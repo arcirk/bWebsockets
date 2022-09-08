@@ -1,0 +1,99 @@
+#include "../include/listener_ssl.hpp"
+#include "../include/http_session1.hpp"
+//#include "../include/http_session.hpp"
+#include <iostream>
+
+listener_ssl::
+listener_ssl(
+        net::io_context& ioc,
+        boost::asio::ssl::context& ctx,
+        tcp::endpoint endpoint,
+        boost::shared_ptr<shared_state> const& state)
+        : ioc_(ioc)
+        , acceptor_(ioc)
+        , state_(state)
+        , ctx_(ctx)
+{
+    beast::error_code ec;
+
+    // Open the acceptor
+    acceptor_.open(endpoint.protocol(), ec);
+    if(ec)
+    {
+        fail(ec, "open");
+        return;
+    }
+
+    // Allow address reuse
+    acceptor_.set_option(net::socket_base::reuse_address(true), ec);
+    if(ec)
+    {
+        fail(ec, "set_option");
+        return;
+    }
+
+    // Bind to the server address
+    acceptor_.bind(endpoint, ec);
+    if(ec)
+    {
+        fail(ec, "bind");
+        return;
+    }
+
+    // Start listening for connections
+    acceptor_.listen(
+            net::socket_base::max_listen_connections, ec);
+    if(ec)
+    {
+        fail(ec, "listen");
+        return;
+    }
+}
+
+void
+listener_ssl::
+run()
+{
+    std::cout << arcirk::local_8bit("Сервер успешно запущен.") << std::endl;
+
+    // The new connection gets its own strand
+    acceptor_.async_accept(
+            net::make_strand(ioc_),
+            beast::bind_front_handler(
+                    &listener_ssl::on_accept,
+                    shared_from_this()));
+
+    state_->on_start();
+}
+
+// Report a failure
+void
+listener_ssl::
+fail(beast::error_code ec, char const* what)
+{
+    // Don't report on canceled operations
+    if(ec == net::error::operation_aborted)
+        return;
+    std::cerr << what << ": " << ec.message() << "\n";
+}
+
+// Handle a connection
+void
+listener_ssl::
+on_accept(beast::error_code ec, tcp::socket socket)
+{
+    if(ec)
+        return fail(ec, "accept");
+    else
+        // Launch a new session for this connection
+        boost::make_shared<http_session_ssl>(
+                std::move(socket), ctx_,
+                state_)->run(); //,
+
+    // The new connection gets its own strand
+    acceptor_.async_accept(
+            net::make_strand(ioc_),
+            beast::bind_front_handler(
+                    &listener_ssl::on_accept,
+                    shared_from_this()));
+}

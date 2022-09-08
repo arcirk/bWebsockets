@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+/arcirk/src/cmake-build-release/
+/arcirk/src/cmake-build-debug/
+/arcirk/src/server/x64/
+/src/arcirk/cmake-build-debug/
+/src/cmake-build-release/
+/src/cmake-build-debug/
+/src/server/cmake-build-debug/
+/src/server/x64/

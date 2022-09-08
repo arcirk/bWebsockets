@@ -1,0 +1,277 @@
+
+#include "../include/websocket_session.hpp"
+#include <iostream>
+#include <utility>
+#include <boost/bind.hpp>
+
+
+websocket_session::
+websocket_session(tcp::socket&& socket, boost::shared_ptr<shared_state>  state)
+: ws_(std::move(socket))
+, state_(std::move(state))
+, _dead_line(socket.get_executor())
+{
+    boost::beast::error_code ec;
+    auto remote = ws_.next_layer().socket().remote_endpoint(ec);
+    _ip_address = remote.address().to_string();
+    _port = std::to_string(remote.port());
+    _uuid = boost::uuids::random_generator()();
+
+    last_error = 0;
+
+}
+
+boost::uuids::uuid & websocket_session::get_uuid() {
+    return _uuid;
+}
+
+void websocket_session::deliver(const boost::shared_ptr<const std::string> &msg) {
+    //
+    send(msg);
+};
+
+websocket_session::
+~websocket_session()
+{
+    // Remove this session from the list of active sessions
+    state_->leave(this);
+
+}
+
+void
+websocket_session::
+fail(beast::error_code ec, char const* what)
+{
+    // Don't report these
+    if( ec == net::error::operation_aborted ||
+        ec == websocket::error::closed)
+        return;
+
+    last_error = ec.value();
+
+    if(ec.value() == 10054){
+        dead_line_cancel();
+    }
+
+    std::cerr << what << " code: " << ec.value() << " " << ec.message() << std::endl;
+}
+
+void
+websocket_session::
+on_accept(beast::error_code ec)
+{
+    // Handle the error, if any
+    if(ec)
+        return fail(ec, "accept");
+
+    // Add this session to the list of active sessions
+    state_->join(this);
+
+    std::cout << "connect client" << std::endl;
+
+    //Установка крайнего срока для авторизации
+    _dead_line.expires_after(std::chrono::seconds(60));
+    _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
+
+    // Read a message
+    ws_.async_read(
+            buffer_,
+            beast::bind_front_handler(
+                    &websocket_session::on_read,
+                    shared_from_this()));
+}
+
+void
+websocket_session::
+on_read(beast::error_code ec, std::size_t)
+{
+    if (ec == boost::asio::error::eof){
+        std::cerr << "websocket_session::on_read: " << "boost::asio::error::eof" << std::endl;
+        return;
+    }
+    // Handle the error, if any
+    if(ec){
+        return fail(ec, "read");
+    }
+
+    std::string msg = beast::buffers_to_string(buffer_.data());
+
+    //отправляем только подписчикам на канал
+    state_->send(msg); //, this);
+
+    // Clear the buffer
+    buffer_.consume(buffer_.size());
+
+    // Read another message
+    ws_.async_read(
+            buffer_,
+            beast::bind_front_handler(
+                    &websocket_session::on_read,
+                    shared_from_this()));
+}
+
+void
+websocket_session::
+send(boost::shared_ptr<std::string const> const& ss)
+{
+
+    net::post(
+            ws_.get_executor(),
+            beast::bind_front_handler(
+                    &websocket_session::on_send,
+                    shared_from_this(),
+                    ss));
+}
+
+
+void
+websocket_session::
+on_send(boost::shared_ptr<std::string const> const& ss)
+{
+    // Always add to queue
+    queue_.push_back(ss);
+
+    // Are we already writing?
+    if(queue_.size() > 1)
+        return;
+
+    // We are not currently writing, so deliver this immediately
+    ws_.async_write(
+            net::buffer(*queue_.front()),
+            beast::bind_front_handler(
+                    &websocket_session::on_write,
+                    shared_from_this()));
+}
+
+void
+websocket_session::
+on_write(beast::error_code ec, std::size_t)
+{
+    // Handle the error, if any
+    if(ec)
+        return fail(ec, "write");
+
+    // Remove the string from the queue
+    queue_.erase(queue_.begin());
+
+    // Send the next message if any
+    if(! queue_.empty())
+        ws_.async_write(
+                net::buffer(*queue_.front()),
+                beast::bind_front_handler(
+                        &websocket_session::on_write,
+                        shared_from_this()));
+}
+
+std::string websocket_session::ip_address() const{
+
+    return _ip_address;
+}
+
+std::string websocket_session::host_name() const
+{
+    return _host_name;
+}
+
+void websocket_session::set_host_name(const std::string &value)
+{
+    _host_name = value;
+}
+std::map<boost::uuids::uuid, websocket_session *>*
+websocket_session::
+get_subscribers() {
+    return &subscribers_;
+}
+
+void
+websocket_session::throw_authorized() {
+#ifdef _WINDOWS
+    std::string msg = boost::locale::conv::from_utf("Отказано в доступе!", "windows-1251");
+#else
+    std::string msg = "Отказано в доступе!";
+#endif
+    if (!this->authorized)
+        boost::throw_exception( std::out_of_range( msg ), BOOST_CURRENT_LOCATION );
+}
+
+void
+websocket_session::close() {
+
+    dead_line_cancel();
+
+    ws_.async_close(websocket::close_code::normal,
+                beast::bind_front_handler(
+                        &websocket_session::on_close,
+                        shared_from_this()));
+}
+void
+websocket_session::on_close(beast::error_code ec)
+{
+    if(ec)
+        return fail(ec, "close");
+
+    // If we get here then the connection is closed gracefully
+
+    // The make_printable() function helps print a ConstBufferSequence
+    std::cout << beast::make_printable(buffer_.data()) << std::endl;
+}
+bool websocket_session::stopped() const
+{
+
+    bool result = false;
+    try {
+        result  = !ws_.next_layer().socket().is_open();
+    }  catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    return result;
+
+}
+
+void
+websocket_session::dead_line_cancel(){
+    _dead_line.cancel();
+}
+
+void
+websocket_session::check_dead_line()
+{
+    if(this->last_error < 0)
+        return;
+
+    if (this->authorized){
+        _dead_line.cancel();
+    }else{
+        if (_dead_line.expiry() <= steady_timer::clock_type::now())
+        {
+
+#ifdef _WINDOWS
+            std::string msg = boost::locale::conv::from_utf("Превышено время на авторизацию! Отключение клиента...", "windows-1251");
+#else
+            std::string msg = "Отказано в доступе!";
+#endif
+            std::cerr << msg << std::endl;
+
+            ws_.async_close(websocket::close_code::normal,
+                            beast::bind_front_handler(
+                                    &websocket_session::on_close,
+                                    shared_from_this()));
+
+            _dead_line.expires_at((steady_timer::time_point::max)());
+            _dead_line.cancel();
+            return;
+        }
+        // Put the actor back to sleep.
+        _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
+    }
+
+}
+
+boost::uuids::uuid &websocket_session::get_user_uuid() {
+    return _user_uuid;
+}
+
+const std::string &websocket_session::get_role() {
+    return _role;
+}
