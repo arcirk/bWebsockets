@@ -19,9 +19,8 @@
 #include <boost/beast/ssl.hpp>
 #include "include/server_certificate.hpp"
 
-//#include "./include/listener_ssl.hpp"
 #include "include/listener_ssl.hpp"
-//#include "include/listener.hpp"
+#include "include/listener.hpp"
 
 const std::string version = "1.1.0";
 
@@ -295,8 +294,9 @@ main(int argc, char* argv[])
         load_certs(ctx, csr_file, key_file);
     }
 
+    const std::string Protocol = is_ssl ? "wss://" : "ws://";
     std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << version << std::endl;
-    std::cout << arcirk::local_8bit("Попытка запуска сервера ") << address << ":" << port << std::endl;
+    std::cout << arcirk::local_8bit("Попытка запуска сервера ") << Protocol << address << ":" << port << std::endl;
     //std::cout << arcirk::local_8bit("Каталог html ") << doc_root << std::endl;
 
     // The io_context is required for all I/O
@@ -304,10 +304,10 @@ main(int argc, char* argv[])
 
     // Create and launch a listening port
     if (!is_ssl){
-//        boost::make_shared<listener>(
-//                ioc,
-//                tcp::endpoint{address, port},
-//                boost::make_shared<shared_state>(doc_root.c_str()))->run();
+        boost::make_shared<listener>(
+                ioc,
+                tcp::endpoint{address, port},
+                boost::make_shared<shared_state>(doc_root.c_str()))->run();
     }else
         boost::make_shared<listener_ssl>(
                 ioc,

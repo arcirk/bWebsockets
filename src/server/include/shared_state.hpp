@@ -50,7 +50,7 @@ enum bConfFields{
 
 using namespace arcirk;
 
-//class websocket_session;
+class websocket_session;
 class websocket_session_ssl;
 
 //typedef boost::variant<websocket_session*, websocket_session_ssl*> sessions__;
@@ -65,10 +65,10 @@ class shared_state
     // This mutex synchronizes all access to sessions_
     std::mutex mutex_;
 
-    //std::map<boost::uuids::uuid, websocket_session*> sessions_; //сессии
-    std::map<boost::uuids::uuid, websocket_session_ssl*> session_ssl_; //сессии
+    std::map<boost::uuids::uuid, websocket_session*> sessions_; //сессии
+    std::map<boost::uuids::uuid, websocket_session_ssl*> sessions_ssl_; //сессии
 
-    //std::map<boost::uuids::uuid, std::vector<websocket_session*>> user_sessions; //все сессии пользователя
+    std::map<boost::uuids::uuid, std::vector<websocket_session*>> user_sessions; //все сессии пользователя
     std::map<boost::uuids::uuid, std::vector<websocket_session_ssl*>> user_sessions_ssl; //все сессии пользователя
 
 public:
@@ -82,9 +82,10 @@ public:
         return doc_root_;
     }
 
-    //template<class T>
+    void join  (websocket_session* sessions);
     void join  (websocket_session_ssl* sessions);
-    //template<class T>
+
+    void leave (websocket_session* session);
     void leave (websocket_session_ssl* session);
     void send(const std::string& message);
     //void send(const std::string& message, websocket_session* session);

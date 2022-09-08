@@ -117,19 +117,19 @@ add_executable(${TARGET}
         main.cpp
         ../arcirk/beast.hpp
         ../arcirk/net.hpp
-        include/http_session1.hpp
-        include/listener_ssl.hpp
-        include/server_certificate.hpp
-        include/shared_state.hpp
-        include/subscriber.hpp
-        include/websocket_session_ssl.hpp
-        src/http_session1.cpp
-        src/listener_ssl.cpp
-        src/shared_state.cpp
-        src/subscriber.cpp
-        src/websocket_session_ssl.cpp
-#        ${CPPS}
-#        ${CPPH}
+#        include/http_session1.hpp
+#        include/listener_ssl.hpp
+#        include/server_certificate.hpp
+#        include/shared_state.hpp
+#        include/subscriber.hpp
+#        include/websocket_session_ssl.hpp
+#        src/http_session1.cpp
+#        src/listener_ssl.cpp
+#        src/shared_state.cpp
+#        src/subscriber.cpp
+#        src/websocket_session_ssl.cpp
+        ${CPPS}
+        ${CPPH}
         )
 
 target_include_directories(${TARGET} PRIVATE
