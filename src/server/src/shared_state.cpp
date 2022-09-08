@@ -32,14 +32,14 @@ leave(websocket_session_ssl* session)
 #ifdef _WINDOWS
     std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
 #else
-    std::string msg = session->get_name();
+    std::string msg = session->get_user_name();
 #endif
     std::cout << "client leave: " << msg << std::endl;
 
     if(!enable_random_connections){
         if (session->is_authorized() && !session->disable_notify()){
 //            // Оповещаем всех об отключении клиента
-//            send(std::string (R"({"name": ")") + session->get_name() +
+//            send(std::string (R"({"name": ")") + session->get_user_name() +
 //                 R"(", "uuid_user": ")" + arcirk::uuids::uuid_to_string(session->get_user_uuid()) + R"(", "uuid": ")" +
 //                 arcirk::uuids::uuid_to_string(session->get_uuid()) + "\"}", "client_leave", true, session->notify_apps());
         }
@@ -79,14 +79,14 @@ leave(websocket_session *session) {
 #ifdef _WINDOWS
     std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
 #else
-    std::string msg = session->get_name();
+    std::string msg = session->get_user_name();
 #endif
     std::cout << "client leave: " << msg << std::endl;
 
     if(!enable_random_connections){
         if (session->is_authorized() && !session->disable_notify()){
 //            // Оповещаем всех об отключении клиента
-//            send(std::string (R"({"name": ")") + session->get_name() +
+//            send(std::string (R"({"name": ")") + session->get_user_name() +
 //                 R"(", "uuid_user": ")" + arcirk::uuids::uuid_to_string(session->get_user_uuid()) + R"(", "uuid": ")" +
 //                 arcirk::uuids::uuid_to_string(session->get_uuid()) + "\"}", "client_leave", true, session->notify_apps());
         }

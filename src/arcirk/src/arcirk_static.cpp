@@ -46,6 +46,11 @@ namespace arcirk{
                 return nil_string_uuid();
             }
         }
+
+        boost::uuids::uuid random_uuid(){
+            return boost::uuids::random_generator()();
+        }
+
     }
 
     namespace standard_paths{

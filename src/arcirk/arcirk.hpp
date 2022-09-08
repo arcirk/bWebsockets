@@ -55,7 +55,7 @@ namespace arcirk {
         std::string nil_string_uuid();
         boost::uuids::uuid nil_uuid();
         std::string uuid_to_string(const boost::uuids::uuid& uuid);
-        std::string random_uuid();
+        boost::uuids::uuid random_uuid();
     }
 
     namespace standard_paths{

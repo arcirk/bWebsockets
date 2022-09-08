@@ -224,7 +224,7 @@ main(int argc, char* argv[])
     const std::string &_key_file = input.getCmdOption("-key_file");
 
     auto threads = 4;
-    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168.10"));
+    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168"));
 
     unsigned short port = 8080;
 

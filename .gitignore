@@ -38,3 +38,5 @@
 /src/cmake-build-debug/
 /src/server/cmake-build-debug/
 /src/server/x64/
+/src/client/cmake-build-debug/
+/src/1c/admin/data/1Cv8Log/

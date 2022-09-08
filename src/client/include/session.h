@@ -5,8 +5,8 @@
 #ifndef WS_SOLUTION_WS_SESSION_H
 #define WS_SOLUTION_WS_SESSION_H
 
-#include "net.h"
-#include "beast.h"
+#include <net.hpp>
+#include <beast.hpp>
 
 #include <cstdlib>
 #include <functional>

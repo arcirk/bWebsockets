@@ -1,14 +1,16 @@
 //
 // Created by arcady on 13.07.2021.
 //
+#include <net.hpp>
+#include <beast.hpp>
 #include <iostream>
-#include "../include/ws_session.h"
-#include "../include/ws_client.h"
+#include "../include/session.h"
+#include "../include/client.h"
 
 
 struct report
 {
-    report(boost::system::error_code ec) : ec(ec) {}
+    explicit report(boost::system::error_code ec) : ec(ec) {}
 
     void operator()(std::ostream& os) const
     {
@@ -32,7 +34,6 @@ session(net::io_context& ioc)
 , deadline_(ioc)
 , heartbeat_timer_(ioc)
 {
-    //stopped_ = true;
 }
 
 session::~session() = default;
@@ -51,7 +52,6 @@ session::run(
     //text_ = text;
 
     deliver("\n");
-    //deliver(client_->get_param());
 
     std::cout << "connect to server..." << std::endl;
 
@@ -88,7 +88,6 @@ session::on_resolve(
 void
 session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
 {
-    //std::cout << ec.value() << std::endl;
     if (ec.value() == 111 || ec.value() == 10061){ //connection refused
         std::string err = ec.message();
 #ifdef _WINDOWS
@@ -140,13 +139,9 @@ session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_
 
     std::cout << "session::on_connect: successful connection!" << std::endl;
 
-    //stopped_ = false;
-
     client_->on_connect(this);
 
     started_ = true;
-
-    //start_write();
 
     start_read();
 
@@ -155,11 +150,10 @@ session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_
 void
 session::start_read()
 {
-    //std::cout << "start_read" << std::endl;
 
     if(!ws_.is_open())
         return;
-    //Установка крайнего срока для операции чтения.
+
     deadline_.expires_after(std::chrono::seconds(30));
 
     ws_.async_read(
@@ -176,23 +170,16 @@ session::on_read(
 
     boost::ignore_unused(bytes_transferred);
 
-    //std::cout << "on_read" << std::endl;
-
     if(ec){
         deadline_.cancel();
     }
 
-    //auto self(shared_from_this()); //!self->ws_.next_layer().is_open() ||ec==boost::asio::error::eof ||
     if (ec == boost::asio::error::connection_reset){
         std::cout << "session::on_read: " << "boost::asio::error::connection_reset" << std::endl;
         return;
     }else if( ec==boost::asio::error::eof){
         client_->error("session::on_read", "boost::asio::error::eof");
-//        if(!ws_.is_open())
-            started_ = false;
-//        deadline_.cancel();
-
-//        heartbeat_timer_.cancel();
+        started_ = false;
         return;
     }else if( ec==websocket::error::no_connection){
         std::cout << "session::on_read: " << "websocket::error::no_connection" << std::endl;
@@ -200,8 +187,6 @@ session::on_read(
     }
 
     if(ec == websocket::error::closed){
-        //client_->error("read","Server is not available");
-                       //"Сервер не доступен!");
         client_->error("read","Сервер не доступен!");
         started_ = false;
         return;
@@ -210,7 +195,6 @@ session::on_read(
     if(ec.value() == 995){
         std::string err = "I/O operation was aborted";
         std::cerr << "session::on_read: " << err << std::endl;
-        //client_->error("read", err);
         return;
     }
 
@@ -258,15 +242,7 @@ session::on_read(
 void
 session::start_write()
 {
-//    if (stopped_)
-//        return;
-
     if ( !get_started()) return;
-
-//    if(!ws_.is_open())
-//        return;
-
-    //std::cout << "start_write" << std::endl;
 
     ws_.async_write(
             net::buffer(output_queue_.front()),
@@ -280,17 +256,6 @@ session::on_write(
         beast::error_code ec,
         std::size_t bytes_transferred)
 {
-//    if (stopped_)
-//        return;
-//    std::cout << "on_write stopped_: " << stopped_ << " ws_.is_open():" << ws_.is_open() << std::endl;
-
-//    if(!ws_.is_open())
-//        return;
-    //if ( !started_) return;
-
-    //auto self(shared_from_this()); !self->ws_.next_layer().is_open() ||ec==boost::asio::error::eof ||
-
-
 
     if(ec){
         std::cerr << ec.value() << std::endl;
@@ -303,7 +268,6 @@ session::on_write(
     boost::ignore_unused(bytes_transferred);
 
     if(ec == websocket::error::closed){
-        //heartbeat_timer_.cancel();
         return;
     }
 
@@ -311,26 +275,12 @@ session::on_write(
         return fail(ec, "write");
 
     buffer_.consume(buffer_.size());
-    //buffer_.clear();
 
     output_queue_.pop_front();
 
     if (output_queue_.empty()) {
         output_queue_.emplace_back("\n");
     }
-
-    //std::cout << "on_write" << std::endl;
-
-//    // Запускаем пинг с периодичностью в 30 секунд
-//
-//    heartbeat_timer_.expires_after(std::chrono::seconds(30));
-//
-//    heartbeat_timer_.async_wait(std::bind(&session::start_write, this));
-//
-//    //start_write();
-
-    //start_read();
-
 }
 
 void
@@ -340,7 +290,6 @@ session::stop(bool eraseObjOnly)
     started_ = false;
     deadline_.cancel();
     heartbeat_timer_.cancel();
-    //client_->on_stop();
     if(!eraseObjOnly)
         ws_.async_close(websocket::close_code::normal,
             beast::bind_front_handler(
@@ -356,18 +305,12 @@ session::on_close(beast::error_code ec)
         return fail(ec, "close");
 
     client_->on_stop();
-    //stopped_ = true;
 
-    // If we get here then the connection is closed gracefully
-
-//    // The make_printable() function helps print a ConstBufferSequence
-//    std::cout << beast::make_printable(buffer_.data()) << std::endl;
 }
 
 void
 session::send(boost::shared_ptr<std::string const> const& ss) {
 
-    //if ( !started_) return;
 
     if (!ws_.is_open())
         return;
@@ -377,32 +320,14 @@ session::send(boost::shared_ptr<std::string const> const& ss) {
     //сбрасываем таймер для отправки следующего сообщения через секунду
     heartbeat_timer_.expires_after(std::chrono::seconds(0));
     heartbeat_timer_.async_wait(std::bind(&session::start_write, this));
-    //start_write();
 
 }
 
 void
 session::fail(beast::error_code ec, char const* what)
 {
-//    using namespace boost::locale::conv;
-//
-//    std::wstring _msg = utf_to_utf<wchar_t>(ec.message());
 
-//    boost::locale::generator g;
-//    g.locale_cache_enabled(true);
-//    std::locale loc = g(boost::locale::util::get_system_locale());
-//    std::wstring _msg = boost::locale::conv::to_utf<wchar_t>(ec.message(), loc);
-
-    //std::string _msg = utf_to_utf<char>(ec.message());
-
-//    std::wcerr << what << ": " << _msg << "\n";
-
-    //client_->error(what, ec.message());
-    //
-
-    //std::cerr << what << ": " << ec.message() << "\n";
     std::ostringstream ss;
-    //std::ostream& str = arc_json::report(ec);
 
     ss << report(ec);
 
@@ -427,10 +352,6 @@ session::deliver(const std::string& msg)
 void
 session::check_deadline()
 {
-//    if (stopped_)
-//        return;
-
-    //if ( !started_) return;
 
     if(!ws_.is_open())
         return;

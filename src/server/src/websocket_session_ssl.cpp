@@ -96,8 +96,7 @@ on_read(beast::error_code ec, std::size_t)
 
     std::string msg = beast::buffers_to_string(buffer_.data());
 
-    //отправляем только подписчикам на канал
-    state_->send(msg); //, this);
+    state_->send(msg);
 
     // Clear the buffer
     buffer_.consume(buffer_.size());
@@ -185,11 +184,9 @@ get_subscribers() {
 
 void
 websocket_session_ssl::throw_authorized() {
-#ifdef _WINDOWS
-    std::string msg = boost::locale::conv::from_utf("Отказано в доступе!", "windows-1251");
-#else
-    std::string msg = "Отказано в доступе!";
-#endif
+
+    std::string msg = arcirk::local_8bit("Отказано в доступе!");
+
     if (!this->authorized)
         boost::throw_exception( std::out_of_range( msg ), BOOST_CURRENT_LOCATION );
 }
@@ -210,9 +207,6 @@ websocket_session_ssl::on_close(beast::error_code ec)
     if(ec)
         return fail(ec, "close");
 
-    // If we get here then the connection is closed gracefully
-
-    // The make_printable() function helps print a ConstBufferSequence
     std::cout << beast::make_printable(buffer_.data()) << std::endl;
 }
 bool websocket_session_ssl::stopped() const
@@ -245,12 +239,8 @@ websocket_session_ssl::check_dead_line()
     }else{
         if (_dead_line.expiry() <= steady_timer::clock_type::now())
         {
+            std::string msg = arcirk::local_8bit("Превышено время на авторизацию! Отключение клиента...");
 
-#ifdef _WINDOWS
-            std::string msg = boost::locale::conv::from_utf("Превышено время на авторизацию! Отключение клиента...", "windows-1251");
-#else
-            std::string msg = "Отказано в доступе!";
-#endif
             std::cerr << msg << std::endl;
 
             ws_.async_close(websocket::close_code::normal,
