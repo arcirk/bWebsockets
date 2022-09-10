@@ -214,7 +214,7 @@ namespace arcirk::json{
 #ifdef _WINDOWS
         return this->GetObjectA();
 #else
-        _Value val(rapidjson::kObjectType);
+        bValue val(rapidjson::kObjectType);
         for(auto itr = this->MemberBegin(); itr != this->MemberEnd(); ++itr){
             val.AddMember(itr->name, itr->value, this->GetAllocator());
         }
