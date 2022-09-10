@@ -40,3 +40,7 @@
 /src/server/x64/
 /src/client/cmake-build-debug/
 /src/1c/admin/data/1Cv8Log/
+
+*.cfl
+*.1cl
+*.cgr

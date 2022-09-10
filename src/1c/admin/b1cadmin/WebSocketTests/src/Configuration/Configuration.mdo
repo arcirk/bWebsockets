@@ -39,4 +39,12 @@
     </synonym>
     <languageCode>ru</languageCode>
   </languages>
+  <subsystems>Subsystem.Параметры</subsystems>
+  <roles>Role.ПолныеПрава</roles>
+  <commonModules>CommonModule.ВебСокетКлиент</commonModules>
+  <commonModules>CommonModule.ВебСокетСервер</commonModules>
+  <constants>Constant.ДатресHttpСервиса</constants>
+  <constants>Constant.ПользовательHttpСериса</constants>
+  <constants>Constant.ПорольПользователяHttpСервиса</constants>
+  <constants>Constant.РазрешитьИспользованиеВебСокет</constants>
 </mdclass:Configuration>

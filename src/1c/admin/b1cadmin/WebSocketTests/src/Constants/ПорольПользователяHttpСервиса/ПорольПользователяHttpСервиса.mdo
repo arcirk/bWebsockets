@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="6321b617-f27f-4f78-8803-6918b8ebec68">
+  <producedTypes>
+    <managerType typeId="c4b374b8-0976-4705-968f-ca586f648ffb" valueTypeId="25b29102-ad07-4fc3-a351-34b336d047fd"/>
+    <valueManagerType typeId="89bd9321-b816-4b73-8730-58c35663b5ad" valueTypeId="378221a8-100c-4feb-9ec1-15d83eb195d1"/>
+    <valueKeyType typeId="0477482d-52ea-4035-bca6-522e8b4c05e2" valueTypeId="1c44308e-5435-48fd-975c-58cae793158e"/>
+  </producedTypes>
+  <name>ПорольПользователяHttpСервиса</name>
+  <synonym>
+    <key>ru</key>
+    <value>Пороль пользователя http сервиса</value>
+  </synonym>
+  <type>
+    <types>String</types>
+    <stringQualifiers>
+      <length>150</length>
+    </stringQualifiers>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>
