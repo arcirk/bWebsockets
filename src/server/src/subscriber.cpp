@@ -31,3 +31,7 @@ std::string subscriber::notify_apps() const
 {
     return _notify_apps;
 }
+
+bool subscriber::use_authorization() {
+    return _use_authorization;
+}

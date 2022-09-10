@@ -22,6 +22,25 @@
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
 
+#include <soci/soci.h>
+#include <soci/boost-fusion.h>
+//#include <boost/fusion/include/define_struct.hpp>
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/adapted/struct/define_struct.hpp>
+#include <boost/fusion/include/define_struct.hpp>
+
+BOOST_FUSION_DEFINE_STRUCT(
+                (), TableUsers,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, hash)
+                (std::string, role)
+                (std::string, performance)
+                (std::string, parent)
+                (std::string, cache))
+
 const std::string version = "1.1.0";
 
 const std::string index_html_text = "<!DOCTYPE html>\n"
@@ -198,6 +217,41 @@ void load_certs(boost::asio::ssl::context& ctx, const std::string& cert, const s
     load_server_certificate(ctx, _cert, _key);
 }
 
+void verify_database(){
+
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    const std::string table_ddl = "CREATE TABLE NOT EXISTS Users (\n"
+                                  "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                  "    first  TEXT,\n"
+                                  "    second TEXT,\n"
+                                  "    ref         TEXT (36) UNIQUE\n"
+                                  "                          NOT NULL,\n"
+                                  "    hash        TEXT      UNIQUE\n"
+                                  "                          NOT NULL,\n"
+                                  "    role        TEXT,\n"
+                                  "    performance TEXT,\n"
+                                  "    parent      TEXT (36),\n"
+                                  "    cache       TEXT\n"
+                                  ");";
+
+    path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
+    if(!exists(data)){
+        session sql("sqlite3", data.string());
+        sql << table_ddl;
+
+        TableUsers u;
+        u.ref = to_string(uuids::random_uuid());
+        u.first = "admin";
+        u.hash = arcirk::get_hash("admin", "admin");
+        u.parent = arcirk::uuids::nil_string_uuid();
+        u.role = "admin";
+
+        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
+    }
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -229,6 +283,8 @@ main(int argc, char* argv[])
     unsigned short port = 8080;
 
     verify_directories();
+
+    verify_database();
 
     path html = m_root_conf;
     html /= "html";

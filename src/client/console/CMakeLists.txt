@@ -1,17 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
-if (MSVC)
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
 include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
-else()
-set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "Vcpkg toolchain file")
-endif()
 
-project(bserver)
+project(client_console)
 
 set(CMAKE_CXX_STANDARD 17)
-set(TARGET bserver)
+set(TARGET client_console)
 
 if(MSVC)
     add_compile_options(
@@ -112,28 +107,25 @@ endif()
 SET(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/x64/)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-set(ARCIRK_INCLUDE ../arcirk)
-set(ARCIRK_LIB ../arcirk/cmake-build-debug)
-
-file(GLOB CPPS "src/*.cpp"
-          CPPH "include/*hpp")
+set(ARCIRK_INCLUDE ../../arcirk)
+set(ARCIRK_LIB ../../arcirk/cmake-build-debug)
+set(BCLIENT_INCLUDE ../../client/include)
+set(BCLIENT_LIB ../../client/cmake-build-debug)
 
 add_executable(${TARGET}
         main.cpp
-        ../arcirk/beast.hpp
-        ../arcirk/net.hpp
-        ${CPPS}
-        ${CPPH}
+        ../../arcirk/beast.hpp
+        ../../arcirk/net.hpp
         )
 
 target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
+        ${BCLIENT_INCLUDE}
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(SOCI CONFIG REQUIRED)
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
         Boost::system
@@ -142,8 +134,7 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-        SOCI::soci_core_static
-        SOCI::soci_empty_static
+        bclient
         )
 
 if (WIN32)

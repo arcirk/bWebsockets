@@ -8,32 +8,14 @@
 #include "../include/client.h"
 
 
-struct report
-{
-    explicit report(boost::system::error_code ec) : ec(ec) {}
-
-    void operator()(std::ostream& os) const
-    {
-        os << ec.category().name() << " : " << ec.value() << " : " << ec.message();
-    }
-
-    boost::system::error_code ec;
-
-    friend std::ostream& operator<<(std::ostream& os, report rep)
-    {
-        rep(os);
-        return os;
-    }
-
-};
-
 session::
-session(net::io_context& ioc)
+session(net::io_context& ioc, const std::string & auth)
 : resolver_(net::make_strand(ioc))
 , ws_(net::make_strand(ioc))
-, deadline_(ioc)
+, dead_line_(ioc)
 , heartbeat_timer_(ioc)
 {
+    _auth = auth;
 }
 
 session::~session() = default;
@@ -49,13 +31,12 @@ session::run(
 
     // Save these for later
     host_ = host;
-    //text_ = text;
 
     deliver("\n");
 
     std::cout << "connect to server..." << std::endl;
 
-    deadline_.async_wait(std::bind(&session::check_deadline, this));
+    dead_line_.async_wait(std::bind(&session::check_dead_line, this));
 
     std::cout << "start resolve " << host << ' ' << port << std::endl;
 
@@ -89,16 +70,12 @@ void
 session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
 {
     if (ec.value() == 111 || ec.value() == 10061){ //connection refused
-        std::string err = ec.message();
-#ifdef _WINDOWS
-    err = "В соединении отказано";
-#endif
-        client_->error("connect", err);
+        std::string err = ec.what();
+        client_->on_error("connect", arcirk::to_utf(err), ec.value());
         return;
     }
 
     if(ec){
-        //stopped_ = true;
         return fail(ec, "connect");
     }
     // Turn off the timeout on the tcp_stream, because
@@ -110,13 +87,17 @@ session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_
             websocket::stream_base::timeout::suggested(
                     beast::role_type::client));
 
+    std::string __auth = _auth;
     // Set a decorator to change the User-Agent of the handshake
     ws_.set_option(websocket::stream_base::decorator(
-            [](websocket::request_type& req)
+            [&__auth](websocket::request_type& req)
             {
                 req.set(http::field::user_agent,
                         std::string(BOOST_BEAST_VERSION_STRING) +
                         " websocket-client-async");
+                if(!__auth.empty()){
+                    req.set(http::field::authorization, __auth);
+                }
             }));
 
     // Update the host_ string. This will provide the value of the
@@ -131,9 +112,9 @@ session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_
                                 shared_from_this()));
                 }
 
-                void
-                session::on_handshake(beast::error_code ec)
-                {
+void
+session::on_handshake(beast::error_code ec)
+{
     if(ec)
         return fail(ec, "handshake");
 
@@ -154,7 +135,7 @@ session::start_read()
     if(!ws_.is_open())
         return;
 
-    deadline_.expires_after(std::chrono::seconds(30));
+    dead_line_.expires_after(std::chrono::seconds(30));
 
     ws_.async_read(
         buffer_,
@@ -170,55 +151,47 @@ session::on_read(
 
     boost::ignore_unused(bytes_transferred);
 
+    std::string err = ec.what();
+    std::string what = "on_read";
+
+
     if(ec){
-        deadline_.cancel();
+        dead_line_.cancel();
     }
 
     if (ec == boost::asio::error::connection_reset){
-        std::cout << "session::on_read: " << "boost::asio::error::connection_reset" << std::endl;
+        //std::cout << "boost::asio::error::connection_reset " << "error code:" << ec.value() << std::endl;
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         return;
     }else if( ec==boost::asio::error::eof){
-        client_->error("session::on_read", "boost::asio::error::eof");
+        //std::cout << "boost::asio::error::eof " << "error code:" << ec.value() << std::endl;
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         started_ = false;
         return;
     }else if( ec==websocket::error::no_connection){
-        std::cout << "session::on_read: " << "websocket::error::no_connection" << std::endl;
+        //std::cout << "websocket::error::no_connection " << "error code:" << ec.value() << std::endl;
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         return;
-    }
-
-    if(ec == websocket::error::closed){
-        client_->error("read","Сервер не доступен!");
+    }else if(ec == websocket::error::closed){
+        //std::cout << "websocket::error::closed " << "error code:" << ec.value() << std::endl;
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         started_ = false;
         return;
     }
 
     if(ec.value() == 995){
-        std::string err = "I/O operation was aborted";
-        std::cerr << "session::on_read: " << err << std::endl;
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         return;
     }
 
     if(ec.value() == 2){
-        std::string err = ec.message();
-#ifdef _WINDOWS
-        err = "Соединение разорвано!";
-#endif
-        client_->error("read", err);
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         return;
     }
 
     //125 : Операция отменена
     if(ec.value() == 109 || ec.value() == 125){
-        std::string err = ec.message();
-#ifdef _WINDOWS
-        err = "Соединение разорвано другой стороной!";
-#endif
-
-        if (!ws_.is_open())
-            return;
-
-        client_->error("read", err);
-
+        client_->on_error(what, arcirk::to_utf(err), ec.value());
         return;
     }
 
@@ -228,12 +201,7 @@ session::on_read(
 
     client_->on_read(beast::buffers_to_string(buffer_.data()));
 
-    //std::cout << s << buffer_.size() << std::endl;
-
-    //beast::make_printable(buffer_.data());
-
     buffer_.consume(buffer_.size());
-    //buffer_.clear();
 
     start_read();
 
@@ -284,13 +252,13 @@ session::on_write(
 }
 
 void
-session::stop(bool eraseObjOnly)
+session::stop()
 {
     if ( !started_) return;
     started_ = false;
-    deadline_.cancel();
+    dead_line_.cancel();
     heartbeat_timer_.cancel();
-    if(!eraseObjOnly)
+    //if(!eraseObjOnly)
         ws_.async_close(websocket::close_code::normal,
             beast::bind_front_handler(
                     &session::on_close,
@@ -327,15 +295,11 @@ void
 session::fail(beast::error_code ec, char const* what)
 {
 
-    std::ostringstream ss;
+    std::string _msg = ec.what();
 
-    ss << report(ec);
+    std::cerr << what << ": " << _msg << "\n";
 
-    std::string _msg = ss.str();
-
-    std::cerr << what << ": " << report(ec) << "\n";
-
-    client_->error(what, _msg);
+    client_->on_error(what, arcirk::to_utf(_msg), ec.value());
 
 }
 
@@ -350,23 +314,23 @@ session::deliver(const std::string& msg)
 }
 
 void
-session::check_deadline()
+session::check_dead_line()
 {
 
     if(!ws_.is_open())
         return;
 
-    if (deadline_.expiry() <= steady_timer::clock_type::now())
+    if (dead_line_.expiry() <= steady_timer::clock_type::now())
     {
         ws_.async_close(websocket::close_code::normal,
                         beast::bind_front_handler(
                                 &session::on_close,
                                 shared_from_this()));
 
-        deadline_.expires_at((steady_timer::time_point::max)());
+        dead_line_.expires_at((steady_timer::time_point::max)());
     }
 
-    deadline_.async_wait(std::bind(&session::check_deadline, this));
+    dead_line_.async_wait(std::bind(&session::check_dead_line, this));
 
 }
 

@@ -278,6 +278,8 @@ on_read(beast::error_code ec, std::size_t)
     if(ec)
         return fail(ec, "read");
 
+    std::cout << "http_session::on_read" << std::endl;
+
     // See if it is a WebSocket Upgrade
     if(websocket::is_upgrade(parser_->get()))
     {

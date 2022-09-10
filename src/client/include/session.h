@@ -35,7 +35,7 @@ class session : public boost::enable_shared_from_this<session>
         public:
             // Resolver and socket require an io_context
             explicit
-            session(net::io_context& ioc);
+            session(net::io_context& ioc, const std::string & auth);
 
             ~session();
 
@@ -68,7 +68,7 @@ class session : public boost::enable_shared_from_this<session>
                     std::size_t bytes_transferred);
 
             void
-            stop(bool eraseObjOnly = false);
+            stop();
 
             void
             send(boost::shared_ptr<std::string const> const& ss);
@@ -81,9 +81,9 @@ class session : public boost::enable_shared_from_this<session>
 
         private:
             std::deque<std::string> output_queue_;
-            steady_timer deadline_;
+            steady_timer dead_line_;
             steady_timer heartbeat_timer_;
-            //std::string input_buffer_;
+            std::string _auth;
             bool started_ = false;
 
             bool get_started() const;
@@ -95,7 +95,7 @@ class session : public boost::enable_shared_from_this<session>
             deliver(const std::string& msg);
 
             void
-            check_deadline();
+            check_dead_line();
 
         };
 

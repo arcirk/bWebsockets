@@ -153,4 +153,50 @@ namespace arcirk{
         return boost::locale::conv::to_utf<char>(source, "Windows-1251");
     }
 
+    std::string get_sha1(const std::string& p_arg)
+    {
+        boost::uuids::detail::sha1 sha1;
+        sha1.process_bytes(p_arg.data(), p_arg.size());
+        unsigned hash[5] = {0};
+        sha1.get_digest(hash);
+
+        // Back to string
+        char buf[41] = {0};
+
+        for (int i = 0; i < 5; i++)
+        {
+            std::sprintf(buf + (i << 3), "%08x", hash[i]);
+        }
+
+        return std::string(buf);
+    }
+
+    std::string get_hash(const std::string& first, const std::string& second){
+        std::string _usr(first);
+        const std::string& _pwd(second);
+
+        boost::trim(_usr);
+        boost::to_upper(_usr);
+
+        return get_sha1(_usr + _pwd);
+    }
+
+    int split_str_to_vec(const T_str& s, const T_str& DELIM, T_vec& v)
+    {
+        size_t l, r;
+
+        for (l = s.find_first_not_of(DELIM), r = s.find_first_of(DELIM, l);
+             l != std::string::npos; l = s.find_first_not_of(DELIM, r), r = s.find_first_of(DELIM, l))
+            v.push_back(s.substr(l, r - l));
+        return (int)v.size();
+    }
+
+    T_vec split(const T_str& line, const T_str& sep)
+    {
+        T_vec  v;
+
+        split_str_to_vec(line, sep, v);
+
+        return v;
+    }
 }

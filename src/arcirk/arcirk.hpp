@@ -48,6 +48,9 @@ namespace arcirk {
 
     std::string local_8bit(const std::string& source);
     std::string to_utf(const std::string& source);
+    std::string get_sha1(const std::string& p_arg);
+    std::string get_hash(const std::string& first, const std::string& second);
+    T_vec split(const T_str& line, const T_str& sep);
 
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);

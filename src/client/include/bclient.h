@@ -11,33 +11,29 @@
 #include <arcirk.hpp>
 #include <iostream>
 #include <string>
-#include <functional>
+#include "callbacks.h"
 
 class  ws_client;
 
-typedef std::function<void(std::string)> _callback_message;
-typedef std::function<void(bool)> _callback_status;
-typedef std::function<void()> _callback_connect;
-
-class  IClient{
+class  bClient{
 
 public:
 
     explicit
-    IClient(_callback_message& on_message);
-    explicit
-    IClient(const std::string& _host, const int& _port, _callback_message& on_message);
-    explicit
-    IClient(const std::string& _host, const int& _port, _callback_message& callback, _callback_status& on_status_changed);
-    ~IClient(){
+    bClient(const std::string& host, const int& port, const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_close& close = {}, const callback_error& err = {});
+    ~bClient(){
         close(true);
     };
 
-    void ext_message(const std::string& msg);
     void on_connect();
+    void on_message(const std::string& message);
+    void on_status_changed(bool status);
+    void on_error(const std::string &what, const std::string &err, int code);
+    void on_close();
 
     void close(bool exitParent = false);
     void open(bool new_thread = true);
+    void open(const std::string& auth, bool new_thread = true);
 
     void send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param);
     bool started();
@@ -45,22 +41,27 @@ public:
     void command_to_client(const std::string &recipient, const std::string &command, const std::string &param, const std::string &uuid_form);
     void command_to_server(const std::string &command, const std::string &param, const std::string& uuid_form);
 
+    void client_details(const std::string& app_name, const std::string& user_name, const boost::uuids::uuid& user_uuid = {}, const std::string& user_hash = "");
 
 private:
-    boost::uuids::uuid app_uuid;
-    std::string app_name;
-    std::string user_name;
-    boost::uuids::uuid user_uuid;
-    std::string host;
-    int port;
+    std::string _app_name;
+    std::string _user_name;
+    std::string _user_hash;
+    boost::uuids::uuid _user_uuid{};
+    std::string _host;
+    int _port;
     ws_client * client;
     std::string _client_param;
 
-    _callback_message _on_message;
-    _callback_status _status_changed;
+    callback_message _on_message;
+    callback_status _on_status_changed;
+    callback_connect _on_connect;
+    callback_error  _on_error;
+    callback_close _on_close;
+
     bool _exitParent;
 
-    void start();
+    void start(const std::string & auth = "");
 
     bool _isRun;
 };

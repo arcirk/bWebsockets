@@ -43,6 +43,8 @@ public:
     void set_notify_apps(const std::string& value);
     [[nodiscard]] std::string notify_apps() const;
 
+    bool use_authorization();
+
 protected:
     boost::uuids::uuid	_uuid{};
     bool authorized = false;
@@ -51,6 +53,7 @@ protected:
     std::string _notify_apps;
     boost::uuids::uuid	_user_uuid{};
     std::string _role = "user";
+    bool _use_authorization = false;
 
 private:
 

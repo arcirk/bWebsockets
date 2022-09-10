@@ -100,6 +100,11 @@ void
 websocket_session::
 run(http::request<Body, http::basic_fields<Allocator>> req)
 {
+
+    std::string auth = req[http::field::authorization].to_string();
+
+    std::cout << "http::field::authorization: " <<  auth << std::endl;
+
     // Set suggested timeout settings for the websocket
     ws_.set_option(
             websocket::stream_base::timeout::suggested(
