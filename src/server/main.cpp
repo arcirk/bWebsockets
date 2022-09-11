@@ -2,8 +2,11 @@
 // Created by Борисоглебский on 05.09.2022.
 //
 //#include "./include/listener.hpp"
+#include <soci/soci.h>
 
 #include <arcirk.hpp>
+
+//#include <soci/sqlite3/soci-sqlite3.h>
 
 #include "./include/shared_state.hpp"
 
@@ -22,9 +25,9 @@
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
 
-#include <soci/soci.h>
-#include <soci/sqlite3/soci-sqlite3.h>
-//#include <soci/boost-fusion.h>
+
+
+#include <soci/boost-fusion.h>
 //#include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>
@@ -240,19 +243,22 @@ void verify_database(){
                                   ");";
 
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
-    if(!exists(data)){
-        session sql(sqlite3, data.string());
-        sql << table_ddl;
+    //if(!exists(data)){
+//        db_pool db;
+//        db.connect(data.string());
+//        soci::session sql(*db.get_pool());
+//        session sql("sqlite3", data.string());
+//        sql << table_ddl;
 
-        user_info u;
-        u.ref = to_string(uuids::random_uuid());
-        u.first = "admin";
-        u.hash = arcirk::get_hash("admin", "admin");
-        u.parent = arcirk::uuids::nil_string_uuid();
-        u.role = "admin";
-
-        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
-    }
+//        user_info u;
+//        u.ref = to_string(uuids::random_uuid());
+//        u.first = "admin";
+//        u.hash = arcirk::get_hash("admin", "admin");
+//        u.parent = arcirk::uuids::nil_string_uuid();
+//        u.role = "admin";
+//
+//        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
+    //}
 }
 
 int

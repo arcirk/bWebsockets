@@ -3,19 +3,19 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_CXX_STANDARD 17)
 
 if (MSVC)
-set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
-include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
 else()
-set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "Vcpkg toolchain file")
+    set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            CACHE STRING "Vcpkg toolchain file")
 endif()
 
 project(bserver)
 set(TARGET bserver)
 
-option(SOCI_CXX11 "" ON)
-option(WITH_SQLITE3 "" ON)
-add_subdirectory(soci)
+#option(SOCI_CXX11 "" ON)
+#option(WITH_SQLITE3 "" ON)
+#add_subdirectory(soci)
 
 if(MSVC)
     add_compile_options(
@@ -34,7 +34,7 @@ add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 if(WIN32)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-#    add_definitions(/MTd)
+    #    add_definitions(/MTd)
 endif()
 
 if (WIN32)
@@ -120,7 +120,7 @@ set(ARCIRK_INCLUDE ../arcirk)
 set(ARCIRK_LIB ../arcirk/cmake-build-debug)
 
 file(GLOB CPPS "src/*.cpp"
-          CPPH "include/*hpp")
+        CPPH "include/*hpp")
 
 add_executable(${TARGET}
         main.cpp
@@ -137,10 +137,10 @@ target_include_directories(${TARGET} PRIVATE
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
-#find_package(SOCI CONFIG REQUIRED)
+find_package(SOCI CONFIG REQUIRED)
 #SOCI::soci_core_static
 #SOCI::soci_empty_static
-#find_package(Poco CONFIG REQUIRED)
+find_package(Poco CONFIG REQUIRED)
 
 #target_include_directories(${TARGET}
 #        PRIVATE
@@ -154,17 +154,17 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-#        Poco::Net
-#        Poco::XML
-#        Poco::Zip
-#        Poco::Data
-#        SOCI::soci_core_static
-#        SOCI::soci_empty_static
-        soci_core
-        soci_sqlite3
+                Poco::Net
+                Poco::XML
+                Poco::Zip
+                Poco::Data
+#                SOCI::soci_core_static
+#                SOCI::soci_empty_static
+#        soci_core
+#        soci_sqlite3
         )
 
 if (WIN32)
-target_link_libraries(${TARGET} PRIVATE
-        bcrypt.lib)
+    target_link_libraries(${TARGET} PRIVATE
+            bcrypt.lib)
 endif()
