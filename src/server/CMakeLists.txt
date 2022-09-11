@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
+set(CMAKE_CXX_STANDARD 17)
+
 if (MSVC)
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
 include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
@@ -9,8 +11,6 @@ set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmak
 endif()
 
 project(bserver)
-
-set(CMAKE_CXX_STANDARD 17)
 set(TARGET bserver)
 
 if(MSVC)
@@ -133,7 +133,11 @@ target_include_directories(${TARGET} PRIVATE
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(SOCI CONFIG REQUIRED)
+#find_package(SOCI CONFIG REQUIRED)
+#SOCI::soci_core_static
+#SOCI::soci_empty_static
+find_package(Poco CONFIG REQUIRED)
+
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
         Boost::system
@@ -142,8 +146,10 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-        SOCI::soci_core_static
-        SOCI::soci_empty_static
+        Poco::Net
+        Poco::XML
+        Poco::Zip
+        Poco::Data
         )
 
 if (WIN32)

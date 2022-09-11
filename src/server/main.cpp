@@ -22,8 +22,8 @@
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
 
-#include <soci/soci.h>
-#include <soci/boost-fusion.h>
+//#include <soci/soci.h>
+//#include <soci/boost-fusion.h>
 //#include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>

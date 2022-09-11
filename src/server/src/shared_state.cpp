@@ -32,7 +32,7 @@ leave(websocket_session_ssl* session)
 #ifdef _WINDOWS
     std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
 #else
-    std::string msg = session->get_user_name();
+    std::string msg = session->get_name();
 #endif
     std::cout << "client leave: " << msg << std::endl;
 
@@ -79,7 +79,7 @@ leave(websocket_session *session) {
 #ifdef _WINDOWS
     std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
 #else
-    std::string msg = session->get_user_name();
+    std::string msg = session->get_name();
 #endif
     std::cout << "client leave: " << msg << std::endl;
 
