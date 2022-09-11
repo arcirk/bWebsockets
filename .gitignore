@@ -46,3 +46,5 @@
 *.cfl
 *.1cl
 *.cgr
+/src/soci/
+/src/server/soci/

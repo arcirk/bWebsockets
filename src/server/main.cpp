@@ -22,24 +22,27 @@
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
 
-//#include <soci/soci.h>
+#include <soci/soci.h>
+#include <soci/sqlite3/soci-sqlite3.h>
 //#include <soci/boost-fusion.h>
 //#include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>
 #include <boost/fusion/include/define_struct.hpp>
 
-BOOST_FUSION_DEFINE_STRUCT(
-                (), TableUsers,
-                (int, _id)
-                (std::string, first)
-                (std::string, second)
-                (std::string, ref)
-                (std::string, hash)
-                (std::string, role)
-                (std::string, performance)
-                (std::string, parent)
-                (std::string, cache))
+#include "include/table_users.hpp"
+
+//BOOST_FUSION_DEFINE_STRUCT(
+//                (), TableUsers,
+//                (int, _id)
+//                (std::string, first)
+//                (std::string, second)
+//                (std::string, ref)
+//                (std::string, hash)
+//                (std::string, role)
+//                (std::string, performance)
+//                (std::string, parent)
+//                (std::string, cache))
 
 const std::string version = "1.1.0";
 
@@ -238,10 +241,10 @@ void verify_database(){
 
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
     if(!exists(data)){
-        session sql("sqlite3", data.string());
+        session sql(sqlite3, data.string());
         sql << table_ddl;
 
-        TableUsers u;
+        user_info u;
         u.ref = to_string(uuids::random_uuid());
         u.first = "admin";
         u.hash = arcirk::get_hash("admin", "admin");

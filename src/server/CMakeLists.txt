@@ -13,6 +13,10 @@ endif()
 project(bserver)
 set(TARGET bserver)
 
+option(SOCI_CXX11 "" ON)
+option(WITH_SQLITE3 "" ON)
+add_subdirectory(soci)
+
 if(MSVC)
     add_compile_options(
             $<$<CONFIG:>:/MT> #---------|
@@ -136,7 +140,11 @@ find_package(OpenSSL REQUIRED)
 #find_package(SOCI CONFIG REQUIRED)
 #SOCI::soci_core_static
 #SOCI::soci_empty_static
-find_package(Poco CONFIG REQUIRED)
+#find_package(Poco CONFIG REQUIRED)
+
+#target_include_directories(${TARGET}
+#        PRIVATE
+#        ${CMAKE_BINARY_DIR}/soci/include)
 
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
@@ -146,10 +154,14 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-        Poco::Net
-        Poco::XML
-        Poco::Zip
-        Poco::Data
+#        Poco::Net
+#        Poco::XML
+#        Poco::Zip
+#        Poco::Data
+#        SOCI::soci_core_static
+#        SOCI::soci_empty_static
+        soci_core
+        soci_sqlite3
         )
 
 if (WIN32)
