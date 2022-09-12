@@ -2,7 +2,7 @@
 // Created by Борисоглебский on 05.09.2022.
 //
 //#include "./include/listener.hpp"
-#include <soci/soci.h>
+
 
 #include <arcirk.hpp>
 
@@ -25,27 +25,29 @@
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
 
-
-
-#include <soci/boost-fusion.h>
-//#include <boost/fusion/include/define_struct.hpp>
+#include <soci/soci.h>
+#include <soci/sqlite3/soci-sqlite3.h>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>
-#include <boost/fusion/include/define_struct.hpp>
+//#include <boost/fusion/include/define_struct.hpp>
+//
+//#include <soci/boost-fusion.h>
+////#include <boost/fusion/include/define_struct.hpp>
+//
+//
+////#include "include/table_users.hpp"
 
-#include "include/table_users.hpp"
-
-//BOOST_FUSION_DEFINE_STRUCT(
-//                (), TableUsers,
-//                (int, _id)
-//                (std::string, first)
-//                (std::string, second)
-//                (std::string, ref)
-//                (std::string, hash)
-//                (std::string, role)
-//                (std::string, performance)
-//                (std::string, parent)
-//                (std::string, cache))
+BOOST_FUSION_DEFINE_STRUCT(
+                (), user_info,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, hash)
+                (std::string, role)
+                (std::string, performance)
+                (std::string, parent)
+                (std::string, cache))
 
 const std::string version = "1.1.0";
 
@@ -228,7 +230,7 @@ void verify_database(){
     using namespace boost::filesystem;
     using namespace soci;
 
-    const std::string table_ddl = "CREATE TABLE NOT EXISTS Users (\n"
+    const std::string table_ddl = "CREATE TABLE IF NOT EXISTS Users (\n"
                                   "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                   "    first  TEXT,\n"
                                   "    second TEXT,\n"
@@ -247,17 +249,27 @@ void verify_database(){
 //        db_pool db;
 //        db.connect(data.string());
 //        soci::session sql(*db.get_pool());
-//        session sql("sqlite3", data.string());
-//        sql << table_ddl;
+        //session sql("sqlite3", data.string());
+        //std::string connection_string = arcirk::sample("db=%1 timeout=2 shared_cache=true", {data.string()});
+        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
+        session sql(soci::sqlite3, connection_string);
+        try {
+            sql << table_ddl;
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
 
-//        user_info u;
-//        u.ref = to_string(uuids::random_uuid());
-//        u.first = "admin";
-//        u.hash = arcirk::get_hash("admin", "admin");
-//        u.parent = arcirk::uuids::nil_string_uuid();
-//        u.role = "admin";
-//
-//        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
+
+        user_info u;
+        u.ref = to_string(uuids::random_uuid());
+        u.first = "admin";
+        u.hash = arcirk::get_hash("admin", "admin");
+        u.parent = arcirk::uuids::nil_string_uuid();
+        u.role = "admin";
+
+        sql << "select 1 where"
+
+        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
     //}
 }
 

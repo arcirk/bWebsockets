@@ -88,9 +88,16 @@ namespace arcirk{
             return uuids::uuid_to_string(get_uuid());
         } else if (is_byte()){
             std::vector<BYTE> val = get_byte();
-            return base64::byte_to_base64(&val[0], val.size());
+            return base64::byte_to_base64(&val[0], (unsigned int)val.size());
         } else
             return {};
     }
 
+    std::string sample(const std::string& format_string, const std::vector<std::string>& args){
+        boost::format f(format_string);
+        for (auto it = args.begin(); it != args.end(); ++it) {
+            f % *it;
+        }
+        return f.str();
+    }
 }

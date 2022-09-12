@@ -1,6 +1,8 @@
 #ifndef ARCIRK_LIBRARY_H
 #define ARCIRK_LIBRARY_H
 
+#include <boost/format.hpp>
+
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -22,7 +24,7 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/regex.hpp>
-#include <boost/format.hpp>
+
 
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
@@ -51,6 +53,10 @@ namespace arcirk {
     std::string get_sha1(const std::string& p_arg);
     std::string get_hash(const std::string& first, const std::string& second);
     T_vec split(const T_str& line, const T_str& sep);
+
+    std::string sample(const std::string& format_string, const std::vector<std::string>& args);
+    template<typename... Arguments>
+    std::string str_sample(const std::string& format_string, const Arguments&... args){return boost::str((boost::format(format_string) % ... % args));}
 
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);
