@@ -69,9 +69,13 @@ on_accept(beast::error_code ec)
 
     std::cout << "connect client" << std::endl;
 
-    //Установка крайнего срока для авторизации
-    _dead_line.expires_after(std::chrono::seconds(60));
-    _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
+    bool use_authorization = state_->use_authorization();
+
+    if(use_authorization){
+        //Установка крайнего срока для авторизации
+        _dead_line.expires_after(std::chrono::seconds(60));
+        _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
+    }
 
     // Read a message
     ws_.async_read(
@@ -185,11 +189,7 @@ get_subscribers() {
 
 void
 websocket_session::throw_authorized() {
-#ifdef _WINDOWS
-    std::string msg = boost::locale::conv::from_utf("Отказано в доступе!", "windows-1251");
-#else
-    std::string msg = "Отказано в доступе!";
-#endif
+    std::string msg = arcirk::local_8bit("Отказано в доступе!");
     if (!this->authorized)
         boost::throw_exception( std::out_of_range( msg ), BOOST_CURRENT_LOCATION );
 }
@@ -246,12 +246,7 @@ websocket_session::check_dead_line()
         if (_dead_line.expiry() <= steady_timer::clock_type::now())
         {
 
-#ifdef _WINDOWS
-            std::string msg = boost::locale::conv::from_utf("Превышено время на авторизацию! Отключение клиента...", "windows-1251");
-#else
-            std::string msg = "Отказано в доступе!";
-#endif
-            std::cerr << msg << std::endl;
+            std::string msg = arcirk::local_8bit("Превышено время на авторизацию! Отключение клиента...");
 
             ws_.async_close(websocket::close_code::normal,
                             beast::bind_front_handler(

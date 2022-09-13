@@ -85,7 +85,8 @@ std::vector<std::string> conf_aliases = {
         "HSPassword",
         "ServerSSL",
         "SSL_csr_file",
-        "SSL_key_file"
+        "SSL_key_file",
+        "UseAuthorization"
 };
 
 boost::filesystem::path m_root_conf;
@@ -230,6 +231,7 @@ void verify_database(){
     using namespace boost::filesystem;
     using namespace soci;
 
+    //таблица пользователей
     const std::string table_ddl = "CREATE TABLE IF NOT EXISTS Users (\n"
                                   "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                   "    first  TEXT,\n"
@@ -245,32 +247,35 @@ void verify_database(){
                                   ");";
 
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
-    //if(!exists(data)){
-//        db_pool db;
-//        db.connect(data.string());
-//        soci::session sql(*db.get_pool());
-        //session sql("sqlite3", data.string());
-        //std::string connection_string = arcirk::sample("db=%1 timeout=2 shared_cache=true", {data.string()});
-        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
-        session sql(soci::sqlite3, connection_string);
-        try {
-            sql << table_ddl;
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+
+    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
+    session sql(soci::sqlite3, connection_string);
+    try {
+        sql << table_ddl;
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+
+    user_info u;
+    u.ref = to_string(uuids::random_uuid());
+    u.first = "admin";
+    u.hash = arcirk::get_hash("admin", "admin");
+    u.parent = arcirk::uuids::nil_string_uuid();
+    u.role = "admin";
+
+
+    try {
+        //Хотя бы одна учетная запись с ролью 'admin' должна быть
+        int count = -1;
+        sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
+        if(count <= 0){
+            //Добавить учетную запись по умолчанию
+            sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
         }
-
-
-        user_info u;
-        u.ref = to_string(uuids::random_uuid());
-        u.first = "admin";
-        u.hash = arcirk::get_hash("admin", "admin");
-        u.parent = arcirk::uuids::nil_string_uuid();
-        u.role = "admin";
-
-        sql << "select 1 where"
-
-        sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(:ref, :first, :hash, :parent, :role)", soci::use(u);
-    //}
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
 }
 
 int
@@ -297,6 +302,7 @@ main(int argc, char* argv[])
     const std::string &_ssl = input.getCmdOption("-ssl");
     const std::string &_csr_file = input.getCmdOption("-csr_file");
     const std::string &_key_file = input.getCmdOption("-key_file");
+    const std::string &_use_authorization = input.getCmdOption("-use_auth");
 
     auto threads = 4;
     auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168"));
@@ -358,12 +364,23 @@ main(int argc, char* argv[])
     if(key_file.empty()){
         key_file = conf[SSL_key_file].get_string();
     }
+
+    bool use_auth = false;
+    if(!_use_authorization.empty())
+        use_auth = _use_authorization == "true";
+    else{
+        if(conf[UseAuthorization].is_bool())
+            use_auth = conf[UseAuthorization].get_bool();
+    }
+
     conf[ServerHost] = address.to_string();
     conf[ServerPort] = (int)port;
     conf[ServerHttpRoot] = doc_root;
     conf[ServerSSL] = is_ssl;
     conf[SSL_csr_file] = csr_file;
     conf[SSL_key_file] = key_file;
+    conf[UseAuthorization] = use_auth;
+
     conf.save();
 
     ssl::context ctx{ssl::context::tlsv12};
@@ -384,13 +401,13 @@ main(int argc, char* argv[])
         boost::make_shared<listener>(
                 ioc,
                 tcp::endpoint{address, port},
-                boost::make_shared<shared_state>(doc_root.c_str()))->run();
+                boost::make_shared<shared_state>(doc_root.c_str(), false, use_auth))->run();
     }else
         boost::make_shared<listener_ssl>(
                 ioc,
                 ctx,
                 tcp::endpoint{address, port},
-                boost::make_shared<shared_state>(doc_root.c_str()))->run();
+                boost::make_shared<shared_state>(doc_root.c_str(), true, use_auth))->run();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

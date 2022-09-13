@@ -9,11 +9,12 @@
 #endif
 
 shared_state::
-shared_state(std::string doc_root, bool is_ssl)
+shared_state(std::string doc_root, bool is_ssl, bool use_auth)
         : doc_root_(std::move(doc_root))
 {
     enable_random_connections = true;
     enable_ssl = is_ssl;
+    _use_authorization = use_auth;
 }
 
 void shared_state::join(websocket_session_ssl *session) {
@@ -29,12 +30,8 @@ void
 shared_state::
 leave(websocket_session_ssl* session)
 {
-#ifdef _WINDOWS
-    std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
-#else
-    std::string msg = session->get_name();
-#endif
-    std::cout << "client leave: " << msg << std::endl;
+
+    std::cout << "client leave: " << arcirk::local_8bit(session->get_name()) << std::endl;
 
     if(!enable_random_connections){
         if (session->is_authorized() && !session->disable_notify()){
@@ -76,11 +73,8 @@ leave(websocket_session_ssl* session)
 void
 shared_state::
 leave(websocket_session *session) {
-#ifdef _WINDOWS
-    std::string msg = boost::locale::conv::from_utf(session->get_name(), "windows-1251");
-#else
-    std::string msg = session->get_name();
-#endif
+
+    std::string msg = arcirk::local_8bit(session->get_name());
     std::cout << "client leave: " << msg << std::endl;
 
     if(!enable_random_connections){
@@ -152,4 +146,8 @@ void shared_state::send(const std::string &message) {
 
 void shared_state::on_start() {
 
+}
+
+bool shared_state::use_authorization() const {
+    return _use_authorization;
 }

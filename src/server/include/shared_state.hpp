@@ -46,6 +46,7 @@ enum bConfFields{
     ServerSSL,
     SSL_csr_file,
     SSL_key_file,
+    UseAuthorization
 };
 
 using namespace arcirk;
@@ -73,7 +74,7 @@ class shared_state
 
 public:
     explicit
-    shared_state(std::string doc_root, bool is_ssl = false);
+    shared_state(std::string doc_root, bool is_ssl = false, bool use_auth = false);
     ~shared_state()= default;
 
     [[nodiscard]] std::string const&
@@ -88,13 +89,15 @@ public:
     void leave (websocket_session* session);
     void leave (websocket_session_ssl* session);
     void send(const std::string& message);
-    //void send(const std::string& message, websocket_session* session);
 
     void on_start();
+
+    bool use_authorization() const;
 
 private:
     bool enable_random_connections;
     bool enable_ssl;
+    bool _use_authorization;
 
 };
 
