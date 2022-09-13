@@ -49,3 +49,6 @@
 /src/soci/
 /src/server/soci/
 /src/1c/admin/data/1Cv8JobScheduler/
+.idea
+/cmake-build-debug/
+/src/wscore/cmake-build-debug/
