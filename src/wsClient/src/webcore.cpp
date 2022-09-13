@@ -2,17 +2,65 @@
 // Created by admin on 02.08.2022.
 //
 
-#ifdef _WINDOWS
-#include "stdafx.h"
-#endif // _WINDOWS
+//#ifdef _WINDOWS
+//#include "stdafx.h"
+//#endif // _WINDOWS
 
+#include <net.hpp>
 #include "webcore.h"
+#include <boost/filesystem.hpp>
 
-#include <server_response.h>
+//#include <server_response.h>
 //#include <boost/iostreams/stream.hpp>
 //#include <boost/iostreams/categories.hpp>
 //#include <boost/iostreams/code_converter.hpp>
-#include <boost/locale.hpp>
+//#include <boost/locale.hpp>
+
+std::vector<std::string> conf_aliases = {
+        "ServerHost",
+        "ServerPort",
+        "ServerUser",
+        "ServerUserHash",
+        "ServerName",
+        "ServerHttpRoot",
+        "AutoConnect",
+        "UseLocalWebDavDirectory",
+        "LocalWebDavDirectory",
+        "WebDavHost",
+        "WebDavUser",
+        "WebDavPwd",
+        "WebDavSSL",
+        "SQLFormat",
+        "SQLHost",
+        "SQLUser",
+        "SQLPassword",
+        "HSHost",
+        "HSUser",
+        "HSPassword",
+        "ServerSSL",
+        "SSL_csr_file",
+        "SSL_key_file",
+        "UseAuthorization"
+};
+
+void WebCore::verify_directories(){
+
+    using namespace boost::filesystem;
+
+    std::string arcirk_dir = "arcirk";
+#ifndef _WINDOWS
+    arcirk_dir = "." + arcirk_dir;
+#endif
+
+    path app_conf(arcirk::standard_paths::this_application_conf_dir(arcirk_dir));
+    app_conf /= version;
+
+    bool is_conf = arcirk::standard_paths::verify_directory(app_conf);
+
+    m_root_conf = app_conf;
+
+}
+
 
 std::string WebCore::extensionName() {
     return "WebSocketClient";
@@ -20,7 +68,14 @@ std::string WebCore::extensionName() {
 
 WebCore::WebCore(){
 
-    _callback_message callback = std::bind(&WebCore::on_server_response, this, std::placeholders::_1);
+    callback_connect _connect = std::bind(&WebCore::on_connect, this);
+    callback_error _err = std::bind(&WebCore::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    callback_message _message = std::bind(&WebCore::on_message, this, std::placeholders::_1);
+    callback_status _status = std::bind(&WebCore::on_status_changed, this, std::placeholders::_1);
+    callback_close _on_close = std::bind(&WebCore::on_stop, this);
+
+    verify_directories();
+
     client = new IClient(callback);
     _port = 8080;
     _user = "user";
@@ -338,4 +393,23 @@ std::string WebCore::uuid_session() {
 void WebCore::set_job_data(const variant_t &jobUuid, const variant_t &jobDescription) {
     _job = std::get<std::string>(jobUuid);
     _job_description = std::get<std::string>(jobDescription);
+}
+void WebCore::on_connect(){
+    std::cout << "websocket on_connect" << std::endl;
+}
+
+void WebCore::on_message(const std::string& message){
+    std::cout << "websocket on_message: " << message << std::endl;
+}
+
+void WebCore::on_stop(){
+    std::cout << "websocket on_stop" << std::endl;
+}
+void
+WebCore::on_error(const std::string &what, const std::string &err, int code){
+    std::cerr << what << "(" << code << "): " << arcirk::local_8bit(err) << std::endl;
+}
+
+void WebCore::on_status_changed(bool status){
+    std::cout << "websocket on_status_changed: " << status << std::endl;
 }

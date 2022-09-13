@@ -1,27 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
+set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+
+project(wsClient)
+
 set(CMAKE_CXX_STANDARD 17)
-
-#if (MSVC)
-#    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
-#    set(CMAKE_TOOLCHAIN_FILE "C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
-#            CACHE STRING "Vcpkg toolchain file")
-#    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
-##    include(C:/lib/vcpkg/packages/soci_x64-windows-static/share/soci/SOCIConfig.cmake)
-##    include(C:/lib/vcpkg/installed/x64-windows-static/share/poco/PocoConfig.cmake)
-#else()
-#    set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
-#            CACHE STRING "Vcpkg toolchain file")
-#endif()
-
-
-
-project(bserver)
-set(TARGET bserver)
-
-#option(SOCI_CXX11 "" ON)
-#option(WITH_SQLITE3 "" ON)
-#add_subdirectory(soci)
+set(TARGET wsClient)
 
 if(MSVC)
     add_compile_options(
@@ -31,16 +16,15 @@ if(MSVC)
     )
 endif()
 
-if (UNIX)
-    SET(CMAKE_CXX_FLAGS -pthread)
-endif()
+option(CASE_INSENSITIVE "Case insensitive method names" OFF)
+if (WIN32)
+    option(STATIC_CRT "Static CRT linkage" ON)
+else()
+    option(STATIC_CRT "Static CRT linkage" OFF)
+endif ()
 
-add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+option(OUT_PARAMS "Support output parameters" OFF)
 
-if(WIN32)
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-endif()
 
 if (WIN32)
     set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
@@ -48,6 +32,7 @@ if (WIN32)
     set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
     set(Boost_USE_MULTITHREADED      ON)
     set(Boost_USE_STATIC_RUNTIME    ON)
+
 
     foreach (flag_var
             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -67,6 +52,10 @@ endif()
 
 add_definitions (-DBOOST_ALL_STATIC_LINK=1)
 
+if(WIN32)
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
 if (MSVC)
     set (CMAKE_VERBOSE_MAKEFILE FALSE)
 
@@ -117,41 +106,23 @@ else()
     endif ()
 endif()
 
-
-SET(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/x64/)
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-
 set(ARCIRK_INCLUDE ../arcirk)
 set(ARCIRK_LIB ../arcirk/cmake-build-debug)
+set(BCLIENT_INCLUDE ../client/include)
+set(BCLIENT_LIB ../client/cmake-build-debug)
 
 file(GLOB CPPS "src/*.cpp"
-        CPPH "include/*hpp")
+        CPPH "include/*h")
 
-add_executable(${TARGET}
-        main.cpp
-        ../arcirk/beast.hpp
-        ../arcirk/net.hpp
+add_library(${TARGET} SHARED
         ${CPPS}
         ${CPPH}
-        )
-
-target_include_directories(${TARGET} PRIVATE
-        ${Boost_INCLUDE_DIRS}
-        ${ARCIRK_INCLUDE}
+        ../../arcirk/beast.hpp
+        ../../arcirk/net.hpp
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(SOCI CONFIG REQUIRED)
-#SOCI::soci_core_static
-#SOCI::soci_empty_static
-
-#find_package(Poco CONFIG REQUIRED Net XML Zip Data)
-
-#target_include_directories(${TARGET}
-#        PRIVATE
-#        ${CMAKE_BINARY_DIR}/soci/include)
-
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
         Boost::system
@@ -160,17 +131,61 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-#                Poco::Net
-#                Poco::XML
-#                Poco::Zip
-#                Poco::Data
-                SOCI::soci_core_static
-                SOCI::soci_empty_static
-        SOCI::soci_sqlite3_static
-#        unofficial::sqlite3::sqlite3
-#        soci_core
-#        soci_sqlite3
+        bclient
         )
+
+
+target_compile_definitions(${TARGET} PRIVATE UNICODE _UNICODE)
+
+target_include_directories(${TARGET} PRIVATE
+        include
+        ${Boost_INCLUDE_DIRS}
+        ${ARCIRK_INCLUDE}
+        ${BCLIENT_INCLUDE}
+        )
+
+set (LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
+set (EXECUTABLE_OUTPUT_PATH ${LIBRARY_OUTPUT_PATH})
+set (CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+
+if (${CMAKE_SIZEOF_VOID_P} STREQUAL 4)
+    message("It's 32 bit build")
+    set(TARGET_SUFFIX "")
+elseif (${CMAKE_SIZEOF_VOID_P} STREQUAL 8)
+    message("It's 64 bit build")
+    set(TARGET_SUFFIX "_x64")
+endif ()
+set_target_properties( ${TARGET} PROPERTIES
+        OUTPUT_NAME ${TARGET}${TARGET_SUFFIX}
+        )
+
+if (UNIX)
+    if (TARGET_PLATFORM_32)
+        set(CMAKE_C_FLAGS "-m32 ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-m32 ${CMAKE_CXX_FLAGS}")
+    else(TARGET_PLATFORM_32)
+        set(CMAKE_C_FLAGS "-m64 ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-m64 ${CMAKE_CXX_FLAGS}")
+    endif ()
+    target_link_libraries(${PROJECT_NAME} -static-libstdc++)
+else(UNIX)
+    set(CMAKE_SUPPRESS_REGENERATION 1)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+    target_compile_definitions(${TARGET} PRIVATE _WINDOWS
+            _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_compile_options(${TARGET} PRIVATE /utf-8)
+endif(UNIX)
+
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
+if (WIN32)
+    link_directories(
+            ${ARCIRK_LIB}
+            ${WDC_LIB}
+            ${WS_CLIENT_LIB})
+endif ()
 
 if (WIN32)
     target_link_libraries(${TARGET} PRIVATE

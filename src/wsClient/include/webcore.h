@@ -9,16 +9,18 @@
 
 #include "Component.h"
 //#include <wdclient.hpp>
-#include <arcirk.h>
+#include <arcirk.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <iws_client.h>
+#include <bclient.h>
+#include <callbacks.h>
 
 class WebCore final : public Component {
 
 public:
-    const char *Version = u8"1.0.0";
+    const char *Version = u8"1.1.0";
+    const std::string version = "1.1.0";
 
     std::string extensionName() override;
 
@@ -27,10 +29,12 @@ public:
 
     void close(const variant_t& exit_base = false);
 
-    void open(const variant_t &url = "", const variant_t &user = "", const variant_t &pwd = "", const variant_t &user_uuid = arcirk::nil_string_uuid());
+    void open(const variant_t &url = "", const variant_t &user = "", const variant_t &pwd = "", const variant_t &user_uuid = arcirk::uuids::nil_string_uuid());
 
 private:
-    IClient * client;
+    bClient * client;
+    boost::filesystem::path m_root_conf;
+
     std::string _client_param;
     std::string _url;
     std::string _user;
@@ -76,6 +80,16 @@ private:
     std::string uuid_session();
 
     void set_job_data(const variant_t &jobUuid, const variant_t &jobDescription);
+
+    //callbacks
+    void on_connect();
+    void on_message(const std::string& message);
+    void on_stop();
+    void
+    on_error(const std::string &what, const std::string &err, int code);
+    void on_status_changed(bool status);
+
+    void verify_directories();
 };
 
 #endif //WS_SOLUTION_WEBCORE_H
