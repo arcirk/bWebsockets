@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="d09966e5-7796-4573-bbc6-93eef98bd5e2">
+  <producedTypes>
+    <managerType typeId="4db3da84-f931-4394-a9a0-2ab3f4ff937a" valueTypeId="9d90ec6e-357a-4d7e-a53f-226d0f6d80b5"/>
+    <valueManagerType typeId="ed8d49f8-8e20-4c91-9290-61fee93f3581" valueTypeId="3101948c-fc52-491c-b75a-ad856a3947f7"/>
+    <valueKeyType typeId="685d93bb-0783-4e57-abf8-06b1aad3d038" valueTypeId="5652794c-b534-4139-8e3d-f0e2e7bae44c"/>
+  </producedTypes>
+  <name>ТребуетсяАвторизацияНаСервере</name>
+  <synonym>
+    <key>ru</key>
+    <value>Требуется авторизация на сервере</value>
+  </synonym>
+  <type>
+    <types>Boolean</types>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>

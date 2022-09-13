@@ -48,3 +48,4 @@
 *.cgr
 /src/soci/
 /src/server/soci/
+/src/1c/admin/data/1Cv8JobScheduler/

@@ -40,11 +40,19 @@
     <languageCode>ru</languageCode>
   </languages>
   <subsystems>Subsystem.Параметры</subsystems>
+  <subsystems>Subsystem.Сервер</subsystems>
   <roles>Role.ПолныеПрава</roles>
   <commonModules>CommonModule.ВебСокетКлиент</commonModules>
   <commonModules>CommonModule.ВебСокетСервер</commonModules>
-  <constants>Constant.ДатресHttpСервиса</constants>
+  <constants>Constant.UrlВебСокетСервера</constants>
+  <constants>Constant.АдресHttpСервиса</constants>
+  <constants>Constant.ИмяАдминистратораСервера</constants>
+  <constants>Constant.ИспользуетсяSSL</constants>
+  <constants>Constant.КаталогУстановкиСервера</constants>
+  <constants>Constant.ПарольАдминистратораСервера</constants>
   <constants>Constant.ПользовательHttpСериса</constants>
   <constants>Constant.ПорольПользователяHttpСервиса</constants>
   <constants>Constant.РазрешитьИспользованиеВебСокет</constants>
+  <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
+  <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
 </mdclass:Configuration>
