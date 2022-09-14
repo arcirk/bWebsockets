@@ -1,7 +1,10 @@
 
 #include "../arcirk.hpp"
+#ifdef USE_RAPIDJSON
 #include "rapidjson/filewritestream.h"
+#endif
 
+#ifdef USE_RAPIDJSON
 namespace arcirk::json{
 
     bool bJson::read(const std::string &fileName) {
@@ -284,3 +287,4 @@ namespace arcirk::json{
 
 
 }
+#endif

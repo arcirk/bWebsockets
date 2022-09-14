@@ -3,7 +3,6 @@
 //
 //#include "./include/listener.hpp"
 
-
 #include <arcirk.hpp>
 
 //#include <soci/sqlite3/soci-sqlite3.h>
@@ -29,13 +28,12 @@
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>
-//#include <boost/fusion/include/define_struct.hpp>
-//
-//#include <soci/boost-fusion.h>
-////#include <boost/fusion/include/define_struct.hpp>
-//
-//
-////#include "include/table_users.hpp"
+
+#include <pre/json/from_json.hpp>
+#include <pre/json/to_json.hpp>
+
+#include <common/server_certificate.hpp>
+
 
 BOOST_FUSION_DEFINE_STRUCT(
                 (), user_info,
@@ -48,6 +46,34 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, performance)
                 (std::string, parent)
                 (std::string, cache))
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (), settings,
+        (std::string, ServerHost)
+                (int, ServerPort)
+                (std::string, ServerUser)
+                (std::string, ServerUserHash)
+                (std::string, ServerName)
+                (std::string, ServerHttpRoot)
+                (std::string, AutoConnect)
+                (bool, UseLocalWebDavDirectory)
+                (std::string, LocalWebDavDirectory)
+                (std::string, WebDavHost)
+                (std::string, WebDavUser)
+                (std::string, WebDavPwd)
+                (bool, WebDavSSL)
+                (std::string, SQLFormat)
+                (std::string, SQLHost)
+                (std::string, SQLUser)
+                (std::string, SQLPassword)
+                (std::string, HSHost)
+                (std::string, HSUser)
+                (std::string, HSPassword)
+                (bool, ServerSSL)
+                (std::string, SSL_csr_file)
+                (std::string, SSL_key_file)
+                (bool, UseAuthorization)
+)
 
 const std::string version = "1.1.0";
 
@@ -62,32 +88,6 @@ const std::string index_html_text = "<!DOCTYPE html>\n"
                                     "</body>\n"
                                     "</html>";
 
-std::vector<std::string> conf_aliases = {
-        "ServerHost",
-        "ServerPort",
-        "ServerUser",
-        "ServerUserHash",
-        "ServerName",
-        "ServerHttpRoot",
-        "AutoConnect",
-        "UseLocalWebDavDirectory",
-        "LocalWebDavDirectory",
-        "WebDavHost",
-        "WebDavUser",
-        "WebDavPwd",
-        "WebDavSSL",
-        "SQLFormat",
-        "SQLHost",
-        "SQLUser",
-        "SQLPassword",
-        "HSHost",
-        "HSUser",
-        "HSPassword",
-        "ServerSSL",
-        "SSL_csr_file",
-        "SSL_key_file",
-        "UseAuthorization"
-};
 
 boost::filesystem::path m_root_conf;
 
@@ -153,7 +153,6 @@ void verify_directories(){
         path data = app_conf;
         data /= "data";
         arcirk::standard_paths::verify_directory(data);
-
     }
 }
 
@@ -278,6 +277,48 @@ void verify_database(){
     }
 }
 
+void read_conf(settings & result){
+
+    using namespace boost::filesystem;
+
+    if(!exists(arcirk::local_8bit(m_root_conf.string())))
+        return;
+
+    try {
+        path conf = m_root_conf /+ "arcirk_server_conf.json";
+
+        if(exists(conf)){
+            std::ifstream file(conf.string(), std::ios_base::in);
+            std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+            if(!str.empty()){
+                result = pre::json::from_json<settings>(str);
+            }
+        }
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+}
+
+void write_conf(settings & conf){
+    using namespace boost::filesystem;
+
+    if(!exists(arcirk::local_8bit(m_root_conf.string())))
+        return;
+    try {
+        std::string result = to_string(pre::json::to_json(conf)) ;
+        std::ofstream out;
+        path conf_file = m_root_conf /+ "arcirk_server_conf.json";
+        out.open(arcirk::local_8bit(conf_file.string()));
+        if(out.is_open()){
+            out << result;
+            out.close();
+        }
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+}
 int
 main(int argc, char* argv[])
 {
@@ -303,9 +344,10 @@ main(int argc, char* argv[])
     const std::string &_csr_file = input.getCmdOption("-csr_file");
     const std::string &_key_file = input.getCmdOption("-key_file");
     const std::string &_use_authorization = input.getCmdOption("-use_auth");
+    //const std::string &_use_certs_demo = input.getCmdOption("-use_ssl_demo");
 
     auto threads = 4;
-    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168"));
+    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168.10"));
 
     unsigned short port = 8080;
 
@@ -317,21 +359,20 @@ main(int argc, char* argv[])
     html /= "html";
     std::string doc_root = html.string();
 
-    auto conf = arcirk::bConf(m_root_conf, "arcirk_server", conf_aliases);
+    auto conf = settings();
+    read_conf(conf);
 
     if(!_host.empty())
         address = net::ip::make_address(_host);
     else{
-        std::string v = conf[ServerHost].to_string();
-        if(!v.empty())
-            address = net::ip::make_address(v);
+        if(!conf.ServerHost.empty())
+            address = net::ip::make_address(conf.ServerHost);
     }
     if(!_port.empty())
         port = static_cast<unsigned short>(std::atoi(_port.c_str()));
     else{
-        int v = conf[ServerPort].get_int();
-        if(v > 0)
-            port = static_cast<unsigned short>(v);
+        if(conf.ServerPort > 0)
+            port = static_cast<unsigned short>(conf.ServerPort);
     }
     if(!_threads.empty())
         threads = std::max<int>(1, std::atoi(_threads.c_str()));
@@ -339,9 +380,8 @@ main(int argc, char* argv[])
     if(!_doc_root.empty())
         doc_root = _doc_root;
     else{
-        std::string v = conf[ServerHttpRoot].to_string();
-        if(!v.empty())
-            doc_root = v;
+        if(!conf.ServerHttpRoot.empty())
+            doc_root = conf.ServerHttpRoot;
     }
 
     if(!_ssl_dir.empty()){
@@ -354,38 +394,42 @@ main(int argc, char* argv[])
 
     if(!_ssl.empty()){
         is_ssl = _ssl == "true";
+        conf.ServerSSL = is_ssl;
     }
     if(!is_ssl){
-        is_ssl = conf[ServerSSL].get_bool();
+        is_ssl = conf.ServerSSL;
     }
     if(csr_file.empty()){
-        csr_file = conf[SSL_csr_file].get_string();
+        csr_file = conf.SSL_csr_file;
     }
     if(key_file.empty()){
-        key_file = conf[SSL_key_file].get_string();
+        key_file = conf.SSL_key_file;
     }
 
     bool use_auth = false;
     if(!_use_authorization.empty())
         use_auth = _use_authorization == "true";
     else{
-        if(conf[UseAuthorization].is_bool())
-            use_auth = conf[UseAuthorization].get_bool();
+        use_auth = conf.UseAuthorization;
     }
 
-    conf[ServerHost] = address.to_string();
-    conf[ServerPort] = (int)port;
-    conf[ServerHttpRoot] = doc_root;
-    conf[ServerSSL] = is_ssl;
-    conf[SSL_csr_file] = csr_file;
-    conf[SSL_key_file] = key_file;
-    conf[UseAuthorization] = use_auth;
+    conf.ServerHost = address.to_string();
+    conf.ServerPort = (int)port;
+    conf.ServerHttpRoot = doc_root;
+    conf.ServerSSL = is_ssl;
+    conf.SSL_csr_file = csr_file;
+    conf.SSL_key_file = key_file;
+    conf.UseAuthorization = use_auth;
 
-    conf.save();
+    write_conf(conf);
+    //conf.save();
 
     ssl::context ctx{ssl::context::tlsv12};
-    if (is_ssl){
-        load_certs(ctx, csr_file, key_file);
+    if (is_ssl) {
+        if (!input.cmdOptionExists("-use_ssl_demo")) {
+            load_certs(ctx, csr_file, key_file);
+        }else
+            load_server_certificate(ctx);
     }
 
     const std::string Protocol = is_ssl ? "wss://" : "ws://";

@@ -4,7 +4,7 @@
 #include "../arcirk.hpp"
 
 namespace arcirk{
-
+#ifdef USE_RAPIDJSON
     bConf::bConf(const boost::filesystem::path& root, const std::string &app_name, std::vector<std::string>& aliases) {
 
         m_root = root;
@@ -87,4 +87,5 @@ namespace arcirk{
         return true;
 
     }
+#endif
 }

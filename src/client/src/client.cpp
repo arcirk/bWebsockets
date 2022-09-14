@@ -167,84 +167,84 @@ void ws_client::set_user_name(const std::string& name) {
     _user_name = name;
 }
 
-void ws_client::set_param(arcirk::json::bJson &pt) {
-    try {
-        std::string uuid = pt.get_member("uuid").to_string();
-        if (!uuid.empty())
-            arcirk::uuids::is_valid_uuid(uuid, _session_uuid);
-        std::string user_uuid = pt.get_member("user_uuid").to_string();
-        if (!user_uuid.empty())
-            set_user_uuid(user_uuid);
-        std::string name = pt.get_member("name").to_string();
-        if (!name.empty())
-            set_user_name(name);
-
-        std::string user_name = pt.get_member("user_name").to_string();
-        if (!name.empty())
-            _user_name = user_name;
-
-        if(_on_connect){
-            _on_connect();
-        }
-
-    }catch (std::exception& e){
-        on_error("ws_client::set_param", arcirk::to_utf(e.what()), -1);
-    }
+void ws_client::set_param(ServerResponse& resp) {
+//    try {
+//        std::string uuid = pt.get_member("uuid").to_string();
+//        if (!uuid.empty())
+//            arcirk::uuids::is_valid_uuid(uuid, _session_uuid);
+//        std::string user_uuid = pt.get_member("user_uuid").to_string();
+//        if (!user_uuid.empty())
+//            set_user_uuid(user_uuid);
+//        std::string name = pt.get_member("name").to_string();
+//        if (!name.empty())
+//            set_user_name(name);
+//
+//        std::string user_name = pt.get_member("user_name").to_string();
+//        if (!name.empty())
+//            _user_name = user_name;
+//
+//        if(_on_connect){
+//            _on_connect();
+//        }
+//
+//    }catch (std::exception& e){
+//        on_error("ws_client::set_param", arcirk::to_utf(e.what()), -1);
+//    }
 }
 
 void
 ws_client::on_read(const std::string& message) {
 
-    if (message == "\n" || message.empty() || message == "pong")
-        return;
-    T_vec v = arcirk::split(message, "\n");
-
-    std::string msg;
-
-    if (!v.empty())
-        msg = v[0];
-
-    //если перед сообщением маркер "result" - это приватный ответ сервера клиенту
-    if (v[0].substr(0, 6) == "result"){
-
-        std::string base64 = v[0].substr(7 , v[0].length() - 6);
-        msg = base64;
-
-        try {
-            std::string result = arcirk::base64::base64_decode(base64);
-            auto pt = arcirk::json::bJson();
-            pt.parse(result);
-            if (pt.is_parse()){
-                if (pt.get_member("command").to_string() == "set_client_param"){
-                    //авторизация прошла успешно, устанавливаем параметры сессии на клиенте
-                    set_param(pt);
-                    return;
-                }
-            }
-        }catch (std::exception& e){
-            on_error("ws_client::on_read:set_client_param", arcirk::to_utf(e.what()), -1);
-            return;
-        }
-
-    }
-
-    try {
-        if (_on_message)
-        {
-//            if (!decode_message){
-//                _on_message(msg);
-//            } else{
-//                std::string result = base64_decode(msg);
-                _on_message(msg);
+//    if (message == "\n" || message.empty() || message == "pong")
+//        return;
+//    T_vec v = arcirk::split(message, "\n");
+//
+//    std::string msg;
+//
+//    if (!v.empty())
+//        msg = v[0];
+//
+//    //если перед сообщением маркер "result" - это приватный ответ сервера клиенту
+//    if (v[0].substr(0, 6) == "result"){
+//
+//        std::string base64 = v[0].substr(7 , v[0].length() - 6);
+//        msg = base64;
+//
+//        try {
+//            std::string result = arcirk::base64::base64_decode(base64);
+//            auto pt = arcirk::json::bJson();
+//            pt.parse(result);
+//            if (pt.is_parse()){
+//                if (pt.get_member("command").to_string() == "set_client_param"){
+//                    //авторизация прошла успешно, устанавливаем параметры сессии на клиенте
+//                    set_param(pt);
+//                    return;
+//                }
 //            }
-
-        }
-    }
-    catch (std::exception& e){
-        //std::cerr << "ws_client::on_read error: " << e.what() << std::endl;
-        on_error("ws_client::on_read error: ", arcirk::to_utf(e.what()), -1);
-        return;
-    }
+//        }catch (std::exception& e){
+//            on_error("ws_client::on_read:set_client_param", arcirk::to_utf(e.what()), -1);
+//            return;
+//        }
+//
+//    }
+//
+//    try {
+//        if (_on_message)
+//        {
+////            if (!decode_message){
+////                _on_message(msg);
+////            } else{
+////                std::string result = base64_decode(msg);
+//                _on_message(msg);
+////            }
+//
+//        }
+//    }
+//    catch (std::exception& e){
+//        //std::cerr << "ws_client::on_read error: " << e.what() << std::endl;
+//        on_error("ws_client::on_read error: ", arcirk::to_utf(e.what()), -1);
+//        return;
+//    }
 
 }
 
@@ -333,5 +333,23 @@ void ws_client::open(const char* host, const char* port, const callback_message&
 
     boost::make_shared<session>(ioc, auth)->run(host, port, this);
     ioc.run();
+
+}
+
+void ws_client::open(Uri &url, const callback_message &message, const callback_status &status_changed,
+                     const callback_connect &connect, const callback_error &err, const callback_close &close,
+                     const std::string &auth) {
+    _on_message = message;
+    _on_status_changed = status_changed;
+    _on_connect = connect;
+    _on_error = err;
+    _on_close = close;
+
+    if(url.Protocol == "wss"){
+
+    }else{
+        boost::make_shared<session>(ioc, auth)->run(url.Host.c_str(), url.Port.c_str(), this);
+        ioc.run();
+    }
 
 }

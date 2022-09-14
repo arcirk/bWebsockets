@@ -29,7 +29,7 @@ public:
 
     void close(const variant_t& exit_base = false);
 
-    void open(const variant_t &url = "", const variant_t &user = "", const variant_t &pwd = "", const variant_t &user_uuid = arcirk::uuids::nil_string_uuid());
+    void open(const variant_t &url, const variant_t &user, const variant_t &user_uuid, const variant_t &pwd = "");
 
 private:
     bClient * client;
@@ -37,23 +37,26 @@ private:
 
     std::string _client_param;
     std::string _url;
-    std::string _user;
-    std::string _hash;
+
+    std::string _sys_user;
+
+
     std::string _host;
-    std::string _user_uuid;
+    int _port;
+
+    boost::uuids::uuid _user_uuid;
     std::string _user_name;
+    std::string _hash;
+
     std::string  _current_recipient;
     std::string _document_name;
     bool _is_source_event_uuid_form;
     std::string  _job;
     std::string  _job_description;
 
-    int _port;
+
     std::string _app_name = "1c_client";
     bool no_notify;
-    std::string notify_apps = "";
-
-    bool m_standard_event_barcode;
 
     void on_server_response(const std::string& resp);
 
@@ -89,7 +92,6 @@ private:
     on_error(const std::string &what, const std::string &err, int code);
     void on_status_changed(bool status);
 
-    void verify_directories();
 };
 
 #endif //WS_SOLUTION_WEBCORE_H

@@ -21,6 +21,11 @@ public:
 
     explicit
     bClient(const std::string& host, const int& port, const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_close& close = {}, const callback_error& err = {});
+    explicit
+    bClient(const arcirk::Uri& url, const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_close& close = {}, const callback_error& err = {});
+    explicit
+    bClient(const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_close& close = {}, const callback_error& err = {});
+
     ~bClient(){
         close(true);
     };
@@ -43,6 +48,10 @@ public:
 
     void client_details(const std::string& app_name, const std::string& user_name, const boost::uuids::uuid& user_uuid = {}, const std::string& user_hash = "");
 
+    bool is_ssl();
+
+    boost::uuids::uuid session_uuid();
+
 private:
     std::string _app_name;
     std::string _user_name;
@@ -64,6 +73,9 @@ private:
     void start(const std::string & auth = "");
 
     bool _isRun;
+
+    bool _is_ssl;
+
 };
 
 #endif // IWS_CLIENT_H

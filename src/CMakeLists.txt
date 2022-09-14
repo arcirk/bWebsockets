@@ -6,3 +6,6 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/arcirk" "${PROJECT_SOURCE_DIR}/arcirk/cm
 add_subdirectory("${PROJECT_SOURCE_DIR}/client" "${PROJECT_SOURCE_DIR}/client/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/wsClient" "${PROJECT_SOURCE_DIR}/wsClient/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/client/console" "${PROJECT_SOURCE_DIR}/client/console/cmake-build-debug")
+
+#set(JSON_BuildTests OFF CACHE INTERNAL "")
+#add_subdirectory(${PROJECT_SOURCE_DIR}/json)

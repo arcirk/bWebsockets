@@ -10,9 +10,31 @@
 #include <boost/asio/io_context.hpp>
 #include "callbacks.h"
 
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/adapted/struct/define_struct.hpp>
+
+#include <pre/json/from_json.hpp>
+#include <pre/json/to_json.hpp>
+
 class session;
 
 using namespace arcirk;
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (), ClientParam,
+        (std::string, app_name)
+        (std::string, user_uuid)
+        (std::string, user_name)
+        (std::string, hash)
+        (std::string, host_name)
+)
+
+BOOST_FUSION_DEFINE_STRUCT(
+    (), ServerResponse,
+    (std::string, command)
+    (std::string, message)
+
+)
 
 class ws_client final{
 
@@ -24,6 +46,7 @@ public:
     ws_client(boost::asio::io_context &io_context, const std::string& client_param = "");
 
     void open(const char* host, const char* port, const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_error& err = {}, const callback_close& close = {}, const std::string & auth = "");
+    void open(arcirk::Uri& url, const callback_message& message = {}, const callback_status& status_changed = {}, const callback_connect& connect = {}, const callback_error& err = {}, const callback_close& close = {}, const std::string & auth = "");
 
     void send(const std::string &message, const boost::uuids::uuid &recipient = {}, const boost::uuids::uuid &uuid_form = {});
     void send_command(const std::string &cmd, const boost::uuids::uuid &uuid_form, const std::string &json_param);
@@ -69,7 +92,7 @@ private:
 
     void send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param, session * sess);
 
-    void set_param(arcirk::json::bJson& pt);
+    void set_param(ServerResponse& resp);
 
     void set_session_uuid(const std::string& uuid);
 

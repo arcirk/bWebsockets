@@ -25,7 +25,7 @@
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/regex.hpp>
 
-
+#ifdef USE_RAPIDJSON
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/writer.h>
@@ -33,15 +33,19 @@
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/istreamwrapper.h>
+#endif
 
 #include <boost/locale.hpp>
 #include <boost/filesystem.hpp>
 
 namespace arcirk {
 
+#ifdef USE_RAPIDJSON
     typedef rapidjson::GenericDocument<rapidjson::UTF8<> > bDocument;
     typedef rapidjson::GenericValue<rapidjson::UTF8<> > bValue;
     typedef rapidjson::GenericStringBuffer<rapidjson::UTF8<> > bStringBuffer;
+#endif
+
     typedef unsigned char BYTE;
     typedef std::vector<BYTE> ByteArray;
     typedef boost::variant<std::string, long int, bool, double, boost::uuids::uuid, std::vector<BYTE>> Variant;
@@ -130,6 +134,7 @@ namespace arcirk {
 
     } content_value;
 
+#ifdef USE_RAPIDJSON
     namespace json{
 
         class bJson : public bDocument {
@@ -174,7 +179,7 @@ namespace arcirk {
 
     }
 
-
+#endif
 
     struct Uri
     {
@@ -251,6 +256,7 @@ namespace arcirk {
         static std::string get_default_host(const std::string& def_host,  const std::string& seg = "192.168");
     };
 
+#ifdef USE_RAPIDJSON
     class bConf{
 
     public:
@@ -274,6 +280,7 @@ namespace arcirk {
         boost::filesystem::path m_file_name;
         boost::filesystem::path m_root;
     };
+#endif
 
 }
 

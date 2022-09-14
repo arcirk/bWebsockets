@@ -2,10 +2,49 @@
 #include "../include/client.h"
 #include <boost/thread/thread.hpp>
 
+#include <pre/json/from_json.hpp>
+#include <pre/json/to_json.hpp>
+
+bClient::bClient(const callback_message& message, const callback_status& status_changed, const callback_connect& connect, const callback_close& close, const callback_error& err) {
+    _host = "localhost";
+    _port = 8080;
+
+    _on_message = message;
+    _on_status_changed = status_changed;
+    _on_connect = connect;
+    _on_error = err;
+    _on_close = close;
+
+    client = nullptr;
+    _app_name = "ws_client";
+    _user_name = "unanimous";
+
+    _exitParent = false;
+    _isRun = false;
+}
+
 bClient::bClient(const std::string &host, const int &port, const callback_message& message, const callback_status& status_changed, const callback_connect& connect, const callback_close& close, const callback_error& err) {
 
     _host = host;
     _port = port;
+
+    _on_message = message;
+    _on_status_changed = status_changed;
+    _on_connect = connect;
+    _on_error = err;
+    _on_close = close;
+
+    client = nullptr;
+    _app_name = "ws_client";
+    _user_name = "unanimous";
+
+    _exitParent = false;
+    _isRun = false;
+}
+bClient::bClient(const arcirk::Uri& url, const callback_message &message, const callback_status &status_changed,
+                 const callback_connect &connect, const callback_close &close, const callback_error &err) {
+    _host = url.Host;
+    _port = url.Port.empty() ? 0 : std::atoi(url.Port.c_str());
 
     _on_message = message;
     _on_status_changed = status_changed;
@@ -166,16 +205,13 @@ void bClient::client_details(const std::string &app_name, const std::string &use
 
 void bClient::open(bool new_thread){
 
-    auto pt = arcirk::json::bJson();
-    pt.set_object();
+    auto param = ClientParam();
+    param.app_name = _app_name;
+    param.user_uuid = arcirk::uuids::uuid_to_string(_user_uuid);
+    param.user_name = _user_name;
+    param.hash = _user_hash;
 
-    pt.insert(arcirk::content_value("app_name", _app_name));
-    pt.insert(arcirk::content_value("user_uuid", _user_uuid));
-    pt.insert(arcirk::content_value("user_name", _user_name));
-    pt.insert(arcirk::content_value("hash", _user_hash));
-    pt.insert(arcirk::content_value("host_name", boost::asio::ip::host_name()));
-
-    _client_param = pt.to_string();
+    _client_param= to_string(pre::json::to_json(param));
 
     if (new_thread){
         boost::thread(boost::bind(&bClient::start, this, "")).detach();
@@ -242,20 +278,24 @@ void bClient::on_close() {
 
 void bClient::open(const std::string & auth, bool new_thread) {
 
-    auto pt = arcirk::json::bJson();
-    pt.set_object();
+    auto param = ClientParam();
+    param.app_name = _app_name;
+    param.user_uuid = arcirk::uuids::uuid_to_string(_user_uuid);
+    param.user_name = _user_name;
+    param.hash = _user_hash;
 
-    pt.insert(arcirk::content_value("app_name", _app_name));
-    pt.insert(arcirk::content_value("user_uuid", _user_uuid));
-    pt.insert(arcirk::content_value("user_name", _user_name));
-    pt.insert(arcirk::content_value("hash", _user_hash));
-    pt.insert(arcirk::content_value("host_name", boost::asio::ip::host_name()));
-
-    _client_param = pt.to_string();
-
+    _client_param= to_string(pre::json::to_json(param));
     if (new_thread){
         boost::thread(boost::bind(&bClient::start, this, auth)).detach();
     }else
         start(auth);
 
 }
+
+boost::uuids::uuid bClient::session_uuid() {
+    if(client)
+        return client->session_uuid();
+    else
+        return arcirk::uuids::nil_uuid();
+}
+

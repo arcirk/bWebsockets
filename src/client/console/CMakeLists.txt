@@ -128,6 +128,8 @@ target_include_directories(${TARGET} PRIVATE
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
         Boost::system
@@ -137,6 +139,7 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::Crypto
         arcirk
         bclient
+        nlohmann_json::nlohmann_json
         )
 
 if (WIN32)
