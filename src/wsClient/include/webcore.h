@@ -54,7 +54,6 @@ private:
     std::string  _job;
     std::string  _job_description;
 
-
     std::string _app_name = "1c_client";
     bool no_notify;
 

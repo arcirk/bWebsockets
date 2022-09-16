@@ -18,6 +18,8 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 
+#include "session_base.hpp"
+
 using boost::asio::steady_timer;
 // Forward declaration
 class shared_state;
@@ -26,7 +28,7 @@ namespace ssl = boost::asio::ssl;
 
 /** Represents an active WebSocket connection to the server
 */
-class websocket_session_ssl : public subscriber, public boost::enable_shared_from_this<websocket_session_ssl>
+class websocket_session_ssl : public session_base, public boost::enable_shared_from_this<websocket_session_ssl>
 {
     beast::flat_buffer buffer_;
 
@@ -37,10 +39,10 @@ class websocket_session_ssl : public subscriber, public boost::enable_shared_fro
 
     std::map<boost::uuids::uuid, websocket_session_ssl*> subscribers_;
 
-    void fail(beast::error_code ec, char const* what);
+    void fail(beast::error_code ec, char const* what) override;
     void on_accept(beast::error_code ec);
-    void on_read(beast::error_code ec, std::size_t bytes_transferred);
-    void on_write(beast::error_code ec, std::size_t bytes_transferred);
+    void on_read(beast::error_code ec, std::size_t bytes_transferred) ;
+    void on_write(beast::error_code ec, std::size_t bytes_transferred) ;
 
     int last_error;
 public:
@@ -57,19 +59,20 @@ public:
 
     // Send a message
     void
-    send(boost::shared_ptr<std::string const> const& ss);
+    send(boost::shared_ptr<std::string const> const& ss) override;
 
-    boost::uuids::uuid& get_uuid() override;
-    boost::uuids::uuid & get_user_uuid() override;
-    const std::string & get_role() override;
+//    boost::uuids::uuid& get_uuid() override;
+//    boost::uuids::uuid & get_user_uuid() override;
+//    const std::string & get_role() override;
 
     void deliver(const boost::shared_ptr<const std::string> &msg) override;
 
     std::map<boost::uuids::uuid, websocket_session_ssl*>* get_subscribers();
 
-    void throw_authorized();
+    //void throw_authorized() override;
 
-    void close();
+    void close() override;
+    bool stopped() const override;
 
     void dead_line_cancel();
 
@@ -85,13 +88,11 @@ private:
     std::string _host_name;
 
     void
-    on_send(boost::shared_ptr<std::string const> const& ss);
+    on_send(boost::shared_ptr<std::string const> const& ss) ;
     void
-    on_close(beast::error_code ec);
+    on_close(beast::error_code ec) ;
 
     void check_dead_line();
-
-    bool stopped() const;
 
     void set_host_name(const std::string& value);
 };

@@ -115,8 +115,15 @@ session::on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_
 void
 session::on_handshake(beast::error_code ec)
 {
-    if(ec)
-        return fail(ec, "handshake");
+
+    if(ec){
+        if(ec.value() == 20){
+            std::cerr << arcirk::local_8bit("Подключение было отклонено удаленным узлом. Ошибка авторизации или сбой на сервере.") << std::endl;
+            return;
+        }else
+            return fail(ec, "handshake");
+    }
+
 
     std::cout << "session::on_connect: successful connection!" << std::endl;
 

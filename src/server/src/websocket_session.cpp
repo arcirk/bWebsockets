@@ -2,7 +2,7 @@
 #include "../include/websocket_session.hpp"
 #include <iostream>
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 
 websocket_session::
@@ -19,10 +19,6 @@ websocket_session(tcp::socket&& socket, boost::shared_ptr<shared_state>  state)
 
     last_error = 0;
 
-}
-
-boost::uuids::uuid & websocket_session::get_uuid() {
-    return _uuid;
 }
 
 void websocket_session::deliver(const boost::shared_ptr<const std::string> &msg) {
@@ -69,9 +65,7 @@ on_accept(beast::error_code ec)
 
     std::cout << "connect client" << std::endl;
 
-    bool use_authorization = state_->use_authorization();
-
-    if(use_authorization){
+    if(state_->use_authorization()){
         //Установка крайнего срока для авторизации
         _dead_line.expires_after(std::chrono::seconds(60));
         _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
@@ -100,8 +94,7 @@ on_read(beast::error_code ec, std::size_t)
 
     std::string msg = beast::buffers_to_string(buffer_.data());
 
-    //отправляем только подписчикам на канал
-    state_->send(msg); //, this);
+    state_->deliver(msg, this);
 
     // Clear the buffer
     buffer_.consume(buffer_.size());
@@ -188,13 +181,6 @@ get_subscribers() {
 }
 
 void
-websocket_session::throw_authorized() {
-    std::string msg = arcirk::local_8bit("Отказано в доступе!");
-    if (!this->authorized)
-        boost::throw_exception( std::out_of_range( msg ), BOOST_CURRENT_LOCATION );
-}
-
-void
 websocket_session::close() {
 
     dead_line_cancel();
@@ -240,7 +226,7 @@ websocket_session::check_dead_line()
     if(this->last_error < 0)
         return;
 
-    if (this->authorized){
+    if (this->authorized()){
         _dead_line.cancel();
     }else{
         if (_dead_line.expiry() <= steady_timer::clock_type::now())
@@ -261,12 +247,4 @@ websocket_session::check_dead_line()
         _dead_line.async_wait(boost::bind(&websocket_session::check_dead_line, this));
     }
 
-}
-
-boost::uuids::uuid &websocket_session::get_user_uuid() {
-    return _user_uuid;
-}
-
-const std::string &websocket_session::get_role() {
-    return _role;
 }

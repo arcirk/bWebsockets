@@ -161,6 +161,9 @@ main(int argc, char* argv[]){
     }
 
     const std::string &_url = input.getCmdOption("-url");
+    const std::string &_usr = input.getCmdOption("-usr");
+    const std::string &_pwd = input.getCmdOption("-pwd");
+
 
     callback_connect _connect = std::bind(&on_connect);
     callback_error _err = std::bind(&on_error, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -195,7 +198,12 @@ main(int argc, char* argv[]){
 
     std::string line;
 
-    std::string auth_cred = "admin:admin";
+    std::string auth_cred;
+    if(_usr.empty()){
+        auth_cred = "admin:admin";
+    }else{
+        auth_cred = _usr + ":" + _pwd;
+    }
     std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
 
     while (getline(std::cin, line)) {

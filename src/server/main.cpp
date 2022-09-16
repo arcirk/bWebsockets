@@ -5,8 +5,6 @@
 
 #include <arcirk.hpp>
 
-//#include <soci/sqlite3/soci-sqlite3.h>
-
 #include "./include/shared_state.hpp"
 
 #include <boost/filesystem.hpp>
@@ -14,7 +12,6 @@
 #include <boost/smart_ptr.hpp>
 #include <iostream>
 #include <vector>
-
 
 #include <string>
 
@@ -26,54 +23,15 @@
 
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/adapted/struct/define_struct.hpp>
+
+//#include <boost/fusion/include/for_each.hpp>
+//#include <boost/fusion/adapted/struct/define_struct.hpp>
 
 #include <pre/json/from_json.hpp>
 #include <pre/json/to_json.hpp>
 
 #include <common/server_certificate.hpp>
-
-
-BOOST_FUSION_DEFINE_STRUCT(
-                (), user_info,
-                (int, _id)
-                (std::string, first)
-                (std::string, second)
-                (std::string, ref)
-                (std::string, hash)
-                (std::string, role)
-                (std::string, performance)
-                (std::string, parent)
-                (std::string, cache))
-
-BOOST_FUSION_DEFINE_STRUCT(
-        (), settings,
-        (std::string, ServerHost)
-                (int, ServerPort)
-                (std::string, ServerUser)
-                (std::string, ServerUserHash)
-                (std::string, ServerName)
-                (std::string, ServerHttpRoot)
-                (std::string, AutoConnect)
-                (bool, UseLocalWebDavDirectory)
-                (std::string, LocalWebDavDirectory)
-                (std::string, WebDavHost)
-                (std::string, WebDavUser)
-                (std::string, WebDavPwd)
-                (bool, WebDavSSL)
-                (std::string, SQLFormat)
-                (std::string, SQLHost)
-                (std::string, SQLUser)
-                (std::string, SQLPassword)
-                (std::string, HSHost)
-                (std::string, HSUser)
-                (std::string, HSPassword)
-                (bool, ServerSSL)
-                (std::string, SSL_csr_file)
-                (std::string, SSL_key_file)
-                (bool, UseAuthorization)
-)
+#include "include/database_struct.hpp"
 
 const std::string version = "1.1.0";
 
@@ -92,6 +50,8 @@ const std::string index_html_text = "<!DOCTYPE html>\n"
 boost::filesystem::path m_root_conf;
 
 namespace ssl = boost::asio::ssl;
+
+using namespace public_struct;
 
 class InputParser{
 public:
@@ -277,7 +237,7 @@ void verify_database(){
     }
 }
 
-void read_conf(settings & result){
+void read_conf(server_settings & result){
 
     using namespace boost::filesystem;
 
@@ -291,7 +251,7 @@ void read_conf(settings & result){
             std::ifstream file(conf.string(), std::ios_base::in);
             std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
             if(!str.empty()){
-                result = pre::json::from_json<settings>(str);
+                result = pre::json::from_json<server_settings>(str);
             }
         }
     } catch (std::exception &e) {
@@ -300,7 +260,7 @@ void read_conf(settings & result){
 
 }
 
-void write_conf(settings & conf){
+void write_conf(server_settings & conf){
     using namespace boost::filesystem;
 
     if(!exists(arcirk::local_8bit(m_root_conf.string())))
@@ -343,8 +303,7 @@ main(int argc, char* argv[])
     const std::string &_ssl = input.getCmdOption("-ssl");
     const std::string &_csr_file = input.getCmdOption("-csr_file");
     const std::string &_key_file = input.getCmdOption("-key_file");
-    const std::string &_use_authorization = input.getCmdOption("-use_auth");
-    //const std::string &_use_certs_demo = input.getCmdOption("-use_ssl_demo");
+    const bool &_use_authorization = input.cmdOptionExists("-use_auth");
 
     auto threads = 4;
     auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168.10"));
@@ -353,13 +312,14 @@ main(int argc, char* argv[])
 
     verify_directories();
 
+    //По умолчанию файл базы SQLite должен быть
     verify_database();
 
     path html = m_root_conf;
     html /= "html";
     std::string doc_root = html.string();
 
-    auto conf = settings();
+    auto conf = server_settings();
     read_conf(conf);
 
     if(!_host.empty())
@@ -407,8 +367,8 @@ main(int argc, char* argv[])
     }
 
     bool use_auth = false;
-    if(!_use_authorization.empty())
-        use_auth = _use_authorization == "true";
+    if(_use_authorization)
+        use_auth = true;
     else{
         use_auth = conf.UseAuthorization;
     }
@@ -421,8 +381,10 @@ main(int argc, char* argv[])
     conf.SSL_key_file = key_file;
     conf.UseAuthorization = use_auth;
 
+    conf.ApplicationProfile = m_root_conf.string();
+
     write_conf(conf);
-    //conf.save();
+
 
     ssl::context ctx{ssl::context::tlsv12};
     if (is_ssl) {
@@ -445,13 +407,13 @@ main(int argc, char* argv[])
         boost::make_shared<listener>(
                 ioc,
                 tcp::endpoint{address, port},
-                boost::make_shared<shared_state>(doc_root.c_str(), false, use_auth))->run();
+                boost::make_shared<shared_state>(doc_root.c_str(), conf, false, use_auth))->run();
     }else
         boost::make_shared<listener_ssl>(
                 ioc,
                 ctx,
                 tcp::endpoint{address, port},
-                boost::make_shared<shared_state>(doc_root.c_str(), true, use_auth))->run();
+                boost::make_shared<shared_state>(doc_root.c_str(), conf, true, use_auth))->run();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

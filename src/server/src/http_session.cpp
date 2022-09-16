@@ -115,7 +115,6 @@ namespace mime {
                     res.prepare_payload();
                     return res;
                 };
-
         // Make sure we can handle the method
         if (req.method() != http::verb::get &&
             req.method() != http::verb::head)
@@ -283,11 +282,31 @@ on_read(beast::error_code ec, std::size_t)
     // See if it is a WebSocket Upgrade
     if(websocket::is_upgrade(parser_->get()))
     {
+        auto req = parser_->release();
+        if(state_->use_authorization()){
+            std::string auth = req[http::field::authorization].to_string();
+            if(!state_->verify_user(auth)){
+                std::cerr << "user authorization failed" << std::endl;
+                auto const server_unauthorized =
+                        [&req](beast::string_view what) {
+                            http::response<http::string_body> res{http::status::unauthorized, req.version()};
+                            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                            res.set(http::field::content_type, "text/html");
+                            res.keep_alive(req.keep_alive());
+                            res.body() = "Server error '" + std::string(what) + "'";
+                            res.prepare_payload();
+                            return res;
+                        };
+                send_lambda(*this)(server_unauthorized("Invalid authorization"));
+                return;
+            }else
+                std::cout << arcirk::local_8bit("Проверка авторизации прошла успешно!") << std::endl;
+        }
         // Create a websocket session, transferring ownership
         // of both the socket and the HTTP request.
         boost::make_shared<websocket_session>(
                 stream_.release_socket(),
-                state_)->run(parser_->release());
+                state_)->run(req);
         return;
     }
 

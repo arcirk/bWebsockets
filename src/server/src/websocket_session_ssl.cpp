@@ -4,7 +4,6 @@
 #include <utility>
 #include <boost/bind.hpp>
 
-
 websocket_session_ssl::
 websocket_session_ssl(tcp::socket&& socket, ssl::context& ctx, boost::shared_ptr<shared_state>  state)
 : ws_(std::move(socket), ctx)
@@ -19,10 +18,6 @@ websocket_session_ssl(tcp::socket&& socket, ssl::context& ctx, boost::shared_ptr
 
     last_error = 0;
 
-}
-
-boost::uuids::uuid & websocket_session_ssl::get_uuid() {
-    return _uuid;
 }
 
 void websocket_session_ssl::deliver(const boost::shared_ptr<const std::string> &msg) {
@@ -68,10 +63,11 @@ on_accept(beast::error_code ec)
     state_->join(this);
 
     std::cout << "connect client" << std::endl;
-
-    //Установка крайнего срока для авторизации
-    _dead_line.expires_after(std::chrono::seconds(60));
-    _dead_line.async_wait(boost::bind(&websocket_session_ssl::check_dead_line, this));
+    if(state_->use_authorization()) {
+        //Установка крайнего срока для авторизации
+        _dead_line.expires_after(std::chrono::seconds(60));
+        _dead_line.async_wait(boost::bind(&websocket_session_ssl::check_dead_line, this));
+    }
 
     // Read a message
     ws_.async_read(
@@ -183,15 +179,6 @@ get_subscribers() {
 }
 
 void
-websocket_session_ssl::throw_authorized() {
-
-    std::string msg = arcirk::local_8bit("Отказано в доступе!");
-
-    if (!this->authorized)
-        boost::throw_exception( std::out_of_range( msg ), BOOST_CURRENT_LOCATION );
-}
-
-void
 websocket_session_ssl::close() {
 
     dead_line_cancel();
@@ -234,7 +221,7 @@ websocket_session_ssl::check_dead_line()
     if(this->last_error < 0)
         return;
 
-    if (this->authorized){
+    if (this->authorized()){
         _dead_line.cancel();
     }else{
         if (_dead_line.expiry() <= steady_timer::clock_type::now())
@@ -256,12 +243,4 @@ websocket_session_ssl::check_dead_line()
         _dead_line.async_wait(boost::bind(&websocket_session_ssl::check_dead_line, this));
     }
 
-}
-
-boost::uuids::uuid &websocket_session_ssl::get_user_uuid() {
-    return _user_uuid;
-}
-
-const std::string &websocket_session_ssl::get_role() {
-    return _role;
 }
