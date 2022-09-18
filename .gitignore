@@ -55,3 +55,11 @@
 /src/wsClient/cmake-build-debug/
 /src/1c/admin/data/1Cv8tmp.1CD
 /json/
+/src/bin/
+/src/client/console/ssl/
+/src/server/tests/x64/
+/src/server/tests/cmake-build-debug/
+/src/client/tests/x64/
+/src/client/tests/cmake-build-debug/
+/src/server_new/cmake-build-debug/
+/src/server_new/x64/

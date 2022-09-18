@@ -6,9 +6,10 @@
 #include <arcirk.hpp>
 #include "../include/client.h"
 #include "../include/session.h"
+#include "../include/session_ssl.h"
 #include <boost/locale.hpp>
 #include <boost/locale/generator.hpp>
-
+#include <common/root_certificates.hpp>
 
 using namespace arcirk;
 
@@ -17,7 +18,7 @@ ws_client::ws_client(net::io_context &io_context, const std::string& client_para
 {
     _client_param = client_param;
     set_user_name("anonymous");
-    _app_name = "unknown";
+    _app_name = "unknown";;
 }
 
 void
@@ -72,7 +73,7 @@ send(const std::string &message, const boost::uuids::uuid &recipient, const boos
 
 void
 ws_client::
-on_connect(session * sess){
+on_connect(session_base * sess){
 
     std::lock_guard<std::mutex> lock(mutex_);
     sessions_.insert(sess);
@@ -112,12 +113,19 @@ close(bool exit_base) {
     //exit_base - это выход из приложения, блокируем сообщения
     _exit_parent = exit_base;
 
-    std::vector<boost::weak_ptr<session>> v;
+    std::vector<boost::weak_ptr<session_base>> v;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         v.reserve(sessions_.size());
         for(auto p : sessions_)
-            v.emplace_back(p->weak_from_this());
+            if(p->is_ssl()){
+                auto sess = (session*)p;
+                v.emplace_back(sess->weak_from_this());
+            }else{
+                auto sess = (session_ssl*)p;
+                v.emplace_back(sess->weak_from_this());
+            }
+
     }
 
     for(auto const& wp : v)
@@ -285,7 +293,7 @@ std::string &ws_client::app_name() {
     return _app_name;
 }
 
-void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param, session * sess) {
+void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param, session_base * sess) {
 
 //        std::string _uuid_form = uuid_form;
 ////
@@ -336,7 +344,7 @@ void ws_client::open(const char* host, const char* port, const callback_message&
 
 }
 
-void ws_client::open(Uri &url, const callback_message &message, const callback_status &status_changed,
+void ws_client::open(Uri &url, ssl::context& ctx, const callback_message &message, const callback_status &status_changed,
                      const callback_connect &connect, const callback_error &err, const callback_close &close,
                      const std::string &auth) {
     _on_message = message;
@@ -346,10 +354,40 @@ void ws_client::open(Uri &url, const callback_message &message, const callback_s
     _on_close = close;
 
     if(url.Protocol == "wss"){
-
+        //ssl::context ctx{ssl::context::tlsv12_client};
+        set_certificates(ctx);
+        boost::make_shared<session_ssl>(ioc, ctx, auth)->run(url.Host.c_str(), url.Port.c_str(), this);
+        ioc.run();
     }else{
         boost::make_shared<session>(ioc, auth)->run(url.Host.c_str(), url.Port.c_str(), this);
         ioc.run();
     }
 
 }
+
+void ws_client::set_certificates(ssl::context& ctx) {
+
+    using namespace boost::filesystem;
+
+    if(!exists(cert_file))
+        return;
+
+    std::string _cert;
+    std::ifstream c_in(cert_file.string());
+    std::ostringstream c_oss;
+    c_oss << c_in.rdbuf();
+    _cert = c_oss.str();
+
+    if(_cert.empty()){
+        std::cerr << "error read certificate files" << std::endl;
+        return;
+    }
+
+    //load_root_certificates(ctx, _cert);
+    load_root_default_certificates(ctx);
+}
+
+void ws_client::set_cert_file(const std::string &file) {
+    cert_file = file;
+}
+

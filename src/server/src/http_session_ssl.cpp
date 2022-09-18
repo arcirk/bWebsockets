@@ -207,10 +207,12 @@ http_session_ssl::http_session_ssl(
 void
 http_session_ssl::run()
 {
-    // We need to be executing within a strand to perform async operations
-    // on the I/O objects in this session. Although not strictly necessary
-    // for single-threaded contexts, this example code is written to be
-    // thread-safe by default.
+//    // We need to be executing within a strand to perform async operations
+//    // on the I/O objects in this session. Although not strictly necessary
+//    // for single-threaded contexts, this example code is written to be
+//    // thread-safe by default.
+
+    //do_read();
     net::dispatch(
             stream_.get_executor(),
             beast::bind_front_handler(
@@ -280,8 +282,9 @@ http_session_ssl::on_read(
     {
         // Create a websocket session, transferring ownership
         // of both the socket and the HTTP request.
+
         boost::make_shared<websocket_session_ssl>(
-                beast::get_lowest_layer(stream_).release_socket(), ctx_,
+                beast::get_lowest_layer(stream_).release_socket(), std::move(ctx_),
                 state_)->run(parser_->release());
         return;
     }

@@ -15,7 +15,6 @@
 #endif //_WINDOWS
 
 
-
 namespace net = boost::asio;                    // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 

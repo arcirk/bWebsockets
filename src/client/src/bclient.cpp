@@ -2,65 +2,56 @@
 #include "../include/client.h"
 #include <boost/thread/thread.hpp>
 
-#include <pre/json/from_json.hpp>
-#include <pre/json/to_json.hpp>
 
-bClient::bClient(const callback_message& message, const callback_status& status_changed, const callback_connect& connect, const callback_close& close, const callback_error& err) {
-    _host = "localhost";
-    _port = 8080;
+void bClient::init(){
+    m_data = bClientData();
+    param = ClientParam();
+    param.app_name = "ws_client";
+    param.user_name = "unanimous";
 
-    _on_message = message;
-    _on_status_changed = status_changed;
-    _on_connect = connect;
-    _on_error = err;
-    _on_close = close;
-
-    client = nullptr;
-    _app_name = "ws_client";
-    _user_name = "unanimous";
-
-    _exitParent = false;
-    _isRun = false;
+    m_data.on_connect = std::bind(&bClient::on_connect, this);
+    m_data.on_error = std::bind(&bClient::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    m_data.on_message = std::bind(&bClient::on_message, this, std::placeholders::_1);
+    m_data.on_status_changed = std::bind(&bClient::on_status_changed, this, std::placeholders::_1);
+    m_data.on_close = std::bind(&bClient::on_close, this);
 }
 
-bClient::bClient(const std::string &host, const int &port, const callback_message& message, const callback_status& status_changed, const callback_connect& connect, const callback_close& close, const callback_error& err) {
-
-    _host = host;
-    _port = port;
-
-    _on_message = message;
-    _on_status_changed = status_changed;
-    _on_connect = connect;
-    _on_error = err;
-    _on_close = close;
-
-    client = nullptr;
-    _app_name = "ws_client";
-    _user_name = "unanimous";
-
-    _exitParent = false;
-    _isRun = false;
-}
-bClient::bClient(const arcirk::Uri& url, const callback_message &message, const callback_status &status_changed,
-                 const callback_connect &connect, const callback_close &close, const callback_error &err) {
-    _host = url.Host;
-    _port = url.Port.empty() ? 0 : std::atoi(url.Port.c_str());
-
-    _on_message = message;
-    _on_status_changed = status_changed;
-    _on_connect = connect;
-    _on_error = err;
-    _on_close = close;
-
-    client = nullptr;
-    _app_name = "ws_client";
-    _user_name = "unanimous";
-
-    _exitParent = false;
-    _isRun = false;
+bClient::bClient(ssl::context& ctx)
+    : client(nullptr),
+    _ctx(ctx)
+{
+    init();
 }
 
-void bClient::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param) {
+bClient::bClient(const arcirk::Uri &url, ssl::context& ctx)
+        : client(nullptr),
+          _ctx(ctx)
+{
+    init();
+    m_data.host = url.Host;
+    m_data.port = url.Port.empty() ? 0 : std::atoi(url.Port.c_str());
+}
+
+bClient::bClient(const std::string &url, ssl::context& ctx)
+        : client(nullptr),
+          _ctx(ctx)
+{
+    init();
+    auto u = arcirk::Uri::Parse(url);
+    m_data.host = u.Host;
+    m_data.port = u.Port.empty() ? 0 : std::atoi(u.Port.c_str());
+}
+
+bClient::bClient(const std::string &host, const int &port, ssl::context& ctx)
+        : client(nullptr),
+          _ctx(ctx)
+{
+    init();
+    m_data.host = host;
+    m_data.port = port;
+}
+
+void bClient::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &json_param) {
 //
 //    if (client){
 //
@@ -86,48 +77,48 @@ void bClient::send_command(const std::string &cmd, const std::string &uuid_form,
 
 void bClient::on_connect()
 {
-    _isRun = true;
+    m_data.isRun = true;
 
-    if(_on_connect){
-        _on_connect();
+    if(m_data.on_connect_private){
+        m_data.on_connect_private();
     }
 }
 
-void bClient::close(bool exitParent) {
+void bClient::close(bool block_message) {
 
-    _exitParent = exitParent;
+    m_data.exitParent = block_message;
     if (client)
     {
         if (started())
         {
-            client->close(exitParent);
+            client->close(block_message);
         }
 
     }
 
-    _isRun = false;
+    m_data.isRun = false;
 }
 
 void bClient::on_error(const std::string &what, const std::string &err, int code) {
-    if(_on_error){
-        _on_error(what, err, code);
+    if(m_data.on_error_private){
+        m_data.on_error_private(what, err, code);
     }
 }
 
 void bClient::on_message(const std::string &message) {
 
-    if(_on_message){
-        _on_message(message);
+    if(m_data.on_message_private){
+        m_data.on_message_private(message);
     }
 }
 
 void bClient::on_status_changed(bool status) {
-    if(_on_status_changed){
-        _on_status_changed(status);
+    if(m_data.on_status_changed_private){
+        m_data.on_status_changed_private(status);
     }
 }
 
-void bClient::start(const std::string & auth) {
+void bClient::start(const std::string & auth, bool is_ssl) {
 
     boost::asio::io_context ioc;
 
@@ -137,20 +128,18 @@ void bClient::start(const std::string & auth) {
         return;
     }
 
-    //close();
-
-    _isRun = false;
-
-    callback_connect _connect = std::bind(&bClient::on_connect, this);
-    callback_error _err = std::bind(&bClient::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    callback_message _message = std::bind(&bClient::on_message, this, std::placeholders::_1);
-    callback_status _status = std::bind(&bClient::on_status_changed, this, std::placeholders::_1);
-    callback_close _close = std::bind(&bClient::on_close, this);
+    m_data.isRun = false;
 
     client = new ws_client(ioc, _client_param);
+    client->set_cert_file(_cert_file);
 
     try {
-        client->open(_host.c_str(), std::to_string(_port).c_str(), _on_message, _status, _connect, _err, _close, auth);
+        if(!is_ssl)
+            client->open(m_data.host.c_str(), std::to_string(m_data.port).c_str(), m_data.on_message, m_data.on_status_changed, m_data.on_connect, m_data.on_error, m_data.on_close, auth);
+        else{
+            auto url = arcirk::Uri::Parse("wss://" + m_data.host + ":" + std::to_string(m_data.port));
+            client->open(url, _ctx, m_data.on_message, m_data.on_status_changed, m_data.on_connect, m_data.on_error, m_data.on_close, auth);
+        }
     }
     catch (std::exception& e){
         std::cerr << "IClient::start::exception: " << e.what() <<std::endl;
@@ -158,32 +147,31 @@ void bClient::start(const std::string & auth) {
 
     std::cout << "IClient::start: exit client thread" << std::endl;
 
-   if(!_exitParent) {
-       if(_on_status_changed){
-           _on_status_changed(false);
+   if(!m_data.exitParent) {
+       if(m_data.on_status_changed){
+           m_data.on_status_changed(false);
        }
-       if(_on_close){
-           _on_close();
+       if(m_data.on_close){
+           m_data.on_close();
        }
-       if(_on_message){
-           _on_message("exit client thread");
+       if(m_data.on_message){
+           m_data.on_message("exit client thread");
        }
    }
 
     if(client){
-        std::cout << "delete object" << std::endl;
+        std::cout << "delete websocket object" << std::endl;
         delete client;
         client = nullptr;
     }
 
-    _isRun = false;
+    m_data.isRun = false;
 
 }
 
 bool bClient::started() {
 
-
-    if(!_isRun)
+    if(!m_data.isRun)
         return false;
 
     bool result = false;
@@ -197,28 +185,98 @@ bool bClient::started() {
 
 void bClient::client_details(const std::string &app_name, const std::string &user_name,
                              const boost::uuids::uuid &user_uuid, const std::string &user_hash) {
-    _app_name = app_name;
-    _user_name = user_name;
-    _user_uuid = user_uuid;
-    _user_hash = user_hash;
+    param.app_name = app_name;
+    param.user_name = user_name;
+    param.user_uuid = arcirk::uuids::uuid_to_string(user_uuid);
+    param.hash = user_hash;
 }
 
-void bClient::open(bool new_thread){
+void bClient::open(const std::string &url, const std::string &usr, const std::string &pwd, bool new_thread) {
 
-    auto param = ClientParam();
-    param.app_name = _app_name;
-    param.user_uuid = arcirk::uuids::uuid_to_string(_user_uuid);
-    param.user_name = _user_name;
-    param.hash = _user_hash;
+    bool _is_ssl = false;
+    if(!url.empty()){
+        arcirk::Uri _url = arcirk::Uri::Parse(url);
+        m_data.host = _url.Host;
+        m_data.port = _url.Port.empty() ? 0 : std::atoi(_url.Port.c_str());
+        _is_ssl = _url.Protocol == "wss";
+    }
+    if(m_data.host.empty()){
+        std::cerr << arcirk::local_8bit("Не верный адрес сервера!") << std::endl;
+        return;
+    }
 
-    _client_param= to_string(pre::json::to_json(param));
+    std::string auth;
+    if(!usr.empty())
+        param.user_name = usr;
+    if(!pwd.empty()){
+        param.hash = arcirk::get_hash(usr, pwd);
+        auth = "Basic " + arcirk::base64::base64_encode(usr + ":" + pwd);
+    }
 
     if (new_thread){
-        boost::thread(boost::bind(&bClient::start, this, "")).detach();
+        boost::thread(boost::bind(&bClient::start, this, auth, _is_ssl)).detach();
     }else
-        start();
+        start(auth);
 
 }
+
+//void bClient::open(bool new_thread){
+//
+//    _client_param= to_string(pre::json::to_json(param));
+//
+//    if (new_thread){
+//        boost::thread(boost::bind(&bClient::start, this, "")).detach();
+//    }else
+//        start();
+//
+//}
+//
+//void bClient::open(const std::string & auth, bool new_thread) {
+//
+//    _client_param= to_string(pre::json::to_json(param));
+//    if (new_thread){
+//        boost::thread(boost::bind(&bClient::start, this, auth)).detach();
+//    }else
+//        start(auth);
+//
+//}
+//
+//void bClient::open(const std::string &usr, const std::string &pwd, bool new_thread) {
+//    param.user_name = usr;
+//    param.hash = arcirk::get_hash(usr, pwd);
+//    _client_param= to_string(pre::json::to_json(param));
+//    std::string auth_cred;
+//    if(usr.empty()){
+//        auth_cred = "admin:admin";
+//    }else{
+//        auth_cred = usr + ":" + pwd;
+//    }
+//    std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
+//    if (new_thread){
+//        boost::thread(boost::bind(&bClient::start, this, encoded_auth_cred)).detach();
+//    }else
+//        start(encoded_auth_cred);
+//}
+//
+//void bClient::open(const std::string &url, const std::string &usr, const std::string &pwd, bool new_thread) {
+//    arcirk::Uri _url = arcirk::Uri::Parse(url);
+//    _host = _url.Host;
+//    _port = _url.Port.empty() ? 0 : std::atoi(_url.Port.c_str());
+//    param.user_name = usr;
+//    param.hash = arcirk::get_hash(usr, pwd);
+//    _client_param= to_string(pre::json::to_json(param));
+//    std::string auth_cred;
+//    if(usr.empty()){
+//        auth_cred = "admin:admin";
+//    }else{
+//        auth_cred = usr + ":" + pwd;
+//    }
+//    std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
+//    if (new_thread){
+//        boost::thread(boost::bind(&bClient::start, this, encoded_auth_cred)).detach();
+//    }else
+//        start(encoded_auth_cred);
+//}
 
 void bClient::send(const std::string &msg, const std::string &sub_user_uuid, const std::string &uuid_form, const std::string& objectName, const std::string& msg_ref) {
 //
@@ -242,7 +300,7 @@ void bClient::send(const std::string &msg, const std::string &sub_user_uuid, con
 //    }
 }
 
-void bClient::command_to_client(const std::string &recipient, const std::string &command, const std::string &param, const std::string &uuid_form) {
+void bClient::command_to_client(const std::string &recipient, const std::string &command, const std::string &json_param, const std::string &uuid_form) {
 
 //    if(!client->started())
 //        return;
@@ -265,32 +323,18 @@ void bClient::command_to_client(const std::string &recipient, const std::string 
 
 }
 
-void bClient::command_to_server(const std::string &command, const std::string &param, const std::string& uuid_form) {
+void bClient::command_to_server(const std::string &command, const std::string &json_param, const std::string& uuid_form) {
     if(!client->started())
         return;
     //client->send_command(command, uuid_form, param);
 }
 
 void bClient::on_close() {
-    if(_on_close)
-        _on_close();
+    if(m_data.on_close_private)
+        m_data.on_close_private();
 }
 
-void bClient::open(const std::string & auth, bool new_thread) {
 
-    auto param = ClientParam();
-    param.app_name = _app_name;
-    param.user_uuid = arcirk::uuids::uuid_to_string(_user_uuid);
-    param.user_name = _user_name;
-    param.hash = _user_hash;
-
-    _client_param= to_string(pre::json::to_json(param));
-    if (new_thread){
-        boost::thread(boost::bind(&bClient::start, this, auth)).detach();
-    }else
-        start(auth);
-
-}
 
 boost::uuids::uuid bClient::session_uuid() {
     if(client)
@@ -299,3 +343,20 @@ boost::uuids::uuid bClient::session_uuid() {
         return arcirk::uuids::nil_uuid();
 }
 
+void bClient::connect(const bClient::bClientEvent &event, const callbacks& f) {
+    if(event == bClientEvent::wsClose){
+        m_data.on_close_private = boost::get<callback_close>(f);
+    }else if(event == bClientEvent::wsConnect){
+        m_data.on_connect_private = boost::get<callback_connect>(f);
+    }else if(event == bClientEvent::wsError){
+        m_data.on_error_private = boost::get<callback_error>(f);
+    }else if(event == bClientEvent::wsMessage){
+        m_data.on_message_private = boost::get<callback_message>(f);
+    }else if(event == bClientEvent::wsStatusChanged){
+        m_data.on_status_changed_private = boost::get<callback_status>(f);
+    }
+}
+
+void bClient::set_certificate(const std::string &file) {
+    _cert_file = file;
+}

@@ -25,8 +25,7 @@ class listener_ssl : public boost::enable_shared_from_this<listener_ssl>
     boost::shared_ptr<shared_state> state_;
     ssl::context& ctx_;
 
-    void fail(beast::error_code ec, char const* what);
-    void on_accept(beast::error_code ec, tcp::socket socket);
+    static void fail(beast::error_code ec, char const* what);
 
 public:
     listener_ssl(
@@ -39,6 +38,10 @@ public:
     // Start accepting incoming connections
     void run();
 
+private:
+    void
+    do_accept();
+    void on_accept(beast::error_code ec, tcp::socket socket);
 };
 
 #endif //ARCIRK_LISTENER_SSL_HPP

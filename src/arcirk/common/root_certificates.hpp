@@ -44,7 +44,7 @@ namespace detail {
 
 inline
 void
-load_root_certificates(ssl::context& ctx, boost::system::error_code& ec)
+load_root_default_certificates(ssl::context& ctx, boost::system::error_code& ec)
 {
     std::string cert =
         "# ACCVRAIZ1\n"
@@ -3945,17 +3945,17 @@ load_root_certificates(ssl::context& ctx, boost::system::error_code& ec)
 
 inline
 void
-load_root_certificates(ssl::context& ctx, boost::system::error_code& ec)
+load_root_default_certificates(ssl::context& ctx, boost::system::error_code& ec)
 {
-    detail::load_root_certificates(ctx, ec);
+    detail::load_root_default_certificates(ctx, ec);
 }
 
 inline
 void
-load_root_certificates(ssl::context& ctx)
+load_root_default_certificates(ssl::context& ctx)
 {
     boost::system::error_code ec;
-    detail::load_root_certificates(ctx, ec);
+    detail::load_root_default_certificates(ctx, ec);
     if(ec)
         throw boost::system::system_error{ec};
 }

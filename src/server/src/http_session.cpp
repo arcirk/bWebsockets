@@ -213,6 +213,7 @@ http_session(
         , state_(state)
 
 {
+    //std::cout << stream_.socket().remote_endpoint().address().to_string() << std::endl;
 }
 
 void
@@ -283,6 +284,7 @@ on_read(beast::error_code ec, std::size_t)
     if(websocket::is_upgrade(parser_->get()))
     {
         auto req = parser_->release();
+        std::string target = std::string(req.target());
         if(state_->use_authorization()){
             std::string auth = req[http::field::authorization].to_string();
             if(!state_->verify_user(auth)){

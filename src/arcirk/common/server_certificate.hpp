@@ -26,7 +26,7 @@
 */
 inline
 void
-load_server_certificate(boost::asio::ssl::context& ctx)
+load_server_default_certificate(boost::asio::ssl::context& ctx)
 {
     /*
         The certificate was generated from CMD.EXE on Windows 10 using:

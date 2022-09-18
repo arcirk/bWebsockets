@@ -1,9 +1,7 @@
 #include "../include/shared_state.hpp"
 
 #include <utility>
-#include "../include/session_base.hpp"
-#include "../include/websocket_session.hpp"
-#include "../include/websocket_session_ssl.hpp"
+#include "../include/server.hpp"
 
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
@@ -24,13 +22,13 @@ shared_state(std::string doc_root, server_settings& settings, bool is_ssl, bool 
     connect_to_database();
 }
 
-void shared_state::join(session_base *session) {
+void shared_state::join(websocket_session *session) {
     std::lock_guard<std::mutex> lock(mutex_);
-    sessions_.insert(std::pair<boost::uuids::uuid, session_base*>(session->uuid(), session));
+    sessions_.insert(std::pair<boost::uuids::uuid, websocket_session*>(session->uuid(), session));
 }
 void
 shared_state::
-leave(session_base* session)
+leave(websocket_session* session)
 {
 
     std::cout << "client leave: " << arcirk::local_8bit(session->user_name()) << std::endl;
@@ -164,16 +162,16 @@ void shared_state::send(const std::string &message) {
 
     auto const ss = boost::make_shared<std::string const>(message);
 //    if(!enable_ssl){
-        std::vector<boost::weak_ptr<session_base>> v;
+        std::vector<boost::weak_ptr<websocket_session>> v;
         {
             std::lock_guard<std::mutex> lock(mutex_);
             v.reserve(sessions_.size());
             for(auto p : sessions_){
                 if(!enable_ssl) {
-                    auto obj = (websocket_session*)p.second;
+                    auto obj = (plain_websocket_session*)p.second;
                     v.emplace_back(obj->weak_from_this());
                 }else{
-                    auto obj = (websocket_session_ssl*)p.second;
+                    auto obj = (ssl_websocket_session*)p.second;
                     v.emplace_back(obj->weak_from_this());
                 }
             }
@@ -204,7 +202,7 @@ void shared_state::on_start() {
 //    return _use_authorization;
 //}
 
-void shared_state::run_command(const std::string &response, session_base *session) {
+void shared_state::run_command(const std::string &response, websocket_session *session) {
 
 }
 
@@ -213,7 +211,7 @@ void shared_state::command_to_server(const std::string& response) {
 }
 
 void
-shared_state::deliver(const std::string& message, session_base *session)
+shared_state::deliver(const std::string& message, websocket_session *session)
 {
 
     bool is_cmd = message.substr(0, 3) == "cmd";

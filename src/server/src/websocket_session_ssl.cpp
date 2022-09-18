@@ -5,7 +5,7 @@
 #include <boost/bind.hpp>
 
 websocket_session_ssl::
-websocket_session_ssl(tcp::socket&& socket, ssl::context& ctx, boost::shared_ptr<shared_state>  state)
+websocket_session_ssl(tcp::socket&& socket, ssl::context&& ctx, boost::shared_ptr<shared_state>  state)
 : ws_(std::move(socket), ctx)
 , state_(std::move(state))
 , _dead_line(socket.get_executor())
@@ -74,6 +74,53 @@ on_accept(beast::error_code ec)
             buffer_,
             beast::bind_front_handler(
                     &websocket_session_ssl::on_read,
+                    shared_from_this()));
+}
+
+void
+websocket_session_ssl::
+on_run()
+{
+//    // Set the timeout.
+    beast::get_lowest_layer(ws_).expires_after(std::chrono::seconds(30));
+
+    // Perform the SSL handshake
+    ws_.next_layer().async_handshake(
+            ssl::stream_base::server,
+            beast::bind_front_handler(
+                    &websocket_session_ssl::on_handshake,
+                    shared_from_this()));
+}
+
+void
+websocket_session_ssl::
+on_handshake(beast::error_code ec)
+{
+    if(ec)
+        return fail(ec, "handshake");
+
+    // Turn off the timeout on the tcp_stream, because
+    // the websocket stream has its own timeout system.
+    beast::get_lowest_layer(ws_).expires_never();
+
+    // Set suggested timeout settings for the websocket
+    ws_.set_option(
+            websocket::stream_base::timeout::suggested(
+                    beast::role_type::server));
+
+    // Set a decorator to change the Server of the handshake
+    ws_.set_option(websocket::stream_base::decorator(
+            [](websocket::response_type& res)
+            {
+                res.set(http::field::server,
+                        std::string(BOOST_BEAST_VERSION_STRING) +
+                        " arcirk websocket server");
+            }));
+
+    // Accept the websocket handshake
+    ws_.async_accept(
+            beast::bind_front_handler(
+                    &websocket_session_ssl::on_accept,
                     shared_from_this()));
 }
 

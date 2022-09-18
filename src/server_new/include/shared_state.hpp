@@ -14,13 +14,12 @@
 #include <map>
 #include <set>
 
-//#include <boost/fusion/include/for_each.hpp>
-//#include <boost/fusion/adapted/struct/define_struct.hpp>
-
 #include <pre/json/from_json.hpp>
 #include <pre/json/to_json.hpp>
 
-#include "../include/database_struct.hpp"
+#include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/adapted/struct/define_struct.hpp>
+#include <boost/fusion/include/define_struct.hpp>
 
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), user_info,
@@ -74,7 +73,7 @@ BOOST_FUSION_DEFINE_STRUCT(
 using namespace arcirk;
 using namespace public_struct;
 
-class session_base;
+class websocket_session;
 
 typedef std::function<void(const std::string&, const std::string&, const std::string&, const std::string&)> server_events;
 
@@ -95,8 +94,8 @@ class shared_state
     // This mutex synchronizes all access to sessions_
     std::mutex mutex_;
 
-    std::map<boost::uuids::uuid, session_base*> sessions_;
-    std::map<boost::uuids::uuid, std::vector<session_base*>> user_sessions;
+    std::map<boost::uuids::uuid, websocket_session*> sessions_;
+    std::map<boost::uuids::uuid, std::vector<websocket_session*>> user_sessions;
 
     server_settings srv_settings;
 
@@ -117,8 +116,8 @@ public:
         return doc_root_;
     }
 
-    void join  (session_base* session);
-    void leave (session_base* session);
+    void join  (websocket_session* session);
+    void leave (websocket_session* session);
 
 //    void join  (websocket_session* sessions);
 //    void join  (websocket_session_ssl* sessions);
@@ -128,13 +127,13 @@ public:
 
 
     void on_start();
-    void deliver(const std::string& message, session_base* session);
+    void deliver(const std::string& message, websocket_session* session);
     void send(const std::string& message);
 
     //[[nodiscard]] bool use_authorization() const;
 
     void command_to_server(const std::string& response);
-    void run_command(const std::string& response, session_base *session);
+    void run_command(const std::string& response, websocket_session *session);
 
 
     bool use_authorization() const { return _use_authorization;};

@@ -9,6 +9,7 @@
 #include <boost/fusion/adapted/struct/define_struct.hpp>
 #include <pre/json/from_json.hpp>
 #include <pre/json/to_json.hpp>
+#include <boost/beast/ssl.hpp>
 
 const std::string version = "1.1.0";
 bClient * client;
@@ -145,7 +146,7 @@ public:
                != this->tokens.end();
     }
 private:
-    std::vector <std::string> tokens;
+    std::vector <std::string> tokens{};
 };
 
 int
@@ -179,32 +180,42 @@ main(int argc, char* argv[]){
     std::string host = app_conf.ServerHost;
     int port = app_conf.ServerPort;
 
+    ssl::context ctx{ssl::context::tlsv12_client};
+    //client = new bClient(ctx, host, 8080);
+
     if(_url.empty()){
         if(host.empty())
-            host = arcirk::bIp::get_default_host("0.0.0.0", "192.168.10");
+            host = arcirk::bIp::get_default_host("0.0.0.0", "192.168.43");
 
         if(port <= 0)
             port = 8080;
-        client = new bClient(host, 8080, _message, _status, _connect, _on_close, _err);
+        client = new bClient(host, 8080, ctx);
     }else{
-        auto u = arcirk::Uri::Parse(_url);
-        host = u.Host;
-        port = u.Port.empty() ? 0 : std::atoi(u.Port.c_str());
-        client = new bClient(u, _message, _status, _connect, _on_close, _err);
+        client = new bClient(_url, ctx);
     }
+    client->connect(bClient::bClientEvent::wsMessage, _message);
+    client->connect(bClient::bClientEvent::wsStatusChanged, _status);
+    client->connect(bClient::bClientEvent::wsError, _err);
+    client->connect(bClient::bClientEvent::wsConnect, _connect);
+    client->connect(bClient::bClientEvent::wsClose, _on_close);
+
     app_conf.ServerPort = port;
     app_conf.ServerHost = host;
     write_conf(app_conf);
 
+    client->set_certificate("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
+
     std::string line;
 
-    std::string auth_cred;
-    if(_usr.empty()){
-        auth_cred = "admin:admin";
-    }else{
-        auth_cred = _usr + ":" + _pwd;
-    }
-    std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
+//    std::string auth_cred;
+//    if(_usr.empty()){
+//        auth_cred = "admin:admin";
+//    }else{
+//        auth_cred = _usr + ":" + _pwd;
+//    }
+//    std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
+
+
 
     while (getline(std::cin, line)) {
         if (line.empty()) {
@@ -212,12 +223,13 @@ main(int argc, char* argv[]){
         }
         else if (line == "start")
         {
-            client->open(encoded_auth_cred);
+            client->open(_url,  _usr, _pwd);
         }
         else if (line == "stop")
         {
             client->close(false);
-        }
+        }else if(line == "exit")
+            break;
     }
     return EXIT_SUCCESS;
 }

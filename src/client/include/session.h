@@ -17,20 +17,17 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <deque>
+#include "session_base.hpp"
 
 using boost::asio::steady_timer;
 
 class ws_client;
 
-class session : public boost::enable_shared_from_this<session>
+class session : public session_base, public boost::enable_shared_from_this<session>
         {
     tcp::resolver resolver_;
     websocket::stream<beast::tcp_stream> ws_;
     beast::flat_buffer buffer_;
-    std::string host_;
-    std::string text_ = "test";
-
-    ws_client* client_{};
 
         public:
             // Resolver and socket require an io_context
@@ -68,7 +65,7 @@ class session : public boost::enable_shared_from_this<session>
                     std::size_t bytes_transferred);
 
             void
-            stop();
+            stop() override;
 
             void
             send(boost::shared_ptr<std::string const> const& ss);
@@ -77,14 +74,12 @@ class session : public boost::enable_shared_from_this<session>
             on_close(beast::error_code ec);
 
 
-            bool is_open() const;
+            bool is_open() const override;
 
         private:
             std::deque<std::string> output_queue_;
             steady_timer dead_line_;
             steady_timer heartbeat_timer_;
-            std::string _auth;
-            bool started_ = false;
 
             bool get_started() const;
 

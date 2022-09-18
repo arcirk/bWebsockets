@@ -17,6 +17,7 @@
 
 #include <boost/beast/ssl.hpp>
 #include "include/server_certificate.hpp"
+#include <common/server_certificate.hpp>
 
 #include "include/listener_ssl.hpp"
 #include "include/listener.hpp"
@@ -306,7 +307,7 @@ main(int argc, char* argv[])
     const bool &_use_authorization = input.cmdOptionExists("-use_auth");
 
     auto threads = 4;
-    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168.10"));
+    auto address = net::ip::make_address(arcirk::bIp::get_default_host("0.0.0.0", "192.168.43"));
 
     unsigned short port = 8080;
 
@@ -325,7 +326,7 @@ main(int argc, char* argv[])
     if(!_host.empty())
         address = net::ip::make_address(_host);
     else{
-        if(!conf.ServerHost.empty())
+        if(!conf.ServerHost.empty() && conf.ServerHost != "0.0.0.0" && conf.ServerHost != "localhost")
             address = net::ip::make_address(conf.ServerHost);
     }
     if(!_port.empty())
@@ -380,18 +381,18 @@ main(int argc, char* argv[])
     conf.SSL_csr_file = csr_file;
     conf.SSL_key_file = key_file;
     conf.UseAuthorization = use_auth;
-
     conf.ApplicationProfile = m_root_conf.string();
 
     write_conf(conf);
 
-
+    // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12};
+
     if (is_ssl) {
-        if (!input.cmdOptionExists("-use_ssl_demo")) {
+        if (!input.cmdOptionExists("-def_ssl")) {
             load_certs(ctx, csr_file, key_file);
         }else
-            load_server_certificate(ctx);
+            load_server_default_certificate(ctx);
     }
 
     const std::string Protocol = is_ssl ? "wss://" : "ws://";
@@ -401,6 +402,8 @@ main(int argc, char* argv[])
 
     // The io_context is required for all I/O
     net::io_context ioc;
+//    tcp::resolver resolver(ioc);
+//    auto const results = resolver.resolve(address, port);
 
     // Create and launch a listening port
     if (!is_ssl){

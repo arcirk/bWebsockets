@@ -48,7 +48,7 @@ class websocket_session_ssl : public session_base, public boost::enable_shared_f
 public:
     websocket_session_ssl(
             tcp::socket&& socket,
-            ssl::context& ctx,
+            ssl::context&& ctx,
             boost::shared_ptr<shared_state> state);
 
     ~websocket_session_ssl() override;
@@ -79,6 +79,10 @@ public:
     std::string ip_address() const;
     std::string host_name() const;
 
+    void
+    on_run();
+    void
+    on_handshake(beast::error_code ec);
 
 private:
 
@@ -102,25 +106,40 @@ void
 websocket_session_ssl::
 run(http::request<Body, http::basic_fields<Allocator>> req)
 {
-    // Set suggested timeout settings for the websocket
-    ws_.set_option(
-            websocket::stream_base::timeout::suggested(
-                    beast::role_type::server));
+//    // Set suggested timeout settings for the websocket
+//    ws_.set_option(
+//            websocket::stream_base::timeout::suggested(
+//                    beast::role_type::server));
+//
+//    // Set a decorator to change the Server of the handshake
+//    ws_.set_option(websocket::stream_base::decorator(
+//            [](websocket::response_type& res)
+//            {
+//                res.set(http::field::server,
+//                        std::string(BOOST_BEAST_VERSION_STRING) +
+//                        "arcirk websocket");
+//            }));
+//
+//    // Accept the websocket handshake
+//    ws_.async_accept(
+//            req,
+//            beast::bind_front_handler(
+//                    &websocket_session_ssl::on_accept,
+//                    shared_from_this()));
 
-    // Set a decorator to change the Server of the handshake
-    ws_.set_option(websocket::stream_base::decorator(
-            [](websocket::response_type& res)
-            {
-                res.set(http::field::server,
-                        std::string(BOOST_BEAST_VERSION_STRING) +
-                        "arcirk websocket");
-            }));
+//    SSL_CTX_set_session_id_context()
+//
+//    beast::get_lowest_layer(ws_).co
+//    sslSocket2.lowest_layer().connect( tcpEndpoint, ec );
+//    SSLSocket::impl_type impl1 = sslSocket1.impl();
+//    SSLSocket::impl_type impl2 = sslSocket2.impl();
+//    SSL_SESSION *savedSession = SSL_get1_session( impl1->ssl );
+//    SSL_set_session( impl2->ssl, savedSession );
+//    SSL_connect( impl2->ssl );
 
-    // Accept the websocket handshake
-    ws_.async_accept(
-            req,
-            beast::bind_front_handler(
-                    &websocket_session_ssl::on_accept,
-                    shared_from_this()));
+    net::dispatch(ws_.get_executor(),
+                  beast::bind_front_handler(
+                          &websocket_session_ssl::on_run,
+                          shared_from_this()));
 }
 #endif //WEBSOCKET_SESSION_SSL_HPP

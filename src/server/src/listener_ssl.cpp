@@ -55,7 +55,13 @@ listener_ssl::
 run()
 {
     std::cout << arcirk::local_8bit("Сервер успешно запущен.") << std::endl;
-
+    do_accept();
+    state_->on_start();
+}
+void
+listener_ssl::
+do_accept()
+{
     // The new connection gets its own strand
     acceptor_.async_accept(
             net::make_strand(ioc_),
@@ -63,7 +69,6 @@ run()
                     &listener_ssl::on_accept,
                     shared_from_this()));
 
-    state_->on_start();
 }
 
 // Report a failure
@@ -90,10 +95,12 @@ on_accept(beast::error_code ec, tcp::socket socket)
                 std::move(socket), ctx_,
                 state_)->run(); //,
 
-    // The new connection gets its own strand
-    acceptor_.async_accept(
-            net::make_strand(ioc_),
-            beast::bind_front_handler(
-                    &listener_ssl::on_accept,
-                    shared_from_this()));
+//    // The new connection gets its own strand
+//    acceptor_.async_accept(
+//            net::make_strand(ioc_),
+//            beast::bind_front_handler(
+//                    &listener_ssl::on_accept,
+//                    shared_from_this()));
+
+    do_accept();
 }
