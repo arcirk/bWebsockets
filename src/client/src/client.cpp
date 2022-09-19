@@ -30,15 +30,15 @@ send(const std::string &message, const boost::uuids::uuid &recipient, const boos
 //        _sub_user_uuid = "00000000-0000-0000-0000-000000000000";
 //
 //    boost::uuids::uuid  uuid_channel = arcirk::uuids::string_to_uuid(_sub_user_uuid);
-//
+
 //    std::string msg;
-//
+
 //    if (is_cmd){
 //        msg.append("cmd ");
 //    } else{
 //        msg.append("msg " + _sub_user_uuid + " ");
 //    }
-//
+
 //    auto _msg = ws_message();
 //    _msg.message().uuid = get_uuid();
 //    _msg.message().message = message;
@@ -55,20 +55,45 @@ send(const std::string &message, const boost::uuids::uuid &recipient, const boos
 //        _msg.message().msg_ref = msg_ref;
 //
 //    msg.append(_msg.get_json(true));
-//
-//    auto const ss = boost::make_shared<std::string const>(std::move(msg));
-//
-//    std::vector<boost::weak_ptr<session>> v;
+
+    auto const ss = boost::make_shared<std::string const>(std::move(message));
+
+    std::vector<boost::weak_ptr<session_base>> v;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        v.reserve(sessions_.size());
+        for(auto p : sessions_){
+            if(p->is_ssl()) {
+                auto sess = (session *) p;
+                v.emplace_back(sess->weak_from_this());
+            }else{
+                auto sess = (session_ssl *) p;
+                v.emplace_back(sess->weak_from_this());
+            }
+        }
+
+    }
+//    std::vector<boost::weak_ptr<session_ssl>> v;
 //    {
 //        std::lock_guard<std::mutex> lock(mutex_);
 //        v.reserve(sessions_.size());
-//        for(auto p : sessions_)
-//            v.emplace_back(p->weak_from_this());
-//    }
+//        for(auto p : sessions_){
+//            auto sess = (session_ssl *) p;
+//            v.emplace_back(sess->weak_from_this());
+//        }
 //
-//    for(auto const& wp : v)
-//        if(auto sp = wp.lock())
-//            sp->send(ss);
+//    }
+    for(auto const& wp : v)
+        if(auto sp = wp.lock()){
+            try {
+                sp->send(ss);
+            } catch (std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+
+        }
+
+
 }
 
 void

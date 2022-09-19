@@ -13,6 +13,8 @@ public:
 
     void use_ssl(bool value) {_is_ssl = value;}
 
+    virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
+
 protected:
     bool _is_ssl = false;
     bool started_ = false;

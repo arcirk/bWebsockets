@@ -230,6 +230,10 @@ main(int argc, char* argv[]){
             client->close(false);
         }else if(line == "exit")
             break;
+        else if (line == "send")
+        {
+            client->send("test message", "", "");
+        }
     }
     return EXIT_SUCCESS;
 }

@@ -2,9 +2,9 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "../../arcirk/arcirk.hpp"
-#include "../../arcirk/net.hpp"
-#include "../../arcirk/beast.hpp"
+#include "arcirk.hpp"
+#include "net.hpp"
+#include "beast.hpp"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -29,6 +29,8 @@
 
 namespace ssl = boost::asio::ssl;
 namespace websocket = beast::websocket;
+
+class shared_state;
 
 beast::string_view
 mime_type(beast::string_view path)
@@ -648,17 +650,20 @@ class plain_http_session
                 , public std::enable_shared_from_this<plain_http_session>
 {
     beast::tcp_stream stream_;
+    boost::shared_ptr<shared_state> state_;
 
 public:
     // Create the session
     plain_http_session(
             beast::tcp_stream&& stream,
             beast::flat_buffer&& buffer,
-            std::shared_ptr<std::string const> const& doc_root)
+            std::shared_ptr<std::string const> const& doc_root,
+            boost::shared_ptr<shared_state> state)
             : http_session<plain_http_session>(
             std::move(buffer),
             doc_root)
             , stream_(std::move(stream))
+            , state_(std::move(state))
     {
     }
 
@@ -703,6 +708,7 @@ class ssl_http_session
                 , public std::enable_shared_from_this<ssl_http_session>
 {
     beast::ssl_stream<beast::tcp_stream> stream_;
+    boost::shared_ptr<shared_state> state_;
 
 public:
     // Create the http_session
@@ -710,11 +716,13 @@ public:
             beast::tcp_stream&& stream,
             ssl::context& ctx,
             beast::flat_buffer&& buffer,
-            std::shared_ptr<std::string const> const& doc_root)
+            std::shared_ptr<std::string const> const& doc_root,
+            boost::shared_ptr<shared_state> state)
             : http_session<ssl_http_session>(
             std::move(buffer),
             doc_root)
             , stream_(std::move(stream), ctx)
+            , state_(std::move(state))
     {
     }
 
@@ -797,16 +805,19 @@ class detect_session : public std::enable_shared_from_this<detect_session>
     ssl::context& ctx_;
     std::shared_ptr<std::string const> doc_root_;
     beast::flat_buffer buffer_;
+    boost::shared_ptr<shared_state> state_;
 
 public:
     explicit
     detect_session(
             tcp::socket&& socket,
             ssl::context& ctx,
-            std::shared_ptr<std::string const> const& doc_root)
+            std::shared_ptr<std::string const> const& doc_root,
+            boost::shared_ptr<shared_state> const& state)
             : stream_(std::move(socket))
             , ctx_(ctx)
             , doc_root_(doc_root)
+            , state_(state)
     {
     }
 
@@ -852,7 +863,8 @@ public:
                     std::move(stream_),
                     ctx_,
                     std::move(buffer_),
-                    doc_root_)->run();
+                    doc_root_,
+                    state_)->run();
             return;
         }
 
@@ -860,7 +872,8 @@ public:
         std::make_shared<plain_http_session>(
                 std::move(stream_),
                 std::move(buffer_),
-                doc_root_)->run();
+                doc_root_,
+                state_)->run();
     }
 };
 
@@ -871,17 +884,20 @@ class listener : public std::enable_shared_from_this<listener>
     ssl::context& ctx_;
     tcp::acceptor acceptor_;
     std::shared_ptr<std::string const> doc_root_;
+    boost::shared_ptr<shared_state> state_;
 
 public:
     listener(
             net::io_context& ioc,
             ssl::context& ctx,
             tcp::endpoint endpoint,
-            std::shared_ptr<std::string const> const& doc_root)
+            std::shared_ptr<std::string const> const& doc_root,
+            boost::shared_ptr<shared_state> const& state)
             : ioc_(ioc)
             , ctx_(ctx)
             , acceptor_(net::make_strand(ioc))
             , doc_root_(doc_root)
+            , state_(state)
     {
         beast::error_code ec;
 
@@ -951,7 +967,8 @@ private:
             std::make_shared<detect_session>(
                     std::move(socket),
                     ctx_,
-                    doc_root_)->run();
+                    doc_root_,
+                    state_)->run();
         }
 
         // Accept another connection

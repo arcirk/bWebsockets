@@ -279,25 +279,23 @@ void bClient::open(const std::string &url, const std::string &usr, const std::st
 //}
 
 void bClient::send(const std::string &msg, const std::string &sub_user_uuid, const std::string &uuid_form, const std::string& objectName, const std::string& msg_ref) {
-//
-//    std::string _msg = msg;
-//    std::string _uuid_form = uuid_form;
-//    std::string _sub_user_uuid = sub_user_uuid;
-//
-//    if (_msg.empty())
-//        return;
-//    if (_uuid_form.empty())
-//        _uuid_form = "00000000-0000-0000-0000-000000000000";
-//    if (_sub_user_uuid.empty())
-//        _sub_user_uuid = "00000000-0000-0000-0000-000000000000";
-//
-//    if (client)
-//    {
-//        if (started())
-//        {
-//            client->send(_msg, false, _sub_user_uuid, _uuid_form, "message", objectName, msg_ref);
-//        }
-//    }
+
+    std::string _msg = msg;
+    boost::uuids::uuid _uuid_form;
+    arcirk::uuids::is_valid_uuid(uuid_form, _uuid_form);
+    boost::uuids::uuid _sub_user_uuid;
+    arcirk::uuids::is_valid_uuid(sub_user_uuid, _sub_user_uuid);
+
+    if (_msg.empty())
+        return;
+
+    if (client)
+    {
+        if (started())
+        {
+            client->send(_msg, _sub_user_uuid, _uuid_form);
+        }
+    }
 }
 
 void bClient::command_to_client(const std::string &recipient, const std::string &command, const std::string &json_param, const std::string &uuid_form) {

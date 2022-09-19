@@ -1,6 +1,12 @@
+#include <boost/filesystem.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/smart_ptr.hpp>
+#include <iostream>
+#include <vector>
 
-#include "include/server.hpp"
 #include "../arcirk/common/server_certificate.hpp"
+#include "include/shared_state.hpp"
+#include "include/listener.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -34,7 +40,8 @@ int main(int argc, char* argv[])
             ioc,
             ctx,
             tcp::endpoint{address, port},
-            doc_root)->run();
+            doc_root,
+            boost::make_shared<shared_state>())->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     net::signal_set signals(ioc, SIGINT, SIGTERM);

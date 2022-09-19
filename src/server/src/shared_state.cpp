@@ -4,6 +4,8 @@
 #include "../include/session_base.hpp"
 #include "../include/websocket_session.hpp"
 #include "../include/websocket_session_ssl.hpp"
+#include "../../server_new/include/shared_state.hpp"
+
 
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>

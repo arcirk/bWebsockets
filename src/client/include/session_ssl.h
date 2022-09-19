@@ -62,7 +62,7 @@ public:
     void
     stop() override;
     void
-    send(boost::shared_ptr<std::string const> const& ss);
+    send(boost::shared_ptr<std::string const> const& ss) override;
 
     void
     on_close(beast::error_code ec);
