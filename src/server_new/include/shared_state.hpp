@@ -22,6 +22,7 @@
 #include <boost/fusion/include/define_struct.hpp>
 
 #include "http.hpp"
+#include "../../client/include/callbacks.hpp"
 
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), user_info,
@@ -95,6 +96,9 @@ class shared_state
 public:
     explicit
     shared_state();
+
+    shared_state(arcirk::client::bClientData &param);
+
     ~shared_state()= default;
 
     void join(subscriber* session);

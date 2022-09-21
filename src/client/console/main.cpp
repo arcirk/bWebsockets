@@ -12,7 +12,7 @@
 #include <boost/beast/ssl.hpp>
 
 const std::string version = "1.1.0";
-bClient * client;
+bClient * m_client;
 
 boost::filesystem::path m_root_conf;
 
@@ -189,21 +189,21 @@ main(int argc, char* argv[]){
 
         if(port <= 0)
             port = 8080;
-        client = new bClient(host, 8080, ctx);
+        m_client = new bClient(host, 8080, ctx);
     }else{
-        client = new bClient(_url, ctx);
+        m_client = new bClient(_url, ctx);
     }
-    client->connect(bClient::bClientEvent::wsMessage, _message);
-    client->connect(bClient::bClientEvent::wsStatusChanged, _status);
-    client->connect(bClient::bClientEvent::wsError, _err);
-    client->connect(bClient::bClientEvent::wsConnect, _connect);
-    client->connect(bClient::bClientEvent::wsClose, _on_close);
+    m_client->connect(client::bClientEvent::wsMessage, _message);
+    m_client->connect(client::bClientEvent::wsStatusChanged, _status);
+    m_client->connect(client::bClientEvent::wsError, _err);
+    m_client->connect(client::bClientEvent::wsConnect, _connect);
+    m_client->connect(client::bClientEvent::wsClose, _on_close);
 
     app_conf.ServerPort = port;
     app_conf.ServerHost = host;
     write_conf(app_conf);
 
-    client->set_certificate("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
+    m_client->set_certificate("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
 
     std::string line;
 
@@ -223,16 +223,16 @@ main(int argc, char* argv[]){
         }
         else if (line == "start")
         {
-            client->open(_url,  _usr, _pwd);
+            m_client->open(_url,  _usr, _pwd);
         }
         else if (line == "stop")
         {
-            client->close(false);
+            m_client->close(false);
         }else if(line == "exit")
             break;
         else if (line == "send")
         {
-            client->send("test message", "", "");
+            m_client->send("test message", "", "");
         }
     }
     return EXIT_SUCCESS;

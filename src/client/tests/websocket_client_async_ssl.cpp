@@ -248,7 +248,7 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        std::cout << "on_read" << std::endl;
+        std::cout << "on_message" << std::endl;
 
         // Close the WebSocket connection
         ws_.async_close(websocket::close_code::normal,

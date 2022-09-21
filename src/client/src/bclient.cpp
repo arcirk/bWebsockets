@@ -130,15 +130,15 @@ void bClient::start(const std::string & auth, bool is_ssl) {
 
     m_data.isRun = false;
 
-    _client = new ws_client(ioc, _client_param);
+    _client = new ws_client(ioc, param);
     _client->set_cert_file(_cert_file);
 
     try {
         if(!is_ssl)
-            _client->open(m_data.host.c_str(), std::to_string(m_data.port).c_str(), m_data.on_message, m_data.on_status_changed, m_data.on_connect, m_data.on_error, m_data.on_close, auth);
+            _client->open(m_data.host.c_str(), std::to_string(m_data.port).c_str(), auth);
         else{
             auto url = arcirk::Uri::Parse("wss://" + m_data.host + ":" + std::to_string(m_data.port));
-            _client->open(url, _ctx, m_data.on_message, m_data.on_status_changed, m_data.on_connect, m_data.on_error, m_data.on_close, auth);
+            _client->open(url, _ctx, auth);
         }
     }
     catch (std::exception& e){

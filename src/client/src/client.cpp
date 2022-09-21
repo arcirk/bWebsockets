@@ -11,6 +11,7 @@
 
 #include "../include/websocket_client.hpp"
 #include "../include/shared_state.hpp"
+#include <boost/bind.hpp>
 
 using namespace arcirk;
 
@@ -19,7 +20,15 @@ ws_client::ws_client(net::io_context &io_context, client::ClientParam& client_pa
 , param(client_param)
 {
     set_user_name("anonymous");
-    _app_name = "unknown";;
+    _app_name = "unknown";
+
+    m_data_private = client::bClientData();
+    m_data_private.on_error = std::bind(&ws_client::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    m_data_private.on_close = std::bind(&ws_client::on_stop, this);
+    m_data_private.on_connect = std::bind(&ws_client::on_connect, this);
+    m_data_private.on_status_changed = std::bind(&ws_client::on_status_changed, this, std::placeholders::_1);
+    m_data_private.on_message = std::bind(&ws_client::on_message, this, std::placeholders::_1);
+
 }
 
 void
@@ -101,6 +110,8 @@ void
 ws_client::
 on_connect(){
 
+    std::cout << "ws_client::on_connect" << std::endl;
+
 //    std::lock_guard<std::mutex> lock(mutex_);
 //    sessions_.insert(sess);
 //
@@ -117,6 +128,8 @@ on_connect(){
 
 void
 ws_client::on_stop() {
+
+    std::cout << "on_stop" << std::endl;
 
 //    if(_exit_parent)
 //        return;
@@ -227,8 +240,9 @@ void ws_client::set_param(client::ServerResponse& resp) {
 }
 
 void
-ws_client::on_read(const std::string& message) {
+ws_client::on_message(const std::string& message) {
 
+    std::cout << "on_message" << std::endl;
 //    if (message == "\n" || message.empty() || message == "pong")
 //        return;
 //    T_vec v = arcirk::split(message, "\n");
@@ -256,7 +270,7 @@ ws_client::on_read(const std::string& message) {
 //                }
 //            }
 //        }catch (std::exception& e){
-//            on_error("ws_client::on_read:set_client_param", arcirk::to_utf(e.what()), -1);
+//            on_error("ws_client::on_message:set_client_param", arcirk::to_utf(e.what()), -1);
 //            return;
 //        }
 //
@@ -275,14 +289,17 @@ ws_client::on_read(const std::string& message) {
 //        }
 //    }
 //    catch (std::exception& e){
-//        //std::cerr << "ws_client::on_read error: " << e.what() << std::endl;
-//        on_error("ws_client::on_read error: ", arcirk::to_utf(e.what()), -1);
+//        //std::cerr << "ws_client::on_message error: " << e.what() << std::endl;
+//        on_error("ws_client::on_message error: ", arcirk::to_utf(e.what()), -1);
 //        return;
 //    }
 
 }
 
 void ws_client::on_error(const std::string &what, const std::string &err, int code) {
+
+    std::cout << "on_error" << std::endl;
+
 //    try{
 //        if (_on_message)
 //        {
@@ -306,9 +323,9 @@ void ws_client::on_error(const std::string &what, const std::string &err, int co
 //        _status_changed(false);
 //    }
 
-    if(m_data.on_error){
-        m_data.on_error(what, err, code);
-    }
+//    if(m_data.on_error){
+//        m_data.on_error(what, err, code);
+//    }
 }
 
 boost::uuids::uuid ws_client::user_uuid() const {
@@ -319,7 +336,7 @@ std::string ws_client::app_name() const{
     return param.app_name;
 }
 
-void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param) {
+void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &cmd_param) {
 
 //        std::string _uuid_form = uuid_form;
 ////
@@ -364,7 +381,7 @@ void ws_client::open(const char* host, const char* port, const std::string & aut
     ssl::context ctx{ssl::context::tlsv12_client};
     set_certificates(ctx);
 
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>())->run(host, port, _ssl);
+    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>(m_data_private))->run(host, port, _ssl);
 
     ioc.run();
 
@@ -375,7 +392,7 @@ void ws_client::open(Uri &url, ssl::context& ctx,
 
     bool _ssl = url.Protocol == "wss";
     set_certificates(ctx);
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>())->run(url.Host.c_str(), url.Port.c_str(), _ssl);
+    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>(m_data_private))->run(url.Host.c_str(), url.Port.c_str(), _ssl);
 
     ioc.run();
 
@@ -418,4 +435,8 @@ void ws_client::connect(const client::bClientEvent &event, const client::callbac
     }else if(event == client::bClientEvent::wsStatusChanged){
         m_data.on_status_changed = boost::get<callback_status>(f);
     }
+}
+
+void ws_client::on_status_changed(bool status) {
+    std::cout << "on_status_changed" << std::endl;
 }

@@ -21,6 +21,8 @@
 
 namespace ssl = boost::asio::ssl;
 
+using boost::asio::steady_timer;
+
 static void
 fail(beast::error_code ec, char const* what)
 {
@@ -129,7 +131,7 @@ public:
 
         std::cout << "session::on_connect: successful connection!" << std::endl;
 
-        //client_->on_connect(this);
+        state_->on_connect();
 
         started_ = true;
 
@@ -160,7 +162,7 @@ public:
         boost::ignore_unused(bytes_transferred);
 
         std::string err = ec.what();
-        std::string what = "on_read";
+        std::string what = "on_message";
 
 
 //        if(ec){
@@ -207,7 +209,7 @@ public:
             return fail(ec, "read");
         }
 
-        //client_->on_read(beast::buffers_to_string(buffer_.data()));
+        state_->on_message(beast::buffers_to_string(buffer_.data()));
 
         buffer_.consume(buffer_.size());
 
@@ -322,7 +324,6 @@ public:
     }
 
     void
-
     check_dead_line()
     {
 
@@ -362,10 +363,14 @@ class ssl_session : public std::enable_shared_from_this<ssl_session>, public ses
     std::string host_;
     beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
+    bool started_ = false;
+    steady_timer heartbeat_timer_;
+
 public:
     ssl_session(net::io_context& ioc, ssl::context& ctx, const std::string& host, boost::shared_ptr<shared_state> sharedPtr)
             : ws_(net::make_strand(ioc), ctx)
-    , state_(std::move(sharedPtr))
+            , state_(std::move(sharedPtr))
+            , heartbeat_timer_(ioc)
     {host_ = host;}
 
     websocket::stream<
@@ -377,6 +382,16 @@ public:
 
     void
     connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep) {
+
+        if (ec.value() == 111 || ec.value() == 10061){ //connection refused
+            std::string err = ec.message();
+#ifdef _WINDOWS
+            err = "В соединении отказано";
+#endif
+            state_->on_error("connect", err, ec.value());
+            return;
+        }
+
         if (ec)
             return fail(ec, "connect");
 
@@ -394,7 +409,7 @@ public:
 
         host_ += ':' + std::to_string(ep.port());
 
-        std::cout << "on_connect" << std::endl;
+        //std::cout << "on_connect" << std::endl;
 
         // Perform the SSL handshake
         ws_.next_layer().async_handshake(
@@ -428,7 +443,7 @@ public:
                             " websocket-client-async-ssl");
                 }));
 
-        std::cout << "on_ssl_handshake" << std::endl;
+       // std::cout << "on_ssl_handshake" << std::endl;
 
         // Perform the websocket handshake
         ws_.async_handshake(host_, "/",
@@ -443,15 +458,34 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
-        std::cout << "on_handshake" << std::endl;
+        //std::cout << "on_handshake" << std::endl;
 
-        // Send the message
+        state_->on_connect();
+
+        started_ = true;
+
+        start_read();
+
+//        // Send the message
+//        ws_.async_write(
+//                net::buffer("test ssl connection"),
+//                beast::bind_front_handler(
+//                        &ssl_session::on_write,
+//                        shared_from_this()));
+    }
+
+    void
+    start_write()
+    {
+        if ( !get_started()) return;
+
         ws_.async_write(
-                net::buffer("test ssl connection"),
+                net::buffer(output_queue_.front()),
                 beast::bind_front_handler(
                         &ssl_session::on_write,
                         shared_from_this()));
     }
+
     void
     on_write(
             beast::error_code ec,
@@ -464,14 +498,28 @@ public:
 
         std::cout << "on_write" << std::endl;
 
-        // Read a message into our buffer
+//        // Read a message into our buffer
+//        ws_.async_read(
+//                buffer_,
+//                beast::bind_front_handler(
+//                        &ssl_session::on_read,
+//                        shared_from_this()));
+    }
+    void
+    start_read()
+    {
+
+        if(!ws_.is_open())
+            return;
+
+        //dead_line_.expires_after(std::chrono::seconds(30));
+
         ws_.async_read(
                 buffer_,
                 beast::bind_front_handler(
                         &ssl_session::on_read,
                         shared_from_this()));
     }
-
     void
     on_read(
             beast::error_code ec,
@@ -482,13 +530,18 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        std::cout << "on_read" << std::endl;
+        std::cout << "on_message" << std::endl;
 
-        // Close the WebSocket connection
-        ws_.async_close(websocket::close_code::normal,
-                        beast::bind_front_handler(
-                                &ssl_session::on_close,
-                                shared_from_this()));
+        state_->on_message(beast::buffers_to_string(buffer_.data()));
+
+        buffer_.consume(buffer_.size());
+
+        start_read();
+//        // Close the WebSocket connection
+//        ws_.async_close(websocket::close_code::normal,
+//                        beast::bind_front_handler(
+//                                &ssl_session::on_close,
+//                                shared_from_this()));
     }
 
     void
@@ -497,13 +550,61 @@ public:
         if(ec)
             return fail(ec, "close");
 
+        state_->on_stop();
         // If we get here then the connection is closed gracefully
 
-        // The make_printable() function helps print a ConstBufferSequence
-        std::cout << "on_close" << std::endl;
-        std::cout << beast::make_printable(buffer_.data()) << std::endl;
+//        // The make_printable() function helps print a ConstBufferSequence
+//        std::cout << "on_close" << std::endl;
+//        std::cout << beast::make_printable(buffer_.data()) << std::endl;
     }
 
+    void
+    deliver(const std::string& msg)
+    {
+        output_queue_.clear();
+        if (msg == "\n" || msg == "pong"){
+            output_queue_.push_back("\n");
+        }else
+            output_queue_.push_back(msg + "\n");
+    }
+
+    void
+    stop(bool eraseObjOnly)
+    {
+        if ( !started_) return;
+        started_ = false;
+        //deadline_.cancel();
+        heartbeat_timer_.cancel();
+        state_->on_stop();
+        if(!eraseObjOnly)
+            ws_.async_close(websocket::close_code::normal,
+                        beast::bind_front_handler(
+                                &ssl_session::on_close,
+                                shared_from_this()));
+    }
+
+    void
+    send(boost::shared_ptr<std::string const> const& ss) {
+
+        //if ( !started_) return;
+
+        if (!ws_.is_open())
+            return;
+
+        deliver(ss->c_str());
+
+        //сбрасываем таймер для отправки следующего сообщения через секунду
+        heartbeat_timer_.expires_after(std::chrono::seconds(0));
+        heartbeat_timer_.async_wait(std::bind(&ssl_session::start_write, this));
+
+    }
+
+private:
+    std::deque<std::string> output_queue_;;
+
+    bool get_started() const{
+        return started_;
+    }
 };
 
 class resolver : public std::enable_shared_from_this<resolver>{
@@ -537,12 +638,14 @@ public:
         port_ = port;
         _is_ssl = is_ssl;
 
-        std::cout << "run" << std::endl;
+        std::cout << "connect to server..." << std::endl;
 
         do_resolve();
     }
 
     void do_resolve(){
+
+        std::cout << "start resolve " << host_ << ' ' << port_ << std::endl;
 
         resolver_.async_resolve(
                 host_,
@@ -560,7 +663,8 @@ public:
         if(ec)
             return fail(ec, "resolve");
 
-        std::cout << "on_resolve" << std::endl;
+        //std::cout << "on_resolve" << std::endl;
+
 
         if(_is_ssl){
             auto sess = std::make_shared<ssl_session>(ioc_, ctx_, host_, state_);

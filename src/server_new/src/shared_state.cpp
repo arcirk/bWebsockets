@@ -16,3 +16,4 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
 void shared_state::deliver(const std::string &message, subscriber *session) {
     std::cout << "message: " << message << std::endl;
 }
+
