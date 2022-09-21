@@ -10,6 +10,7 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/client/console" "${PROJECT_SOURCE_DIR}/c
 add_subdirectory("${PROJECT_SOURCE_DIR}/client/tests" "${PROJECT_SOURCE_DIR}/client/tests/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/server_new" "${PROJECT_SOURCE_DIR}/server_new/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/client_new" "${PROJECT_SOURCE_DIR}/client_new/cmake-build-debug")
+add_subdirectory("${PROJECT_SOURCE_DIR}/client_new/console" "${PROJECT_SOURCE_DIR}/client_new/console/cmake-build-debug")
 
 #set(JSON_BuildTests OFF CACHE INTERNAL "")
 #add_subdirectory(${PROJECT_SOURCE_DIR}/json)

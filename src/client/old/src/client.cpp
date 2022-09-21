@@ -4,20 +4,19 @@
 
 #include "net.hpp"
 #include "arcirk.hpp"
-#include "../include/client.hpp"
+#include "../../include/client.hpp"
+#include "../../include/session.h"
+#include "../../include/session_ssl.h"
 #include <boost/locale.hpp>
 #include <boost/locale/generator.hpp>
 #include "common/root_certificates.hpp"
 
-#include "../include/websocket_client.hpp"
-#include "../include/shared_state.hpp"
-
 using namespace arcirk;
 
-ws_client::ws_client(net::io_context &io_context, client::ClientParam& client_param)
+ws_client::ws_client(net::io_context &io_context, const std::string& client_param)
 : ioc(io_context)
-, param(client_param)
 {
+    _client_param = client_param;
     set_user_name("anonymous");
     _app_name = "unknown";;
 }
@@ -57,23 +56,23 @@ send(const std::string &message, const boost::uuids::uuid &recipient, const boos
 //
 //    msg.append(_msg.get_json(true));
 
-//    auto const ss = boost::make_shared<std::string const>(std::move(message));
-//
-//    std::vector<boost::weak_ptr<session_base>> v;
-//    {
-//        std::lock_guard<std::mutex> lock(mutex_);
-//        v.reserve(sessions_.size());
-//        for(auto p : sessions_){
-//            if(p->is_ssl()) {
-//                auto sess = (session *) p;
-//                v.emplace_back(sess->weak_from_this());
-//            }else{
-//                auto sess = (session_ssl *) p;
-//                v.emplace_back(sess->weak_from_this());
-//            }
-//        }
+    auto const ss = boost::make_shared<std::string const>(std::move(message));
 
-//    }
+    std::vector<boost::weak_ptr<session_base>> v;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        v.reserve(sessions_.size());
+        for(auto p : sessions_){
+            if(p->is_ssl()) {
+                auto sess = (session *) p;
+                v.emplace_back(sess->weak_from_this());
+            }else{
+                auto sess = (session_ssl *) p;
+                v.emplace_back(sess->weak_from_this());
+            }
+        }
+
+    }
 //    std::vector<boost::weak_ptr<session_ssl>> v;
 //    {
 //        std::lock_guard<std::mutex> lock(mutex_);
@@ -84,35 +83,35 @@ send(const std::string &message, const boost::uuids::uuid &recipient, const boos
 //        }
 //
 //    }
-//    for(auto const& wp : v)
-//        if(auto sp = wp.lock()){
-//            try {
-//                sp->send(ss);
-//            } catch (std::exception &e) {
-//                std::cerr << e.what() << std::endl;
-//            }
-//
-//        }
+    for(auto const& wp : v)
+        if(auto sp = wp.lock()){
+            try {
+                sp->send(ss);
+            } catch (std::exception &e) {
+                std::cerr << e.what() << std::endl;
+            }
+
+        }
 
 
 }
 
 void
 ws_client::
-on_connect(){
+on_connect(session_base * sess){
 
-//    std::lock_guard<std::mutex> lock(mutex_);
-//    sessions_.insert(sess);
-//
-//    if(_on_connect){
-//        _on_connect();
-//    }
-//
-//    if (!_client_param.empty())
-//        send_command("set_client_param", "", _client_param, sess);
-//
-//    if(_on_status_changed)
-//        _on_status_changed(started());
+    std::lock_guard<std::mutex> lock(mutex_);
+    sessions_.insert(sess);
+
+    if(_on_connect){
+        _on_connect();
+    }
+
+    if (!_client_param.empty())
+        send_command("set_client_param", "", _client_param, sess);
+
+    if(_on_status_changed)
+        _on_status_changed(started());
 }
 
 void
@@ -135,30 +134,30 @@ ws_client::on_stop() {
 void
 ws_client::
 close(bool exit_base) {
-//
-//    //exit_base - это выход из приложения, блокируем сообщения
-//    _exit_parent = exit_base;
-//
-//    std::vector<boost::weak_ptr<session_base>> v;
-//    {
-//        std::lock_guard<std::mutex> lock(mutex_);
-//        v.reserve(sessions_.size());
-//        for(auto p : sessions_)
-//            if(p->is_ssl()){
-//                auto sess = (session*)p;
-//                v.emplace_back(sess->weak_from_this());
-//            }else{
-//                auto sess = (session_ssl*)p;
-//                v.emplace_back(sess->weak_from_this());
-//            }
-//
-//    }
-//
-//    for(auto const& wp : v)
-//        if(auto sp = wp.lock())
-//            sp->stop();
-//
-//    ioc.stop();
+
+    //exit_base - это выход из приложения, блокируем сообщения
+    _exit_parent = exit_base;
+
+    std::vector<boost::weak_ptr<session_base>> v;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        v.reserve(sessions_.size());
+        for(auto p : sessions_)
+            if(p->is_ssl()){
+                auto sess = (session*)p;
+                v.emplace_back(sess->weak_from_this());
+            }else{
+                auto sess = (session_ssl*)p;
+                v.emplace_back(sess->weak_from_this());
+            }
+
+    }
+
+    for(auto const& wp : v)
+        if(auto sp = wp.lock())
+            sp->stop();
+
+    ioc.stop();
 
 }
 
@@ -166,42 +165,42 @@ bool
 ws_client::
 started() {
 
-//    for(auto p : sessions_){
-//        if (p->is_open()){
-//            return true;
-//        }
-//    }
-//
+    for(auto p : sessions_){
+        if (p->is_open()){
+            return true;
+        }
+    }
+
     return false;
 }
 
-boost::uuids::uuid
+boost::uuids::uuid&
 ws_client::
-session_uuid() const {
-    return m_data.session_uuid;
+session_uuid() {
+    return _session_uuid;
 }
 
 void
 ws_client::
 set_session_uuid(const std::string& uuid) {
-    arcirk::uuids::is_valid_uuid(uuid, m_data.session_uuid);
+    arcirk::uuids::is_valid_uuid(uuid, _session_uuid);
 }
 
 void
 ws_client::
 set_user_uuid(const std::string& uuid) {
-    param.user_uuid = uuid;
+    arcirk::uuids::is_valid_uuid(uuid, _user_uuid);
 }
 
 std::string ws_client::user_name() const{
-    return param.user_name;
+    return _user_name;
 }
 
 void ws_client::set_user_name(const std::string& name) {
-    param.user_name = name;
+    _user_name = name;
 }
 
-void ws_client::set_param(client::ServerResponse& resp) {
+void ws_client::set_param(ServerResponse& resp) {
 //    try {
 //        std::string uuid = pt.get_member("uuid").to_string();
 //        if (!uuid.empty())
@@ -306,20 +305,20 @@ void ws_client::on_error(const std::string &what, const std::string &err, int co
 //        _status_changed(false);
 //    }
 
-    if(m_data.on_error){
-        m_data.on_error(what, err, code);
+    if(_on_error){
+        _on_error(what, err, code);
     }
 }
 
-boost::uuids::uuid ws_client::user_uuid() const {
-    return arcirk::uuids::string_to_uuid(param.user_uuid);
+boost::uuids::uuid& ws_client::user_uuid() {
+    return _user_uuid;
 }
 
-std::string ws_client::app_name() const{
-    return param.app_name;
+std::string &ws_client::app_name() {
+    return _app_name;
 }
 
-void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param) {
+void ws_client::send_command(const std::string &cmd, const std::string &uuid_form, const std::string &param, session_base * sess) {
 
 //        std::string _uuid_form = uuid_form;
 ////
@@ -357,27 +356,37 @@ void ws_client::send_command(const std::string &cmd, const boost::uuids::uuid &u
 
 }
 
-void ws_client::open(const char* host, const char* port, const std::string & auth) {
+void ws_client::open(const char* host, const char* port, const callback_message& message, const callback_status& status_changed, const callback_connect& connect, const callback_error& error, const callback_close& close, const std::string & auth) {
 
-    bool _ssl = false;
+    _on_message = message;
+    _on_status_changed = status_changed;
+    _on_connect = connect;
+    _on_error = error;
+    _on_close = close;
 
-    ssl::context ctx{ssl::context::tlsv12_client};
-    set_certificates(ctx);
-
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>())->run(host, port, _ssl);
-
+    boost::make_shared<session>(ioc, auth)->run(host, port, this);
     ioc.run();
 
 }
 
-void ws_client::open(Uri &url, ssl::context& ctx,
+void ws_client::open(Uri &url, ssl::context& ctx, const callback_message &message, const callback_status &status_changed,
+                     const callback_connect &connect, const callback_error &err, const callback_close &close,
                      const std::string &auth) {
+    _on_message = message;
+    _on_status_changed = status_changed;
+    _on_connect = connect;
+    _on_error = err;
+    _on_close = close;
 
-    bool _ssl = url.Protocol == "wss";
-    set_certificates(ctx);
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>())->run(url.Host.c_str(), url.Port.c_str(), _ssl);
-
-    ioc.run();
+    if(url.Protocol == "wss"){
+        //ssl::context ctx{ssl::context::tlsv12_client};
+        set_certificates(ctx);
+        boost::make_shared<session_ssl>(ioc, ctx, auth)->run(url.Host.c_str(), url.Port.c_str(), this);
+        ioc.run();
+    }else{
+        boost::make_shared<session>(ioc, auth)->run(url.Host.c_str(), url.Port.c_str(), this);
+        ioc.run();
+    }
 
 }
 
@@ -399,6 +408,7 @@ void ws_client::set_certificates(ssl::context& ctx) {
         return;
     }
 
+    //load_root_certificates(ctx, _cert);
     load_root_default_certificates(ctx);
 }
 
@@ -406,16 +416,3 @@ void ws_client::set_cert_file(const std::string &file) {
     cert_file = file;
 }
 
-void ws_client::connect(const client::bClientEvent &event, const client::callbacks& f) {
-    if(event == client::bClientEvent::wsClose){
-        m_data.on_close= boost::get<callback_close>(f);
-    }else if(event == client::bClientEvent::wsConnect){
-        m_data.on_connect = boost::get<callback_connect>(f);
-    }else if(event == client::bClientEvent::wsError){
-        m_data.on_error = boost::get<callback_error>(f);
-    }else if(event == client::bClientEvent::wsMessage){
-        m_data.on_message = boost::get<callback_message>(f);
-    }else if(event == client::bClientEvent::wsStatusChanged){
-        m_data.on_status_changed = boost::get<callback_status>(f);
-    }
-}

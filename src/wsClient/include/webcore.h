@@ -13,8 +13,8 @@
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <bclient.h>
-#include <callbacks.h>
+#include <bclient.hpp>
+#include <callbacks.hpp>
 
 class WebCore final : public Component {
 

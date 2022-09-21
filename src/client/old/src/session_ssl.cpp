@@ -2,8 +2,8 @@
 // Created by admin on 17.09.2022.
 //
 
-#include "../include/session_ssl.h"
-#include "../include/client.h"
+#include "../../include/session_ssl.h"
+#include "../../include/client.hpp"
 
 session_ssl::
 session_ssl(net::io_context& ioc, ssl::context& ctx, const std::string & auth)

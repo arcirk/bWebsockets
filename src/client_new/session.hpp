@@ -1,8 +1,8 @@
 #ifndef WSCLIENT_SESSION_HPP
 #define WSCLIENT_SESSION_HPP
 
-#include <net.hpp>
-#include <beast.hpp>
+#include "net.hpp"
+#include "beast.hpp"
 
 #include <cstdlib>
 #include <functional>
@@ -20,6 +20,15 @@
 
 using boost::asio::steady_timer;
 
+static void
+fail(beast::error_code ec, char const* what)
+{
+    if(ec == net::ssl::error::stream_truncated)
+        return;
+
+    std::cerr << what << " code: " << ec.value() << " : " << ec.message() << "\n";
+}
+
 template<class Derived>
 class session
 {
@@ -30,13 +39,20 @@ class session
     }
 
     beast::flat_buffer buffer_;
+    tcp::resolver resolver_;
+
+
 
 public:
+    session(net::io_context& ioc)
+    : resolver_(net::make_strand(ioc))
+    {
+
+    }
+
     void
     run(char const* host, char const* port){
         std::cout << "connect to server..." << std::endl;
-
-        dead_line_.async_wait(std::bind(&session_ssl::check_dead_line, this));
 
         std::cout << "start resolve " << host << ' ' << port << std::endl;
 
@@ -45,11 +61,24 @@ public:
                 host,
                 port,
                 beast::bind_front_handler(
-                        &session_ssl::on_resolve,
-                        shared_from_this()));
+                        &session::on_resolve,
+                        derived().shared_from_this()));
     }
+    void
+    on_resolve(
+            beast::error_code ec,
+            tcp::resolver::results_type results)
+    {
+        if(ec)
+            return fail(ec, "resolve");
 
+        beast::get_lowest_layer(derived().ws()).expires_after(std::chrono::seconds(30));
+
+
+    }
 private:
+
+protected:
 
 };
 
@@ -57,17 +86,15 @@ class plain_session
         : public session<plain_session>, public std::enable_shared_from_this<plain_session>
         {
     websocket::stream<beast::tcp_stream> ws_;
-    tcp::resolver resolver_;
+    //tcp::resolver resolver_;
 public:
-    plain_session::
     plain_session(net::io_context& ioc)
-            : resolver_(net::make_strand(ioc))
-            , ws_(net::make_strand(ioc))
+            : ws_(net::make_strand(ioc))
             , dead_line_(ioc)
             , heartbeat_timer_(ioc)
     {
-
     }
+
 
 private:
     std::deque<std::string> output_queue_;
@@ -80,13 +107,12 @@ class ssl_session
         : public session<ssl_session>
                 , public std::enable_shared_from_this<ssl_session>{
 
-    websocket::stream<beast::ssl_stream<beast::tcp_stream>> ws_;
-    tcp::resolver resolver_;
+    websocket::stream<
+            beast::ssl_stream<beast::tcp_stream>> ws_;
+    //tcp::resolver resolver_;
 public:
-    ssl_session::
     ssl_session(net::io_context& ioc, ssl::context& ctx)
-            : resolver_(net::make_strand(ioc))
-            , ws_(net::make_strand(ioc), ctx)
+            : ws_(net::make_strand(ioc), ctx)
             , dead_line_(ioc)
             , heartbeat_timer_(ioc)
     {

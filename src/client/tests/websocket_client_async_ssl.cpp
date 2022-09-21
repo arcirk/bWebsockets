@@ -42,8 +42,39 @@ fail(beast::error_code ec, char const* what)
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
+template<class Derived>
+class session{
+    Derived&
+    derived()
+    {
+        return static_cast<Derived&>(*this);
+    }
+
+    beast::flat_buffer buffer_;
+
+};
+class session_plain : public std::enable_shared_from_this<session_plain>, public session<session_plain>
+{
+
+    websocket::stream<beast::tcp_stream> ws_;
+public:
+    explicit
+    session_plain(net::io_context& ioc)
+    : resolver_(net::make_strand(ioc))
+    {
+    }
+
+    void
+    run(
+            char const* host,
+            char const* port,
+            char const* text)
+    {
+
+    }
+};
 // Sends a WebSocket message and prints the response
-class session : public std::enable_shared_from_this<session>
+class session_ssl : public std::enable_shared_from_this<session_ssl>, public session<session_ssl>
 {
     tcp::resolver resolver_;
     websocket::stream<
@@ -55,7 +86,7 @@ class session : public std::enable_shared_from_this<session>
 public:
     // Resolver and socket require an io_context
     explicit
-    session(net::io_context& ioc, ssl::context& ctx)
+    session_ssl(net::io_context& ioc, ssl::context& ctx)
         : resolver_(net::make_strand(ioc))
         , ws_(net::make_strand(ioc), ctx)
     {
@@ -79,7 +110,7 @@ public:
             host,
             port,
             beast::bind_front_handler(
-                &session::on_resolve,
+                &session_ssl::on_resolve,
                 shared_from_this()));
     }
 
@@ -100,7 +131,7 @@ public:
         beast::get_lowest_layer(ws_).async_connect(
             results,
             beast::bind_front_handler(
-                &session::on_connect,
+                &session_ssl::on_connect,
                 shared_from_this()));
     }
 
@@ -134,7 +165,7 @@ public:
         ws_.next_layer().async_handshake(
             ssl::stream_base::client,
             beast::bind_front_handler(
-                &session::on_ssl_handshake,
+                &session_ssl::on_ssl_handshake,
                 shared_from_this()));
     }
 
@@ -167,7 +198,7 @@ public:
         // Perform the websocket handshake
         ws_.async_handshake(host_, "/",
             beast::bind_front_handler(
-                &session::on_handshake,
+                &session_ssl::on_handshake,
                 shared_from_this()));
     }
 
@@ -183,7 +214,7 @@ public:
         ws_.async_write(
             net::buffer(text_),
             beast::bind_front_handler(
-                &session::on_write,
+                &session_ssl::on_write,
                 shared_from_this()));
     }
 
@@ -203,7 +234,7 @@ public:
         ws_.async_read(
             buffer_,
             beast::bind_front_handler(
-                &session::on_read,
+                &session_ssl::on_read,
                 shared_from_this()));
     }
 
@@ -222,7 +253,7 @@ public:
         // Close the WebSocket connection
         ws_.async_close(websocket::close_code::normal,
             beast::bind_front_handler(
-                &session::on_close,
+                &session_ssl::on_close,
                 shared_from_this()));
     }
 
@@ -241,6 +272,65 @@ public:
 };
 
 //------------------------------------------------------------------------------
+class detect_session : public std::enable_shared_from_this<detect_session>
+{
+    beast::tcp_stream stream_;
+    ssl::context& ctx_;
+    beast::flat_buffer buffer_;
+    tcp::resolver resolver_;
+public:
+    explicit
+    detect_session(
+            tcp::socket&& socket,
+            ssl::context& ctx)
+            : stream_(std::move(socket))
+            , ctx_(ctx)
+            , resolver_(net::make_strand(ioc))
+    {}
+
+    void
+    run()
+    {
+        net::dispatch(
+                stream_.get_executor(),
+                beast::bind_front_handler(
+                        &detect_session::on_run,
+                        this->shared_from_this()));
+    }
+    void
+    on_run()
+    {
+        // Set the timeout.
+        stream_.expires_after(std::chrono::seconds(30));
+
+        beast::async_detect_ssl(
+                stream_,
+                buffer_,
+                beast::bind_front_handler(
+                        &detect_session::on_detect,
+                        this->shared_from_this()));
+    }
+
+    void
+    on_detect(beast::error_code ec, bool result)
+    {
+        if(ec)
+            return fail(ec, "detect");
+
+        if(result)
+        {
+            // Launch SSL session
+            std::make_shared<session_ssl>(
+                    std::move(stream_),
+                    ctx_)->run();
+            return;
+        }
+
+        // Launch plain session
+        std::make_shared<session_plain>(
+                std::move(stream_))->run();
+    }
+};
 
 int main(int argc, char** argv)
 {
@@ -267,7 +357,7 @@ int main(int argc, char** argv)
     load_root_default_certificates(ctx);
 
     // Launch the asynchronous operation
-    std::make_shared<session>(ioc, ctx)->run(host, port, text);
+    std::make_shared<session_plain>(ioc, ctx)->run(host, port, text);
 
     // Run the I/O service. The call will return when
     // the socket is closed.
