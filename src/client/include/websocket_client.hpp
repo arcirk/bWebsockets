@@ -92,10 +92,14 @@ class plain_session : public std::enable_shared_from_this<plain_session>, public
     bool started_ = false;
     beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
+    steady_timer heartbeat_timer_;
+    steady_timer dead_line_;
 public:
     plain_session(net::io_context& ioc, const std::string& host, boost::shared_ptr<shared_state> sharedPtr)
             : ws_(net::make_strand(ioc))
             , state_(std::move(sharedPtr))
+            , heartbeat_timer_(ioc)
+            , dead_line_(ioc)
     {host_ = host;}
 
     websocket::stream<beast::tcp_stream>&
@@ -108,6 +112,8 @@ public:
     connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
     {
         host_ += ':' + std::to_string(ep.port());
+
+        deliver("\n");
 
         // Perform the websocket handshake
         ws_.async_handshake(host_, "/",
@@ -131,10 +137,11 @@ public:
 
         std::cout << "session::on_connect: successful connection!" << std::endl;
 
-        state_->on_connect();
+        state_->on_connect(this);
 
         started_ = true;
 
+        start_write();
         start_read();
 
     }
@@ -145,7 +152,7 @@ public:
         if(!ws_.is_open())
             return;
 
-        //dead_line_.expires_after(std::chrono::seconds(30));
+        dead_line_.expires_after(std::chrono::seconds(30));
 
         ws_.async_read(
                 buffer_,
@@ -165,43 +172,43 @@ public:
         std::string what = "on_message";
 
 
-//        if(ec){
-//            dead_line_.cancel();
-//        }
+        if(ec){
+            dead_line_.cancel();
+        }
 
         if (ec == boost::asio::error::connection_reset){
             //std::cout << "boost::asio::error::connection_reset " << "error code:" << ec.value() << std::endl;
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }else if( ec==boost::asio::error::eof){
             //std::cout << "boost::asio::error::eof " << "error code:" << ec.value() << std::endl;
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             started_ = false;
             return;
         }else if( ec==websocket::error::no_connection){
             //std::cout << "websocket::error::no_connection " << "error code:" << ec.value() << std::endl;
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }else if(ec == websocket::error::closed){
             //std::cout << "websocket::error::closed " << "error code:" << ec.value() << std::endl;
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             started_ = false;
             return;
         }
 
         if(ec.value() == 995){
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
         if(ec.value() == 2){
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
         //125 : Операция отменена
         if(ec.value() == 109 || ec.value() == 125){
-            //client_->on_error(what, arcirk::to_utf(err), ec.value());
+            state_->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
@@ -220,7 +227,7 @@ public:
     void
     start_write()
     {
-        if ( !get_started()) return;
+        if ( !started()) return;
 
         ws_.async_write(
                 net::buffer(output_queue_.front()),
@@ -266,9 +273,9 @@ public:
     {
         if ( !started_) return;
         started_ = false;
-        //ead_line_.cancel();
-        //heartbeat_timer_.cancel();
-        //if(!eraseObjOnly)
+        dead_line_.cancel();
+        heartbeat_timer_.cancel();
+
         ws_.async_close(websocket::close_code::normal,
                         beast::bind_front_handler(
                                 &plain_session::on_close,
@@ -282,7 +289,7 @@ public:
         if(ec)
             return fail(ec, "close");
 
-        //client_->on_stop();
+        state_->on_stop();
 
     }
 
@@ -295,9 +302,9 @@ public:
 
         deliver(ss->c_str());
 
-//        //сбрасываем таймер для отправки следующего сообщения через секунду
-//        heartbeat_timer_.expires_after(std::chrono::seconds(0));
-//        heartbeat_timer_.async_wait(std::bind(&session::start_write, this));
+        //сбрасываем таймер для отправки следующего сообщения через секунду
+        heartbeat_timer_.expires_after(std::chrono::seconds(0));
+        heartbeat_timer_.async_wait(std::bind(&plain_session::start_write, this));
 
     }
 
@@ -327,20 +334,20 @@ public:
     check_dead_line()
     {
 
-//        if(!ws_.is_open())
-//            return;
-//
-//        if (dead_line_.expiry() <= steady_timer::clock_type::now())
-//        {
-//            ws_.async_close(websocket::close_code::normal,
-//                            beast::bind_front_handler(
-//                                    &session::on_close,
-//                                    shared_from_this()));
-//
-//            dead_line_.expires_at((steady_timer::time_point::max)());
-//        }
-//
-//        dead_line_.async_wait(std::bind(&session::check_dead_line, this));
+        if(!ws_.is_open())
+            return;
+
+        if (dead_line_.expiry() <= steady_timer::clock_type::now())
+        {
+            ws_.async_close(websocket::close_code::normal,
+                            beast::bind_front_handler(
+                                    &plain_session::on_close,
+                                    shared_from_this()));
+
+            dead_line_.expires_at((steady_timer::time_point::max)());
+        }
+
+        dead_line_.async_wait(std::bind(&plain_session::check_dead_line, this));
 
     }
 
@@ -348,7 +355,7 @@ public:
         return ws_.is_open();
     }
 
-    bool get_started() const{
+    bool started() const{
         return started_;
     }
 
@@ -365,12 +372,14 @@ class ssl_session : public std::enable_shared_from_this<ssl_session>, public ses
     boost::shared_ptr<shared_state> state_;
     bool started_ = false;
     steady_timer heartbeat_timer_;
+    steady_timer dead_line_;
 
 public:
     ssl_session(net::io_context& ioc, ssl::context& ctx, const std::string& host, boost::shared_ptr<shared_state> sharedPtr)
             : ws_(net::make_strand(ioc), ctx)
             , state_(std::move(sharedPtr))
             , heartbeat_timer_(ioc)
+            , dead_line_(ioc)
     {host_ = host;}
 
     websocket::stream<
@@ -409,7 +418,9 @@ public:
 
         host_ += ':' + std::to_string(ep.port());
 
-        //std::cout << "on_connect" << std::endl;
+        deliver("\n");
+
+        dead_line_.async_wait(std::bind(&ssl_session::check_dead_line, this));
 
         // Perform the SSL handshake
         ws_.next_layer().async_handshake(
@@ -460,7 +471,7 @@ public:
 
         //std::cout << "on_handshake" << std::endl;
 
-        state_->on_connect();
+        state_->on_connect(this);
 
         started_ = true;
 
@@ -477,7 +488,7 @@ public:
     void
     start_write()
     {
-        if ( !get_started()) return;
+        if ( !started()) return;
 
         ws_.async_write(
                 net::buffer(output_queue_.front()),
@@ -512,7 +523,7 @@ public:
         if(!ws_.is_open())
             return;
 
-        //dead_line_.expires_after(std::chrono::seconds(30));
+        dead_line_.expires_after(std::chrono::seconds(30));
 
         ws_.async_read(
                 buffer_,
@@ -527,6 +538,58 @@ public:
     {
         boost::ignore_unused(bytes_transferred);
 
+        if(ec){
+            dead_line_.cancel();
+        }
+
+        if (ec == boost::asio::error::connection_reset){
+            std::cout << "session::on_read: " << "boost::asio::error::connection_reset" << std::endl;
+            return;
+        }else if( ec==boost::asio::error::eof){
+            state_->on_error("session::on_read", "boost::asio::error::eof", ec.value());
+            started_ = false;
+            return;
+        }else if( ec==websocket::error::no_connection){
+            std::cout << "session::on_read: " << "websocket::error::no_connection" << std::endl;
+            return;
+        }
+
+        if(ec == websocket::error::closed){
+            state_->on_error("read","Сервер не доступен!", ec.value());
+            started_ = false;
+            return;
+        }
+
+        if(ec.value() == 995){
+            std::string err = "I/O operation was aborted";
+            std::cerr << "session::on_read: " << err << std::endl;
+            //client_->error("read", err);
+            return;
+        }
+
+        if(ec.value() == 2){
+            std::string err = ec.message();
+#ifdef _WINDOWS
+            err = "Соединение разорвано!";
+#endif
+            state_->on_error("read", err, ec.value());
+            return;
+        }
+
+        //125 : Операция отменена
+        if(ec.value() == 109 || ec.value() == 125){
+            std::string err = ec.message();
+#ifdef _WINDOWS
+            err = "Соединение разорвано другой стороной!";
+#endif
+
+            if (!ws_.is_open())
+                return;
+
+            state_->on_error("read", err, ec.value());
+
+            return;
+        }
         if(ec)
             return fail(ec, "read");
 
@@ -569,18 +632,17 @@ public:
     }
 
     void
-    stop(bool eraseObjOnly)
+    stop()
     {
         if ( !started_) return;
         started_ = false;
-        //deadline_.cancel();
+        dead_line_.cancel();
         heartbeat_timer_.cancel();
-        state_->on_stop();
-        if(!eraseObjOnly)
-            ws_.async_close(websocket::close_code::normal,
-                        beast::bind_front_handler(
-                                &ssl_session::on_close,
-                                shared_from_this()));
+
+        ws_.async_close(websocket::close_code::normal,
+                    beast::bind_front_handler(
+                            &ssl_session::on_close,
+                            shared_from_this()));
     }
 
     void
@@ -599,12 +661,38 @@ public:
 
     }
 
-private:
-    std::deque<std::string> output_queue_;;
-
-    bool get_started() const{
+    bool started() const{
         return started_;
     }
+
+    bool is_open() const{
+        return ws_.is_open();
+    }
+
+    void
+    check_dead_line()
+    {
+
+        if(!ws_.is_open())
+            return;
+
+        if (dead_line_.expiry() <= steady_timer::clock_type::now())
+        {
+            ws_.async_close(websocket::close_code::normal,
+                            beast::bind_front_handler(
+                                    &ssl_session::on_close,
+                                    shared_from_this()));
+
+            dead_line_.expires_at((steady_timer::time_point::max)());
+        }
+
+        dead_line_.async_wait(std::bind(&ssl_session::check_dead_line, this));
+
+    }
+
+private:
+    std::deque<std::string> output_queue_;
+
 };
 
 class resolver : public std::enable_shared_from_this<resolver>{

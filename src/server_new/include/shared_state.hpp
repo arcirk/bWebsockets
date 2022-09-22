@@ -22,7 +22,6 @@
 #include <boost/fusion/include/define_struct.hpp>
 
 #include "http.hpp"
-#include "../../client/include/callbacks.hpp"
 
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), user_info,
@@ -85,25 +84,26 @@ namespace arcirk{
     };
 }
 
-//class plain_websocket_session;
-//class ssl_websocket_session;
+class plain_websocket_session;
+class ssl_websocket_session;
 class subscriber;
 
 // Represents the shared server state
 class shared_state
 {
+    std::map<boost::uuids::uuid const, subscriber*> sessions_;
+    std::mutex mutex_;
 
 public:
     explicit
     shared_state();
-
-    shared_state(arcirk::client::bClientData &param);
 
     ~shared_state()= default;
 
     void join(subscriber* session);
     void leave(const boost::uuids::uuid& session_uuid, const std::string& user_name);
     void deliver(const std::string& message, subscriber* session);
+    void send(const std::string& message);
 
 private:
 

@@ -5,6 +5,8 @@
 #include "shared_state.hpp"
 #include <arcirk.hpp>
 
+class plain_websocket_session;
+
 class subscriber{
 
 public:
@@ -24,6 +26,13 @@ public:
     virtual void set_uuid_session(const boost::uuids::uuid& value){
         _uuid_session = value;
     }
+
+    virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
+
+//    template<typename T>
+//    T get_ptr(){
+//        return *this;
+//    }
 
 protected:
     std::string _user_name = UnknownUser;
@@ -47,6 +56,7 @@ class websocket_session
     }
 
     beast::flat_buffer buffer_;
+    std::vector<boost::shared_ptr<std::string const>> queue_;
 
     // Start the asynchronous operation
     template<class Body, class Allocator>
@@ -91,6 +101,7 @@ class websocket_session
     void
     do_read()
     {
+        buffer_.consume(buffer_.size());
         // Read a message into our buffer
         derived().ws().async_read(
                 buffer_,
@@ -106,6 +117,11 @@ class websocket_session
     {
         boost::ignore_unused(bytes_transferred);
 
+        if (ec == boost::asio::error::eof){
+            std::cerr << "websocket_session::on_read: " << "boost::asio::error::eof" << std::endl;
+            return;
+        }
+
         // This indicates that the websocket_session was closed
         if(ec == websocket::error::closed)
             return;
@@ -113,8 +129,7 @@ class websocket_session
         if(ec)
             return fail(ec, "read");
 
-//        // Echo the message
-//        derived().ws().text(derived().ws().got_text());
+        std::string msg = beast::buffers_to_string(buffer_.data());
 
         derived().deliver(beast::buffers_to_string(buffer_.data()));
 
@@ -124,8 +139,10 @@ class websocket_session
 
     void do_write(){
 
+        queue_.erase(queue_.begin());
+
         derived().ws().async_write(
-                buffer_.data(),
+                net::buffer(*queue_.front()),
                 beast::bind_front_handler(
                         &websocket_session::on_write,
                         derived().shared_from_this()));
@@ -150,6 +167,25 @@ class websocket_session
 
     }
 
+    void
+    on_send(boost::shared_ptr<std::string const> const& ss)
+    {
+        // Always add to queue
+        queue_.push_back(ss);
+
+        // Are we already writing?
+        if(queue_.size() > 1)
+            return;
+
+        // We are not currently writing, so deliver this immediately
+        derived().ws().async_write(
+                net::buffer(*queue_.front()),
+                beast::bind_front_handler(
+                        &websocket_session::on_write,
+                        derived().shared_from_this()));
+    }
+
+
 
 public:
     // Start the asynchronous operation
@@ -161,14 +197,22 @@ public:
         do_accept(std::move(req));
     }
 
-//    boost::uuids::uuid uuid() const{
-//        return _uuid;
-//    }
-
+    void
+    send(boost::shared_ptr<std::string const> const& ss)
+    {
+        net::post(
+                derived().ws().get_executor(),
+                beast::bind_front_handler(
+                        &websocket_session::on_send,
+                        derived().shared_from_this(),
+                        ss));
+    }
 
 protected:
-    //boost::uuids::uuid _uuid{};
-    //boost::shared_ptr<shared_state> state_;
+    auto super()
+    {
+        return this;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -180,6 +224,7 @@ class plain_websocket_session
 {
     websocket::stream<beast::tcp_stream> ws_;
     boost::shared_ptr<shared_state> state_;
+
 public:
     // Create the session
     explicit
@@ -201,7 +246,7 @@ public:
         return ws_;
     }
 
-    boost::shared_ptr<shared_state>&
+    boost::shared_ptr<shared_state>
     state(){
         return state_;
     }
@@ -210,10 +255,13 @@ public:
         state_->join(this);
     }
 
+    void send(boost::shared_ptr<std::string const> const& ss) override{
+        super()->send(ss);
+    }
+
     void deliver(const std::string& message){
         state_->deliver(message, this);
     }
-
 };
 
 //------------------------------------------------------------------------------
@@ -249,13 +297,17 @@ public:
         return ws_;
     }
 
-    boost::shared_ptr<shared_state>&
+    boost::shared_ptr<shared_state>
     state(){
         return state_;
     }
 
     void join(){
         state_->join(this);
+    }
+
+    void send(boost::shared_ptr<std::string const> const& ss) override{
+        super()->send(ss);
     }
 
     void deliver(const std::string& message){

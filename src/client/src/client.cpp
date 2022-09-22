@@ -10,7 +10,6 @@
 #include "common/root_certificates.hpp"
 
 #include "../include/websocket_client.hpp"
-#include "../include/shared_state.hpp"
 #include <boost/bind.hpp>
 
 using namespace arcirk;
@@ -115,15 +114,15 @@ on_connect(){
 //    std::lock_guard<std::mutex> lock(mutex_);
 //    sessions_.insert(sess);
 //
-//    if(_on_connect){
-//        _on_connect();
-//    }
-//
+    if(m_data.on_connect){
+        m_data.on_connect();
+    }
+
 //    if (!_client_param.empty())
 //        send_command("set_client_param", "", _client_param, sess);
-//
-//    if(_on_status_changed)
-//        _on_status_changed(started());
+
+    if(m_data.on_status_changed)
+        m_data.on_status_changed(started());
 }
 
 void
@@ -131,23 +130,23 @@ ws_client::on_stop() {
 
     std::cout << "on_stop" << std::endl;
 
-//    if(_exit_parent)
-//        return;
-//
-//    if (_on_close)
-//    {
-//        _on_close();
-//    }
-//
-//    console_log("ws_client::on_stop: client on_stop");
-//
-//    if(_on_status_changed)
-//        _on_status_changed(false);
+    if(m_data.exitParent)
+        return;
+
+    if (m_data.on_close)
+    {
+        m_data.on_close();
+    }
+
+    console_log("ws_client::on_stop: client on_stop");
+
+    if(m_data.on_status_changed)
+        m_data.on_status_changed(false);
 }
 
 void
 ws_client::
-close(bool exit_base) {
+close(bool block_notify) {
 //
 //    //exit_base - это выход из приложения, блокируем сообщения
 //    _exit_parent = exit_base;
@@ -173,18 +172,17 @@ close(bool exit_base) {
 //
 //    ioc.stop();
 
+    if(started()){
+        state_->close(block_notify);
+    }
 }
 
 bool
 ws_client::
 started() {
 
-//    for(auto p : sessions_){
-//        if (p->is_open()){
-//            return true;
-//        }
-//    }
-//
+    if (state_)
+        return state_->started();
     return false;
 }
 
@@ -381,7 +379,9 @@ void ws_client::open(const char* host, const char* port, const std::string & aut
     ssl::context ctx{ssl::context::tlsv12_client};
     set_certificates(ctx);
 
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>(m_data_private))->run(host, port, _ssl);
+    state_ = boost::make_shared<shared_state>(m_data_private);
+
+    std::make_shared<resolver>(ioc, ctx, state_)->run(host, port, _ssl);
 
     ioc.run();
 
@@ -392,7 +392,8 @@ void ws_client::open(Uri &url, ssl::context& ctx,
 
     bool _ssl = url.Protocol == "wss";
     set_certificates(ctx);
-    std::make_shared<resolver>(ioc, ctx, boost::make_shared<shared_state>(m_data_private))->run(url.Host.c_str(), url.Port.c_str(), _ssl);
+    state_ = boost::make_shared<shared_state>(m_data_private);
+    std::make_shared<resolver>(ioc, ctx, state_)->run(url.Host.c_str(), url.Port.c_str(), _ssl);
 
     ioc.run();
 

@@ -17,6 +17,7 @@
 #include <pre/json/to_json.hpp>
 
 #include <boost/beast/ssl.hpp>
+#include "../include/shared_state.hpp"
 
 using namespace arcirk;
 
@@ -37,7 +38,7 @@ public:
 
     void send_command(const std::string &cmd, const boost::uuids::uuid &uuid_form, const std::string &cmd_param);
 
-    void close(bool exit_base = false);
+    void close(bool block_notify = false);
     bool started();
 
     boost::uuids::uuid session_uuid() const;
@@ -60,7 +61,7 @@ private:
     client::ClientParam param;
     client::bClientData m_data;
     client::bClientData m_data_private;
-
+    boost::shared_ptr<shared_state> state_;
     boost::asio::io_context &ioc;
 
     //std::string _client_param;

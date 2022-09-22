@@ -3,6 +3,7 @@
 //
 
 #include "../include/shared_state.hpp"
+#include "../include/websocket_client.hpp"
 
 shared_state::shared_state(const client::bClientData &param)
 : m_data(param)
@@ -11,11 +12,29 @@ shared_state::shared_state(const client::bClientData &param)
 }
 
 void shared_state::on_message(const std::string &message) {
+
+    if (message == "\n" || message.empty() || message == "pong")
+        return;
+
+    T_vec v = split(message, "\n");
+
+    std::string msg;
+
+    if (!v.empty())
+        msg = v[0];
+
     if(m_data.on_message)
         m_data.on_message(message);
 }
 
-void shared_state::on_connect() {
+void shared_state::on_connect(ssl_session* sess) {
+    session_ = sess;
+    if(m_data.on_connect)
+        m_data.on_connect();
+}
+
+void shared_state::on_connect(plain_session* sess) {
+    session_ = sess;
     if(m_data.on_connect)
         m_data.on_connect();
 }
@@ -33,4 +52,45 @@ void shared_state::on_error(const std::string &what, const std::string &err, int
 void shared_state::on_status_changed(bool status) {
     if(m_data.on_status_changed)
         m_data.on_status_changed(status);
+}
+
+void shared_state::close(bool block_notify) {
+
+    bool is_ssl = false;
+
+    if(session_.type() == typeid(ssl_session*))
+        is_ssl = true;
+
+    if(is_ssl){
+        auto sess = boost::get<ssl_session*>(session_);
+        if(sess)
+            sess->stop();
+    }else
+    {
+        auto sess = boost::get<plain_session*>(session_);
+        if(sess)
+            sess->stop();
+    }
+
+}
+
+bool shared_state::started() {
+
+    bool is_ssl = false;
+
+    if(session_.type() == typeid(ssl_session*))
+        is_ssl = true;
+
+    if(is_ssl){
+        auto sess = boost::get<ssl_session*>(session_);
+        if(sess)
+            return sess->is_open();
+    }else
+    {
+        auto sess = boost::get<plain_session*>(session_);
+        if(sess)
+            return sess->is_open();
+    }
+
+    return false;
 }

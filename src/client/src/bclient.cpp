@@ -77,45 +77,44 @@ void bClient::send_command(const std::string &cmd, const std::string &uuid_form,
 
 void bClient::on_connect()
 {
-//    m_data.isRun = true;
-//
-//    if(m_data.on_connect_private){
-//        m_data.on_connect_private();
-//    }
+    m_data.isRun = true;
+
+    if(m_data.on_connect){
+        m_data.on_connect();
+    }
 }
 
 void bClient::close(bool block_message) {
 
-//    m_data.exitParent = block_message;
-//    if (client)
-//    {
-//        if (started())
-//        {
-//            client->close(block_message);
-//        }
-//
-//    }
+    m_data.exitParent = block_message;
+    if (_client)
+    {
+        if (started())
+        {
+            _client->close(block_message);
+        }
+
+    }
 
     m_data.isRun = false;
 }
 
 void bClient::on_error(const std::string &what, const std::string &err, int code) {
-//    if(m_data.on_error_private){
-//        m_data.on_error_private(what, err, code);
-//    }
+    if(m_data.on_error){
+        m_data.on_error(what, err, code);
+    }
 }
 
 void bClient::on_message(const std::string &message) {
-
-//    if(m_data.on_message_private){
-//        m_data.on_message_private(message);
-//    }
+    if(m_data.on_message){
+        m_data.on_message(message);
+    }
 }
 
 void bClient::on_status_changed(bool status) {
-//    if(m_data.on_status_changed_private){
-//        m_data.on_status_changed_private(status);
-//    }
+    if(m_data.on_status_changed){
+        m_data.on_status_changed(status);
+    }
 }
 
 void bClient::start(const std::string & auth, bool is_ssl) {
@@ -132,7 +131,11 @@ void bClient::start(const std::string & auth, bool is_ssl) {
 
     _client = new ws_client(ioc, param);
     _client->set_cert_file(_cert_file);
-
+    _client->connect(client::bClientEvent::wsMessage, (callback_message)std::bind(&bClient::on_message, this, std::placeholders::_1));
+    _client->connect(client::bClientEvent::wsStatusChanged, (callback_status)std::bind(&bClient::on_status_changed, this, std::placeholders::_1));
+    _client->connect(client::bClientEvent::wsError, (callback_error)std::bind(&bClient::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    _client->connect(client::bClientEvent::wsConnect,  (callback_connect)std::bind(&bClient::on_connect, this));
+    _client->connect(client::bClientEvent::wsClose, (callback_close)std::bind(&bClient::on_close, this));
     try {
         if(!is_ssl)
             _client->open(m_data.host.c_str(), std::to_string(m_data.port).c_str(), auth);
