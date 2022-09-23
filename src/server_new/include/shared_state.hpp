@@ -23,6 +23,12 @@
 
 #include "http.hpp"
 
+class plain_websocket_session;
+class ssl_websocket_session;
+class subscriber;
+
+typedef boost::variant<plain_websocket_session*, ssl_websocket_session*> vSessions;
+
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), user_info,
         (int, _id)
@@ -84,16 +90,14 @@ namespace arcirk{
     };
 }
 
-class plain_websocket_session;
-class ssl_websocket_session;
-class subscriber;
 
 // Represents the shared server state
 class shared_state
 {
     std::map<boost::uuids::uuid const, subscriber*> sessions_;
     std::mutex mutex_;
-
+    std::map<boost::uuids::uuid const, vSessions> v_sessions_;
+    std::map<boost::uuids::uuid const, plain_websocket_session*> plain_sessions_;
 public:
     explicit
     shared_state();
@@ -101,11 +105,16 @@ public:
     ~shared_state()= default;
 
     void join(subscriber* session);
+
+    void join_adv(plain_websocket_session* session);
+    void join_adv(ssl_websocket_session* session);
+
     void leave(const boost::uuids::uuid& session_uuid, const std::string& user_name);
     void deliver(const std::string& message, subscriber* session);
     void send(const std::string& message);
 
 private:
+    //bool _use_ssl
 
 };
 

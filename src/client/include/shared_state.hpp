@@ -20,7 +20,7 @@ class shared_state {
     client::bClientData m_data;
 public:
     explicit
-    shared_state(){};
+    shared_state()= default;;
     explicit
     shared_state(const client::bClientData& param);
 

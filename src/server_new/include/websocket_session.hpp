@@ -5,7 +5,7 @@
 #include "shared_state.hpp"
 #include <arcirk.hpp>
 
-class plain_websocket_session;
+//typedef boost::variant<plain_websocket_session *, ssl_websocket_session*> shared_type;
 
 class subscriber{
 
@@ -29,16 +29,13 @@ public:
 
     virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
 
-//    template<typename T>
-//    T get_ptr(){
-//        return *this;
-//    }
+    //virtual bool is_ssl() = 0;
 
 protected:
     std::string _user_name = UnknownUser;
     boost::uuids::uuid _user_uuid{};
     boost::uuids::uuid _uuid_session{};
-    //
+
 };
 
 // Echoes back all received WebSocket messages.
@@ -129,8 +126,6 @@ class websocket_session
         if(ec)
             return fail(ec, "read");
 
-        std::string msg = beast::buffers_to_string(buffer_.data());
-
         derived().deliver(beast::buffers_to_string(buffer_.data()));
 
         do_read();
@@ -146,7 +141,7 @@ class websocket_session
                 beast::bind_front_handler(
                         &websocket_session::on_write,
                         derived().shared_from_this()));
-    };
+    }
 
     void
     on_write(
@@ -184,8 +179,6 @@ class websocket_session
                         &websocket_session::on_write,
                         derived().shared_from_this()));
     }
-
-
 
 public:
     // Start the asynchronous operation
@@ -253,6 +246,7 @@ public:
 
     void join(){
         state_->join(this);
+        state_->join_adv(this);
     }
 
     void send(boost::shared_ptr<std::string const> const& ss) override{
@@ -304,6 +298,7 @@ public:
 
     void join(){
         state_->join(this);
+        state_->join_adv(this);
     }
 
     void send(boost::shared_ptr<std::string const> const& ss) override{

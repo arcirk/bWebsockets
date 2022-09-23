@@ -1,6 +1,6 @@
 #include <utility>
 #include "../include/shared_state.hpp"
-#include "../include/listener.hpp"
+//#include "../include/listener.hpp"
 #include "../include/websocket_session.hpp"
 
 shared_state::shared_state() = default;
@@ -37,15 +37,31 @@ void shared_state::deliver(const std::string &message, subscriber *session) {
 
 }
 
-
 void shared_state::send(const std::string &message) {
 
-//    std::vector<boost::weak_ptr<plain_websocket_session*>> v;
+    std::vector<boost::weak_ptr<subscriber>> v;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        v.reserve(sessions_.size());
+        for(auto p : sessions_){
+            //auto sess = (plain_websocket_session*)(p.second);
+            v.emplace_back(p.second);
+        }
+//        for(auto const& wp : v)
+//            if(auto sp = wp.lock()){
+//                auto const ss = boost::make_shared<std::string const>(message);
+//                sp->send(ss);
+//            }
+    }
+
+
+//    std::vector<boost::weak_ptr<plain_websocket_session>> v;
 //    {
 //        std::lock_guard<std::mutex> lock(mutex_);
-//        v.reserve(sessions_.size());
-//        for(auto p : sessions_){
-//            v.emplace_back(p.second->get<plain_websocket_session*>());
+//        v.reserve(v_sessions_.size());
+//        for(auto p : v_sessions_){
+//            plain_websocket_session* sess = boost::get<plain_websocket_session*>(p.second);
+//            v.emplace_back(sess->weak_from_this());
 //        }
 //        for(auto const& wp : v)
 //            if(auto sp = wp.lock()){
@@ -53,19 +69,45 @@ void shared_state::send(const std::string &message) {
 //                sp->send(ss);
 //            }
 //    }
-//    std::vector<subscriber*> v;
+
+//    std::vector<boost::weak_ptr<websocket_session<plain_websocket_session>>> v;
+//    {
+//        std::lock_guard<std::mutex> lock(mutex_);
+//        v.reserve(plain_sessions_.size());
+//        for(auto p : plain_sessions_){
+//            //plain_websocket_session* sess = boost::get<plain_websocket_session*>(p.second);
+//            v.emplace_back(p.second->weak_from_this());
+//        }
+//        for(auto const& wp : v)
+//            if(auto sp = wp.lock()){
+//                auto const ss = boost::make_shared<std::string const>(message);
+//                sp->send(ss);
+//            }
+//    }
+//    std::vector<boost::weak_ptr<ssl_websocket_session>> v;
 //    {
 //        std::lock_guard<std::mutex> lock(mutex_);
 //        v.reserve(sessions_.size());
 //        for(auto p : sessions_){
-//            auto ww = p.second->get_ptr();
-//            v.emplace_back(p.second);
+//            //plain_websocket_session* sess = boost::get<plain_websocket_session*>(p.second);
+//            if(p.second->is_ssl()){
+//                auto pw = (ssl_websocket_session*)p.second;
+//                v.emplace_back(pw->shared_from_this());
+//            }
+//
 //        }
 //        for(auto const& wp : v)
-//            if(auto sp = wp->lock()){
+//            if(auto sp = wp.lock()){
 //                auto const ss = boost::make_shared<std::string const>(message);
 //                sp->send(ss);
 //            }
 //    }
 }
 
+void shared_state::join_adv(plain_websocket_session *session) {
+    //v_sessions_.insert(std::pair<boost::uuids::uuid const, vSessions>(session->uuid_session(), session));
+}
+
+void shared_state::join_adv(ssl_websocket_session *session) {
+    //v_sessions_.insert(std::pair<boost::uuids::uuid const, vSessions>(session->uuid_session(), session));
+}
