@@ -29,6 +29,21 @@ fail(beast::error_code ec, char const* what)
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
+class session_base{
+
+public:
+    template<class Derived>
+    Derived& derived()
+    {
+        return static_cast<Derived&>(*this);
+    }
+
+    virtual bool is_ssl() const = 0;
+
+    virtual bool started() const = 0;
+
+};
+
 template<class Derived>
 class session {
 
@@ -86,7 +101,7 @@ public:
     }
 };
 
-class plain_session : public std::enable_shared_from_this<plain_session>, public session<plain_session> {
+class plain_session : public std::enable_shared_from_this<plain_session>, public session<plain_session>, public session_base {
     websocket::stream<beast::tcp_stream> ws_;
     std::string host_;
     bool started_ = false;
@@ -355,8 +370,12 @@ public:
         return ws_.is_open();
     }
 
-    bool started() const{
+    bool started() const override{
         return started_;
+    }
+
+    bool is_ssl() const override{
+        return false;
     }
 
 private:
@@ -364,7 +383,7 @@ private:
 
 };
 
-class ssl_session : public std::enable_shared_from_this<ssl_session>, public session<ssl_session> {
+class ssl_session : public std::enable_shared_from_this<ssl_session>, public session<ssl_session>, public session_base {
     websocket::stream<
             beast::ssl_stream<beast::tcp_stream>> ws_;
     std::string host_;
@@ -661,14 +680,6 @@ public:
 
     }
 
-    bool started() const{
-        return started_;
-    }
-
-    bool is_open() const{
-        return ws_.is_open();
-    }
-
     void
     check_dead_line()
     {
@@ -688,6 +699,18 @@ public:
 
         dead_line_.async_wait(std::bind(&ssl_session::check_dead_line, this));
 
+    }
+
+    bool is_open() const{
+        return ws_.is_open();
+    }
+
+    bool started() const override{
+        return started_;
+    }
+
+    bool is_ssl()  const override{
+        return false;
     }
 
 private:

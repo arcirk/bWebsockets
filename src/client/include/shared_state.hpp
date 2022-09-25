@@ -9,12 +9,16 @@
 #include "callbacks.hpp"
 #include <boost/variant.hpp>
 
-class ssl_session;
-class plain_session;
+//template<class Derived>
+//class session;
+//class ssl_session;
+//class plain_session;
+
+class session_base;
 
 using namespace arcirk;
 
-typedef boost::variant<ssl_session*, plain_session*> current_session;
+//typedef boost::variant<ssl_session*, plain_session*> current_session;
 
 class shared_state {
     client::bClientData m_data;
@@ -24,8 +28,8 @@ public:
     explicit
     shared_state(const client::bClientData& param);
 
-    void on_connect(ssl_session* sess);
-    void on_connect(plain_session* sess);
+    void on_connect(session_base* sess);
+    //void on_connect(plain_session* sess);
     void on_message(const std::string& message);
     void on_stop();
     void on_error(const std::string &what, const std::string &err, int code);
@@ -38,8 +42,7 @@ public:
     void send(const std::string& message);
 
 private:
-    current_session session_;
-
+    session_base * session_;
 
 };
 

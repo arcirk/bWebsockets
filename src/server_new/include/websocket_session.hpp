@@ -4,22 +4,28 @@
 #include "http.hpp"
 #include "shared_state.hpp"
 #include <arcirk.hpp>
+#include <boost/pointer_cast.hpp>
+#include <boost/shared_ptr.hpp>
 
-//typedef boost::variant<plain_websocket_session *, ssl_websocket_session*> shared_type;
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <vector>
+#include <boost/asio/steady_timer.hpp>
 
 class subscriber{
 
 public:
 
-    virtual std::string user_name() const{
+    [[nodiscard]] virtual std::string user_name() const{
         return _user_name;
     }
 
-    virtual boost::uuids::uuid user_uuid() const {
+    [[nodiscard]] virtual boost::uuids::uuid user_uuid() const {
         return _user_uuid;
     }
 
-    virtual boost::uuids::uuid uuid_session() const {
+    [[nodiscard]] virtual boost::uuids::uuid uuid_session() const {
         return _uuid_session;
     }
 
@@ -29,7 +35,13 @@ public:
 
     virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
 
-    //virtual bool is_ssl() = 0;
+    virtual bool is_ssl() = 0;
+
+    template<class Derived>
+    Derived& derived()
+    {
+        return static_cast<Derived&>(*this);
+    }
 
 protected:
     std::string _user_name = UnknownUser;
@@ -38,14 +50,9 @@ protected:
 
 };
 
-// Echoes back all received WebSocket messages.
-// This uses the Curiously Recurring Template Pattern so that
-// the same code works with both SSL streams and regular sockets.
 template<class Derived>
 class websocket_session
 {
-    // Access the derived class, this is part of
-    // the Curiously Recurring Template Pattern idiom.
     Derived&
     derived()
     {
@@ -156,8 +163,6 @@ class websocket_session
         // Clear the buffer
         buffer_.consume(buffer_.size());
 
-        // Do another read
-        //do_read();
         do_write();
 
     }
@@ -191,7 +196,7 @@ public:
     }
 
     void
-    send(boost::shared_ptr<std::string const> const& ss)
+    send_message(boost::shared_ptr<std::string const> const& ss)
     {
         net::post(
                 derived().ws().get_executor(),
@@ -246,15 +251,26 @@ public:
 
     void join(){
         state_->join(this);
-        state_->join_adv(this);
     }
 
     void send(boost::shared_ptr<std::string const> const& ss) override{
-        super()->send(ss);
+       auto _super = boost::dynamic_pointer_cast<plain_websocket_session>(shared_from_this());
+        _super->send_message(ss);
+        //super()->send(ss);
+//        net::post(
+//                ws_.get_executor(),
+//                beast::bind_front_handler(
+//                        &websocket_session::on_send,
+//                        derived().shared_from_this(),
+//                        ss));
     }
 
     void deliver(const std::string& message){
         state_->deliver(message, this);
+    }
+
+    bool is_ssl() override{
+        return false;
     }
 };
 
@@ -298,15 +314,21 @@ public:
 
     void join(){
         state_->join(this);
-        state_->join_adv(this);
+//        state_->join_adv(this);
     }
 
     void send(boost::shared_ptr<std::string const> const& ss) override{
-        super()->send(ss);
+        //super()->send(ss);
+        auto _super = boost::dynamic_pointer_cast<ssl_websocket_session>(shared_from_this());
+        _super->send_message(ss);
     }
 
     void deliver(const std::string& message){
         state_->deliver(message, this);
+    }
+
+    bool is_ssl() override{
+        return true;
     }
 };
 
