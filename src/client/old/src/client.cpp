@@ -10,6 +10,8 @@
 #include <boost/locale.hpp>
 #include <boost/locale/generator.hpp>
 #include "common/root_certificates.hpp"
+#include "../../../client_test/include/client.hpp"
+
 
 using namespace arcirk;
 
@@ -415,4 +417,3 @@ void ws_client::set_certificates(ssl::context& ctx) {
 void ws_client::set_cert_file(const std::string &file) {
     cert_file = file;
 }
-

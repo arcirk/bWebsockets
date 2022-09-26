@@ -48,6 +48,7 @@ public:
 
     [[nodiscard]] virtual bool started() const = 0;
 
+    virtual void close(bool disable_notify) = 0;
 };
 
 template<class Derived>
@@ -127,17 +128,19 @@ public:
             beast::error_code ec,
             std::size_t bytes_transferred)
     {
+
+        boost::ignore_unused(bytes_transferred);
+
         if(ec){
             std::cerr << ec.value() << std::endl;
         }
 
-        if (ec == boost::asio::error::connection_reset){
-            return;
-        }
+        std::string err = ec.what();
+        std::string what = "on_write";
 
-        boost::ignore_unused(bytes_transferred);
-
-        if(ec == websocket::error::closed){
+        if (ec == boost::asio::error::connection_reset
+        || ec == websocket::error::closed){
+            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
@@ -178,54 +181,75 @@ public:
             derived().dead_line().cancel();
         }
 
-        if (ec == boost::asio::error::connection_reset){
-            std::cout << "session::on_read: " << "boost::asio::error::connection_reset" << std::endl;
-            return;
-        }else if( ec==boost::asio::error::eof){
-            derived().state()->on_error("session::on_read", "boost::asio::error::eof", ec.value());
-            //started_ = false;
-            return;
-        }else if( ec==websocket::error::no_connection){
-            std::cout << "session::on_read: " << "websocket::error::no_connection" << std::endl;
-            return;
-        }
+        std::string err = ec.what();
+        std::string what = "on_read";
 
-        if(ec == websocket::error::closed){
-            derived().state()->on_error("read","Сервер не доступен!", ec.value());
-            //started_ = false;
+        if (ec == boost::asio::error::connection_reset
+            || ec==boost::asio::error::eof
+            || ec==websocket::error::no_connection
+            || ec == websocket::error::closed){
+            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
+            started_ = false;
             return;
         }
 
-        if(ec.value() == 995){
-            std::string err = "I/O operation was aborted";
-            std::cerr << "session::on_read: " << err << std::endl;
-            //client_->error("read", err);
+        if(ec.value() == 995
+        || ec.value() == 2
+        || ec.value() == 109
+        || ec.value() == 125){
+            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
-        if(ec.value() == 2){
-            std::string err = ec.message();
-#ifdef _WINDOWS
-            err = "Соединение разорвано!";
-#endif
-            derived().state()->on_error("read", err, ec.value());
-            return;
-        }
+//        if (ec == boost::asio::error::connection_reset){
+//            std::cout << "session::on_read: " << "boost::asio::error::connection_reset" << std::endl;
+//            return;
+//        }else if( ec==boost::asio::error::eof){
+//            derived().state()->on_error("session::on_read", "boost::asio::error::eof", ec.value());
+//            //started_ = false;
+//            return;
+//        }else if( ec==websocket::error::no_connection){
+//            std::cout << "session::on_read: " << "websocket::error::no_connection" << std::endl;
+//            return;
+//        }
+//
+//        if(ec == websocket::error::closed){
+//            derived().state()->on_error("read","Сервер не доступен!", ec.value());
+//            //started_ = false;
+//            return;
+//        }
 
-        //125 : Операция отменена
-        if(ec.value() == 109 || ec.value() == 125){
-            std::string err = ec.message();
-#ifdef _WINDOWS
-            err = "Соединение разорвано другой стороной!";
-#endif
+//        if(ec.value() == 995){
+//            std::string err = "I/O operation was aborted";
+//            std::cerr << "session::on_read: " << err << std::endl;
+//            //client_->error("read", err);
+//            return;
+//        }
+//
+//        if(ec.value() == 2){
+//            std::string err = ec.message();
+//#ifdef _WINDOWS
+//            err = "Соединение разорвано!";
+//#endif
+//            derived().state()->on_error("read", err, ec.value());
+//            return;
+//        }
+//
+//        //125 : Операция отменена
+//        if(ec.value() == 109 || ec.value() == 125){
+//            std::string err = ec.message();
+//#ifdef _WINDOWS
+//            err = "Соединение разорвано другой стороной!";
+//#endif
+//
+//            if (!derived().ws().is_open())
+//                return;
+//
+//            derived().state()->on_error("read", err, ec.value());
+//
+//            return;
+//        }
 
-            if (!derived().ws().is_open())
-                return;
-
-            derived().state()->on_error("read", err, ec.value());
-
-            return;
-        }
         if(ec)
             return fail(ec, "read");
 
@@ -369,6 +393,9 @@ private:
 
         beast::get_lowest_layer(derived().ws()).expires_after(std::chrono::seconds(30));
         derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
+
+        derived().connect(ec, ep);
+
 //        if(derived().is_ssl()){
 //            if (!SSL_set_tlsext_host_name(
 //                    derived().next_layer().native_handle(),
@@ -474,14 +501,19 @@ public:
 
         std::cout << "session::on_connect: successful connection!" << std::endl;
 
-        //state_->on_connect(this);
+        state_->on_connect(this);
 
         started_ = true;
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
-        _super->start_write();
+        //_super->start_write();
         _super->start_read();
 
+    }
+
+    void close(bool disable_notify) override{
+        auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
+        _super->stop();
     }
 };
 
@@ -596,15 +628,20 @@ public:
 
         //std::cout << "on_handshake" << std::endl;
 
-        //derived().state()->on_connect(this);
+        state_->on_connect(this);
 
         started_ = true;
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
 
-        _super->start_write();
+        //_super->start_write();
         _super->start_read();
 
+    }
+
+    void close(bool disable_notify) override{
+        auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
+        _super->stop();
     }
 };
 
@@ -662,7 +699,7 @@ public:
         if (ec)
             return fail(ec, "resolve");
 
-        //std::cout << "on_resolve" << std::endl;
+        std::cout << "on_resolve" << std::endl;
 
 
         if (_is_ssl)

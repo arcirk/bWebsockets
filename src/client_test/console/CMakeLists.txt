@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 3.19)
-project(ws_client VERSION 1.0.1 DESCRIPTION "arcirk websocket client")
+cmake_minimum_required(VERSION 3.21)
+
+if(MSVC)
+set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+endif()
+
+project(ws_client_console)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
-set(TARGET ws_client)
+set(TARGET ws_client_console)
 
 if(MSVC)
     add_compile_options(
@@ -19,6 +23,12 @@ if (UNIX)
 endif()
 
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+
+if(WIN32)
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+#    add_definitions(/MTd)
+endif()
 
 if (WIN32)
     set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
@@ -40,7 +50,10 @@ if (WIN32)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:MSVCRT")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:MSVCRT")
     set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:MSVCRTD")
-endif ()
+
+endif()
+
+add_definitions (-DBOOST_ALL_STATIC_LINK=1)
 
 if (MSVC)
     set (CMAKE_VERBOSE_MAKEFILE FALSE)
@@ -92,39 +105,31 @@ else()
     endif ()
 endif()
 
+
 SET(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/x64/)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-set(ARCIRK_INCLUDE ../arcirk)
-set(ARCIRK_LIB ../arcirk/cmake-build-debug)
+set(ARCIRK_INCLUDE ../../arcirk)
+set(ARCIRK_LIB ../../arcirk/cmake-build-debug)
+set(BCLIENT_INCLUDE ../../client_test/include)
+set(BCLIENT_LIB ../../client_test/cmake-build-debug)
 
-file(GLOB CPPS "src/*.cpp"
-        CPPH "include/*.hpp")
-
-add_library(${TARGET}
-        ../arcirk/beast.hpp
-        ../arcirk/net.hpp
-        ${CPPS}
-        ${CPPH}
+add_executable(${TARGET}
+        main.cpp
+        ../../arcirk/beast.hpp
+        ../../arcirk/net.hpp
         )
-
-
-#if (WIN32)
-#    set(CMAKE_SUPPRESS_REGENERATION 1)
-#    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-#    target_compile_definitions(${TARGET} PRIVATE _WINDOWS
-#            _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-#    target_compile_options(${TARGET} PRIVATE /utf-8)
-#endif ()
 
 target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
+        ${BCLIENT_INCLUDE}
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
         Boost::system
@@ -133,10 +138,11 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
+        ws_client
         nlohmann_json::nlohmann_json
         )
 
 if (WIN32)
-    target_link_libraries(${TARGET} PRIVATE
-            bcrypt.lib)
+target_link_libraries(${TARGET} PRIVATE
+        bcrypt.lib)
 endif()
