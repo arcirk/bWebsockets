@@ -150,7 +150,11 @@ namespace arcirk{
     }
 
     std::string to_utf(const std::string& source){
+#ifdef _WINDOWS
         return boost::locale::conv::to_utf<char>(source, "Windows-1251");
+#else
+        return source;
+#endif
     }
 
     std::string get_sha1(const std::string& p_arg)

@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
-include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+if (MSVC)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+endif ()
 
 project(ws_addin)
 
@@ -137,12 +139,22 @@ target_link_libraries(${TARGET} PRIVATE
 
 target_compile_definitions(${TARGET} PRIVATE UNICODE _UNICODE)
 
+if(MSVC)
 target_include_directories(${TARGET} PRIVATE
         include
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
         ${BCLIENT_INCLUDE}
         )
+else()
+    target_include_directories(${TARGET} PRIVATE
+            include
+            ${Boost_INCLUDE_DIRS}
+            ${ARCIRK_INCLUDE}
+            ${BCLIENT_INCLUDE}
+            -static-libstdc++
+            )
+endif()
 
 set (LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 set (EXECUTABLE_OUTPUT_PATH ${LIBRARY_OUTPUT_PATH})
@@ -167,7 +179,7 @@ if (UNIX)
         set(CMAKE_C_FLAGS "-m64 ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-m64 ${CMAKE_CXX_FLAGS}")
     endif ()
-    target_link_libraries(${PROJECT_NAME} -static-libstdc++)
+#    target_link_libraries(${PROJECT_NAME} -static-libstdc++)
 else(UNIX)
     set(CMAKE_SUPPRESS_REGENERATION 1)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
