@@ -133,7 +133,7 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-        bclient
+        ws_client
         )
 
 

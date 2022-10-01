@@ -155,8 +155,6 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        std::cout << "on_message" << std::endl;
-
         derived().state()->on_message(beast::buffers_to_string(buffer_.data()));
 
         buffer_.consume(buffer_.size());
@@ -185,7 +183,7 @@ public:
         if ( !started_) return;
         started_ = false;
         derived().dead_line().cancel();
-        //derived().heartbeat_timer().cancel();
+        derived().heartbeat_timer().cancel();
 
         derived().ws().async_close(websocket::close_code::normal,
                         beast::bind_front_handler(
@@ -213,9 +211,9 @@ public:
 
         deliver(ss->c_str());
 
-//        //сбрасываем таймер для отправки следующего сообщения через секунду
-//        derived().heartbeat_timer().expires_after(std::chrono::seconds(0));
-//        derived().heartbeat_timer().async_wait(std::bind(&session::start_write,  derived().shared_from_this()));
+        //сбрасываем таймер для отправки следующего сообщения через секунду
+        derived().heartbeat_timer().expires_after(std::chrono::seconds(0));
+        derived().heartbeat_timer().async_wait(std::bind(&session::start_write,  derived().shared_from_this()));
         start_write();
     }
 
@@ -241,6 +239,8 @@ public:
     }
 
     void run(tcp::resolver::results_type results){
+        deliver("\n");
+        derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
         do_connect(results);
     }
 
@@ -262,9 +262,18 @@ private:
     }
 
     void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep){
+
+        if (ec.value() == 111 || ec.value() == 10061) { //connection refused
+            derived().state()->on_error("on_connect", arcirk::to_utf(ec.message()), ec.value());
+            return;
+        }
+
         if(ec){
             return fail(ec, "connect");
         }
+        //отключаем таймаут, tcp_stream имеет свою систему таймаута
+        beast::get_lowest_layer(derived().ws()).expires_never();
+
         derived().ws().set_option(
                 websocket::stream_base::timeout::suggested(
                         beast::role_type::client));
@@ -291,10 +300,7 @@ private:
 
         host_ += ':' + std::to_string(ep.port());
 
-        deliver("\n");
-
         beast::get_lowest_layer(derived().ws()).expires_after(std::chrono::seconds(30));
-        derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
 
         derived().connect(ec, ep);
 
@@ -350,9 +356,9 @@ public:
     connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
     {
         ws_.async_handshake(host_, "/",
-                                       beast::bind_front_handler(
-                                               &plain_session::on_handshake,
-                                               shared_from_this()));
+                           beast::bind_front_handler(
+                                   &plain_session::on_handshake,
+                                   shared_from_this()));
     }
 
     void
@@ -367,7 +373,6 @@ public:
                 return fail(ec, "handshake");
         }
 
-
         std::cout << "session::on_connect: successful connection!" << std::endl;
 
         state_->on_connect(this);
@@ -375,7 +380,6 @@ public:
         started_ = true;
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
-        //_super->start_write();
         _super->start_read();
 
     }
@@ -475,8 +479,6 @@ public:
                             " websocket-client-async-ssl");
                 }));
 
-        // std::cout << "on_ssl_handshake" << std::endl;
-
         // Perform the websocket handshake
         ws_.async_handshake(host_, "/",
                                        beast::bind_front_handler(
@@ -489,15 +491,12 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
-        //std::cout << "on_handshake" << std::endl;
-
         state_->on_connect(this);
 
         started_ = true;
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
 
-        //_super->start_write();
         _super->start_read();
 
     }

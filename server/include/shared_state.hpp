@@ -99,8 +99,7 @@ class shared_state
 {
     std::map<boost::uuids::uuid const, subscriber*> sessions_;
     std::mutex mutex_;
-//    std::map<boost::uuids::uuid const, vSessions> v_sessions_;
-//    std::map<boost::uuids::uuid, websocket_session<plain_websocket_session>*> plain_sessions_;
+
 public:
     explicit
     shared_state();
@@ -108,9 +107,6 @@ public:
     ~shared_state()= default;
 
     void join(subscriber* session);
-
-//    void join_adv(plain_websocket_session* session);
-//    void join_adv(ssl_websocket_session* session);
 
     void leave(const boost::uuids::uuid& session_uuid, const std::string& user_name);
     void deliver(const std::string& message, subscriber* session);

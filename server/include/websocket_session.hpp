@@ -143,7 +143,8 @@ class websocket_session
 
         queue_.erase(queue_.begin());
 
-        derived().ws().async_write(
+        if(!queue_.empty())
+            derived().ws().async_write(
                 net::buffer(*queue_.front()),
                 beast::bind_front_handler(
                         &websocket_session::on_write,
@@ -206,11 +207,11 @@ public:
                         ss));
     }
 
-protected:
-    auto super()
-    {
-        return this;
-    }
+//protected:
+//    auto super()
+//    {
+//        return this;
+//    }
 };
 
 //------------------------------------------------------------------------------

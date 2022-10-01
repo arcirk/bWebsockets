@@ -23,7 +23,7 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
 
 void shared_state::deliver(const std::string &message, subscriber *session) {
 
-    std::string result;
+    std::string result = message;
 
     if (result == "\n")
         return;
@@ -33,11 +33,10 @@ void shared_state::deliver(const std::string &message, subscriber *session) {
 
     std::cout << "message: " << message << std::endl;
 
-    //send<>(message);
     if(!session->is_ssl())
-        send<plain_websocket_session>(message);
+        send<plain_websocket_session>(result);
     else
-        send<ssl_websocket_session>(message);
+        send<ssl_websocket_session>(result);
 
 }
 
