@@ -104,7 +104,7 @@ static void
 handle_request(
         beast::string_view doc_root,
         http::request<Body, http::basic_fields<Allocator>>&& req,
-        Send&& send)
+        Send&& send, bool unauthorized = false)
 {
     // Returns a bad request response
     auto const bad_request =
@@ -145,6 +145,18 @@ handle_request(
                 return res;
             };
 
+    auto const server_authorization_error =
+            [&req](beast::string_view what)
+            {
+                http::response<http::string_body> res{http::status::unauthorized, req.version()};
+                res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                res.set(http::field::content_type, "text/html");
+                res.keep_alive(req.keep_alive());
+                res.body() = "An error occurred: '" + std::string(what) + "'";
+                res.prepare_payload();
+                return res;
+            };
+
     // Make sure we can handle the method
     if( req.method() != http::verb::get &&
         req.method() != http::verb::head)
@@ -173,6 +185,9 @@ handle_request(
     // Handle an unknown error
     if(ec)
         return send(server_error(ec.message()));
+
+    if(unauthorized)
+        return send(server_authorization_error("Incorrect username or password"));
 
     // Cache the size since we need it after the move
     auto const size = body.size();

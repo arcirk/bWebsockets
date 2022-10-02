@@ -184,10 +184,11 @@ namespace arcirk {
     struct Uri
     {
     public:
-        std::string QueryString, Path, Protocol, Host, Port;
+        std::string QueryString, Path, Protocol, Host, Port, BasicAuth;
 
         static Uri Parse(const std::string &uri)
         {
+
             Uri result;
 
             typedef std::string::const_iterator iterator_t;
@@ -218,11 +219,28 @@ namespace arcirk {
             else
                 protocolEnd = uri.begin();  // no protocol
 
+            //basic auth
+            iterator_t authStart = protocolEnd;
+            iterator_t authEnd = std::find(authStart, uriEnd, '@');
+            if(authStart != authEnd){
+                std::string auth_string = std::string(authStart, authEnd);
+                T_vec v_auth = split(auth_string, ":");
+                std::string usr = v_auth[0];
+                std::string pwd;
+                if(v_auth.size() > 1){
+                    pwd = v_auth[1];
+                }
+                std::string base64 = base64::base64_encode(usr + ":" + pwd);
+                result.BasicAuth = std::string("Basic ") + base64;
+                authEnd += 1;
+            }else
+                authEnd = authStart;
+
             // host
-            iterator_t hostStart = protocolEnd;
+            iterator_t hostStart = authEnd;
             iterator_t pathStart = std::find(hostStart, uriEnd, '/');  // get pathStart
 
-            iterator_t hostEnd = std::find(protocolEnd,
+            iterator_t hostEnd = std::find(authEnd,
                                            (pathStart != uriEnd) ? pathStart : queryStart,
                                            ':');  // check for port
 
@@ -282,6 +300,16 @@ namespace arcirk {
     };
 #endif
 
+    namespace command_line_parser{
+        class cmd_parser{
+        public:
+            cmd_parser (int &argc, char **argv);
+            const std::string& option(const std::string &option) const;
+            bool option_exists(const std::string &option) const;
+        private:
+            std::vector <std::string> tokens;
+        };
+    }
 }
 
 #endif //ARCIRK_LIBRARY_H

@@ -23,8 +23,6 @@
 #include <boost/pointer_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
-//class shared_state;
-
 namespace ssl = boost::asio::ssl;
 
 using boost::asio::steady_timer;
@@ -113,8 +111,6 @@ public:
 
         if ( !derived().started()) return;
 
-        derived().dead_line().expires_after(std::chrono::seconds(30));
-
         derived().ws().async_read(
                 buffer_,
                 beast::bind_front_handler(
@@ -127,10 +123,6 @@ public:
             std::size_t bytes_transferred)
     {
         boost::ignore_unused(bytes_transferred);
-
-        if(ec){
-            derived().dead_line().cancel();
-        }
 
         std::string err = ec.what();
         std::string what = "on_read";
@@ -170,7 +162,7 @@ public:
         if (msg == "\n" || msg == "pong"){
             output_queue_.push_back("\n");
         }else
-            output_queue_.push_back(msg + "\n");
+            output_queue_.push_back(msg); // + "\n"
     }
 
     [[nodiscard]] bool is_open() const{
@@ -182,8 +174,6 @@ public:
     {
         if ( !started_) return;
         started_ = false;
-        derived().dead_line().cancel();
-        derived().heartbeat_timer().cancel();
 
         derived().ws().async_close(websocket::close_code::normal,
                         beast::bind_front_handler(
@@ -211,36 +201,12 @@ public:
 
         deliver(ss->c_str());
 
-        //сбрасываем таймер для отправки следующего сообщения через секунду
-        derived().heartbeat_timer().expires_after(std::chrono::seconds(0));
-        derived().heartbeat_timer().async_wait(std::bind(&session::start_write,  derived().shared_from_this()));
         start_write();
-    }
-
-    void
-    check_dead_line()
-    {
-
-        if(!derived().ws().is_open())
-            return;
-
-        if (derived().dead_line().expiry() <= steady_timer::clock_type::now())
-        {
-            derived().ws().async_close(websocket::close_code::normal,
-                            beast::bind_front_handler(
-                                    &session::on_close,
-                                    derived().shared_from_this()));
-
-            derived().dead_line().expires_at((steady_timer::time_point::max)());
-        }
-
-        derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
-
     }
 
     void run(tcp::resolver::results_type results){
         deliver("\n");
-        derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
+        //derived().dead_line().async_wait(std::bind(&session::check_dead_line, derived().shared_from_this()));
         do_connect(results);
     }
 
@@ -277,7 +243,7 @@ private:
         derived().ws().set_option(
                 websocket::stream_base::timeout::suggested(
                         beast::role_type::client));
-        std::string __auth = "";
+        std::string __auth = derived().state()->basic_auth_string();
         // Set a decorator to change the User-Agent of the handshake
         derived().ws().set_option(websocket::stream_base::decorator(
                 [&__auth](websocket::request_type& req)
@@ -300,8 +266,6 @@ private:
 
         host_ += ':' + std::to_string(ep.port());
 
-        beast::get_lowest_layer(derived().ws()).expires_after(std::chrono::seconds(30));
-
         derived().connect(ec, ep);
 
     }
@@ -310,15 +274,11 @@ private:
 class plain_session : public std::enable_shared_from_this<plain_session>, public session<plain_session>, public session_base {
     websocket::stream<beast::tcp_stream> ws_;
     boost::shared_ptr<shared_state> state_;
-    steady_timer heartbeat_timer_;
-    steady_timer dead_line_;
 
 public:
     plain_session(net::io_context& ioc, const std::string& host, boost::shared_ptr<shared_state> sharedPtr)
             : ws_(net::make_strand(ioc))
             , state_(std::move(sharedPtr))
-            , heartbeat_timer_(ioc)
-            , dead_line_(ioc)
     {host_ = host;}
 
     websocket::stream<beast::tcp_stream>&
@@ -338,13 +298,6 @@ public:
 
     bool started() const override{
         return started_;
-    }
-
-    steady_timer& dead_line(){
-        return dead_line_;
-    }
-    steady_timer& heartbeat_timer(){
-        return heartbeat_timer_;
     }
 
     void send_message(boost::shared_ptr<std::string const> const& ss) override{
@@ -367,7 +320,6 @@ public:
 
         if(ec){
             if(ec.value() == 20){
-                //std::cerr << arcirk::local_8bit("Подключение было отклонено удаленным узлом. Ошибка авторизации или сбой на сервере.") << std::endl;
                 return;
             }else
                 return fail(ec, "handshake");
@@ -397,15 +349,11 @@ class ssl_session : public std::enable_shared_from_this<ssl_session>, public ses
     beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
     bool started_ = false;
-    steady_timer heartbeat_timer_;
-    steady_timer dead_line_;
 
 public:
     ssl_session(net::io_context& ioc, ssl::context& ctx, const std::string& host, boost::shared_ptr<shared_state> sharedPtr)
             : ws_(net::make_strand(ioc), ctx)
             , state_(std::move(sharedPtr))
-            , heartbeat_timer_(ioc)
-            , dead_line_(ioc)
     {host_ = host;}
 
     bool is_ssl() const override{
@@ -425,13 +373,6 @@ public:
     boost::shared_ptr<shared_state>&
     state(){
         return state_;
-    }
-
-    steady_timer& dead_line(){
-        return dead_line_;
-    }
-    steady_timer& heartbeat_timer(){
-        return heartbeat_timer_;
     }
 
     void send_message(boost::shared_ptr<std::string const> const& ss) override{
@@ -489,7 +430,7 @@ public:
     on_handshake(beast::error_code ec)
     {
         if(ec)
-            return fail(ec, "handshake");
+            return fail(ec, "handshake (ssl)");
 
         state_->on_connect(this);
 

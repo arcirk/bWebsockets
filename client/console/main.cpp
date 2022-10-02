@@ -200,7 +200,7 @@ main(int argc, char* argv[]){
 
         if(port <= 0)
             port = 8080;
-        url = "ws://" + host + ":" + boost::to_string(port);
+        url = "wss://" + host + ":" + boost::to_string(port);
     }
 
 

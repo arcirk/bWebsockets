@@ -167,9 +167,35 @@ public:
         if(ec)
             return fail(ec, "read");
 
+        //    std::string auth = req[http::field::authorization].to_string();
+//
+//    std::cout << "state_->use_authorization:" << state_->use_authorization() << std::endl;
+//
+//    //проверка авторизации
+//    if(state_->use_authorization()){
+//        if(!state_->verify_user(auth)){
+//            std::cerr << "user authorization failed" << std::endl;
+//            return;
+//        }else
+//            std::cout << arcirk::local_8bit("Проверка авторизации прошла успешно!") << std::endl;
+//    }
+
+        //auto req = parser_->get();
+
         // See if it is a WebSocket Upgrade
         if(websocket::is_upgrade(parser_->get()))
         {
+            auto req = parser_->release();
+
+            if(state_->use_authorization()){
+                std::string auth = req[http::field::authorization].to_string();
+                if(!state_->verify_connection(auth)){
+                    std::cerr << "failed authorization" << std::endl;
+                    return handle_request(*doc_root_, parser_->release(), queue_, true);
+                }
+
+            }
+
             // Disable the timeout.
             // The websocket::stream uses its own timeout settings.
             beast::get_lowest_layer(derived().stream()).expires_never();
@@ -178,7 +204,7 @@ public:
             // of both the socket and the HTTP request.
             return make_websocket_session(
                     derived().release_stream(),
-                    parser_->release(), state_);
+                    req, state_);
         }
 
         // Send the response

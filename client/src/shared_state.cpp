@@ -61,3 +61,11 @@ void shared_state::send(const boost::shared_ptr<const std::string> &ss) {
         session_base_->send_message(ss);
     }
 }
+
+void shared_state::set_basic_auth_string(const std::string &value) {
+    basic_auth_string_ = value;
+}
+
+std::string shared_state::basic_auth_string() const {
+    return basic_auth_string_;
+}

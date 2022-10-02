@@ -192,6 +192,14 @@ public:
     void
     run(http::request<Body, http::basic_fields<Allocator>> req)
     {
+//        if(derived().state()->use_authorization()){
+//            std::string auth = req[http::field::authorization].to_string();
+//            if(!state_->verify_connection(auth)){
+//                std::cerr << "failed authorization" << std::endl;
+//                return handle_request(*doc_root_, parser_->release(), queue_, true);
+//            }
+//
+//        }
         // Accept the WebSocket upgrade request
         do_accept(std::move(req));
     }

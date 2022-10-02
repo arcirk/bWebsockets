@@ -39,6 +39,7 @@ void websocket_client::start(arcirk::Uri &url) {
     bool _ssl = url.Protocol == "wss";
     set_certificates(ctx_);
     state_ = boost::make_shared<shared_state>();
+    state_->set_basic_auth_string(url.BasicAuth);
     state_->connect(client::bClientEvent::wsMessage, (callback_message)std::bind(&websocket_client::on_message, this, std::placeholders::_1));
     state_->connect(client::bClientEvent::wsStatusChanged, (callback_status)std::bind(&websocket_client::on_status_changed, this, std::placeholders::_1));
     state_->connect(client::bClientEvent::wsError, (callback_error)std::bind(&websocket_client::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
