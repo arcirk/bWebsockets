@@ -243,16 +243,17 @@ private:
         derived().ws().set_option(
                 websocket::stream_base::timeout::suggested(
                         beast::role_type::client));
-        std::string __auth = derived().state()->basic_auth_string();
+
+        std::string _auth = derived().state()->basic_auth_string();
         // Set a decorator to change the User-Agent of the handshake
         derived().ws().set_option(websocket::stream_base::decorator(
-                [&__auth](websocket::request_type& req)
+                [&_auth](websocket::request_type& req)
                 {
                     req.set(http::field::user_agent,
                             std::string(BOOST_BEAST_VERSION_STRING) +
                             " arcirk-client-async");
-                    if(!__auth.empty()){
-                        req.set(http::field::authorization, __auth);
+                    if(!_auth.empty()){
+                        req.set(http::field::authorization, _auth);
                     }
                 }));
 

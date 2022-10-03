@@ -51,6 +51,8 @@ public:
             return;
         }
 
+        std::cout << "start server listen " << endpoint.address().to_string() << " " << endpoint.port() << " ..." << std::endl;
+
         // Start listening for connections
         acceptor_.listen(
                 net::socket_base::max_listen_connections, ec);
@@ -65,6 +67,7 @@ public:
     void
     run()
     {
+        std::cout << "server run" << std::endl;
         do_accept();
     }
 
@@ -72,6 +75,7 @@ private:
     void
     do_accept()
     {
+
         // The new connection gets its own strand
         acceptor_.async_accept(
                 net::make_strand(ioc_),

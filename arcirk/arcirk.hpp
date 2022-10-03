@@ -222,7 +222,7 @@ namespace arcirk {
             //basic auth
             iterator_t authStart = protocolEnd;
             iterator_t authEnd = std::find(authStart, uriEnd, '@');
-            if(authStart != authEnd){
+            if(authEnd != uriEnd){
                 std::string auth_string = std::string(authStart, authEnd);
                 T_vec v_auth = split(auth_string, ":");
                 std::string usr = v_auth[0];

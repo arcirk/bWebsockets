@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/bind.hpp>
+
+using boost::asio::steady_timer;
 
 class subscriber{
 
@@ -37,6 +40,10 @@ public:
 
     virtual bool is_ssl() = 0;
 
+    virtual bool authorized() const{
+        return authorized_;
+    };
+
     template<class Derived>
     Derived& derived()
     {
@@ -47,7 +54,7 @@ protected:
     std::string _user_name = UnknownUser;
     boost::uuids::uuid _user_uuid{};
     boost::uuids::uuid _uuid_session{};
-
+    bool authorized_ = false;
 };
 
 template<class Derived>
@@ -98,8 +105,62 @@ class websocket_session
 
         derived().set_uuid_session(arcirk::uuids::random_uuid());
         derived().join();
+        if(derived().state()->use_authorization() && !derived().authorized()){
+            //Запускаем таймер ожидания авторизации
+            derived().dead_line().expires_after(std::chrono::seconds(60));
+            derived().dead_line().async_wait(boost::bind(&websocket_session::check_dead_line, derived().shared_from_this()));
+        }
         // Read a message
         do_read();
+    }
+
+    void
+    check_dead_line()
+    {
+//        if(this->last_error < 0)
+//            return;
+
+        if (derived().authorized()){
+            derived().dead_line().cancel();
+        }else{
+            if (derived().dead_line().expiry() <= steady_timer::clock_type::now())
+            {
+                std::cerr << arcirk::local_8bit("Превышено время на авторизацию! Отключение клиента...") << std::endl;
+                derived().ws().async_close(websocket::close_code::normal,
+                                beast::bind_front_handler(
+                                        &websocket_session::on_close,
+                                        derived().shared_from_this()));
+
+                derived().dead_line().expires_at((steady_timer::time_point::max)());
+                derived().dead_line().cancel();
+                return;
+            }
+            // Put the actor back to sleep.
+            derived().dead_line().async_wait(std::bind(&websocket_session::check_dead_line, derived().shared_from_this()));
+        }
+
+    }
+
+    void
+    on_close(beast::error_code ec)
+    {
+        if(ec)
+            return fail(ec, "close");
+
+        // If we get here then the connection is closed gracefully
+
+        // The make_printable() function helps print a ConstBufferSequence
+        std::cout << beast::make_printable(buffer_.data()) << std::endl;
+    }
+
+    void close() {
+
+        derived().dead_line().cancel();
+
+        derived().ws().async_close(websocket::close_code::normal,
+                        beast::bind_front_handler(
+                                &websocket_session::on_close,
+                                derived().shared_from_this()));
     }
 
     void
@@ -231,15 +292,17 @@ class plain_websocket_session
 {
     websocket::stream<beast::tcp_stream> ws_;
     boost::shared_ptr<shared_state> state_;
-
+    steady_timer dead_line_;
 public:
     // Create the session
     explicit
     plain_websocket_session(
-            beast::tcp_stream&& stream, boost::shared_ptr<shared_state> sharedPtr)
+            beast::tcp_stream&& stream, boost::shared_ptr<shared_state> sharedPtr, bool is_http_authorization)
             : ws_(std::move(stream))
             , state_(std::move(sharedPtr))
+            , dead_line_(stream.socket().get_executor())
     {
+        authorized_ = is_http_authorization;
     }
 
     ~plain_websocket_session(){
@@ -256,6 +319,11 @@ public:
     boost::shared_ptr<shared_state>
     state(){
         return state_;
+    }
+
+    steady_timer&
+    dead_line(){
+        return dead_line_;
     }
 
     void join(){
@@ -293,15 +361,17 @@ class ssl_websocket_session
     websocket::stream<
     beast::ssl_stream<beast::tcp_stream>> ws_;
     boost::shared_ptr<shared_state> state_;
-
+    steady_timer dead_line_;
 public:
     // Create the ssl_websocket_session
     explicit
     ssl_websocket_session(
-            beast::ssl_stream<beast::tcp_stream>&& stream, boost::shared_ptr<shared_state> sharedPtr)
+            beast::ssl_stream<beast::tcp_stream>&& stream, boost::shared_ptr<shared_state> sharedPtr, bool is_http_authorization)
             : ws_(std::move(stream))
             , state_(std::move(sharedPtr))
+            , dead_line_(stream.next_layer().socket().get_executor())
     {
+        authorized_ = is_http_authorization;
     }
 
     ~ssl_websocket_session(){
@@ -339,6 +409,11 @@ public:
     bool is_ssl() override{
         return true;
     }
+
+    steady_timer&
+    dead_line(){
+        return dead_line_;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -347,20 +422,20 @@ template<class Body, class Allocator>
 void
 make_websocket_session(
         beast::tcp_stream stream,
-        http::request<Body, http::basic_fields<Allocator>> req, boost::shared_ptr<shared_state> sharedPtr)
+        http::request<Body, http::basic_fields<Allocator>> req, boost::shared_ptr<shared_state> sharedPtr, bool is_http_authorization)
 {
     std::make_shared<plain_websocket_session>(
-            std::move(stream), std::move(sharedPtr))->run(std::move(req));
+            std::move(stream), std::move(sharedPtr), is_http_authorization)->run(std::move(req));
 }
 
 template<class Body, class Allocator>
 void
 make_websocket_session(
         beast::ssl_stream<beast::tcp_stream> stream,
-        http::request<Body, http::basic_fields<Allocator>> req, boost::shared_ptr<shared_state> sharedPtr)
+        http::request<Body, http::basic_fields<Allocator>> req, boost::shared_ptr<shared_state> sharedPtr, bool is_http_authorization)
 {
     std::make_shared<ssl_websocket_session>(
-            std::move(stream), std::move(sharedPtr))->run(std::move(req));
+            std::move(stream), std::move(sharedPtr), is_http_authorization)->run(std::move(req));
 }
 
 

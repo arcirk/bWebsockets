@@ -167,34 +167,21 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        //    std::string auth = req[http::field::authorization].to_string();
-//
-//    std::cout << "state_->use_authorization:" << state_->use_authorization() << std::endl;
-//
-//    //проверка авторизации
-//    if(state_->use_authorization()){
-//        if(!state_->verify_user(auth)){
-//            std::cerr << "user authorization failed" << std::endl;
-//            return;
-//        }else
-//            std::cout << arcirk::local_8bit("Проверка авторизации прошла успешно!") << std::endl;
-//    }
+        auto req = parser_->get();
+        bool http_authorization = false;
 
-        //auto req = parser_->get();
+        if(state_->use_authorization()){
+            std::string auth = req[http::field::authorization].to_string();
+            http_authorization = state_->verify_connection(auth);
+            if(!http_authorization){
+                std::cerr << "failed http authorization" << std::endl;
+            }
+        }
 
         // See if it is a WebSocket Upgrade
-        if(websocket::is_upgrade(parser_->get()))
+        if(websocket::is_upgrade(req))
         {
-            auto req = parser_->release();
-
-            if(state_->use_authorization()){
-                std::string auth = req[http::field::authorization].to_string();
-                if(!state_->verify_connection(auth)){
-                    std::cerr << "failed authorization" << std::endl;
-                    return handle_request(*doc_root_, parser_->release(), queue_, true);
-                }
-
-            }
+            //auto req = parser_->release();
 
             // Disable the timeout.
             // The websocket::stream uses its own timeout settings.
@@ -204,7 +191,11 @@ public:
             // of both the socket and the HTTP request.
             return make_websocket_session(
                     derived().release_stream(),
-                    req, state_);
+                    parser_->release(), state_, http_authorization);
+        }else{
+            if(state_->use_authorization()){
+                return handle_request(*doc_root_, parser_->release(), queue_, true);
+            }
         }
 
         // Send the response

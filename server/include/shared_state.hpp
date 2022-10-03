@@ -70,6 +70,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (bool, UseAuthorization)
                 (std::string, ApplicationProfile)
                 (int, ThreadsCount)
+                (std::string, Version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -172,8 +173,11 @@ public:
     bool use_authorization() const;
 
     bool verify_connection(const std::string& basic_auth);
+
 private:
     public_struct::server_settings sett;
+
+    bool verify_auth(const std::string& usr, const std::string& pwd) const;
 
 };
 
