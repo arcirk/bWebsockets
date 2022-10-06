@@ -203,6 +203,10 @@ main(int argc, char* argv[]){
         url = "wss://" + host + ":" + boost::to_string(port);
     }
 
+    if(!_usr.empty())
+        client_param.user_name = _usr;
+    if(!_pwd.empty())
+        client_param.password = _pwd;
 
     std::cout << url << std:: endl;
 
@@ -246,6 +250,8 @@ main(int argc, char* argv[]){
         else if (line == "send")
         {
             m_client->send_message("test message");
+        }else{
+            m_client->send_message(line);
         }
     }
     return EXIT_SUCCESS;

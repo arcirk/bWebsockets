@@ -28,12 +28,17 @@ public:
     void send(boost::shared_ptr<std::string const> const& ss);
 
     void set_basic_auth_string(const std::string& value);
-   std::string basic_auth_string() const;
+
+    std::string basic_auth_string() const;
+
+    void command_to_server(const std::string& command, const std::string& param = "");
 
 private:
     session_base * session_base_;
     client::bClientData m_data;
     std::string basic_auth_string_;
+
+
 
 };
 

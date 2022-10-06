@@ -94,14 +94,14 @@ namespace arcirk {
 
     class bVariant {
     public:
-        bVariant(const std::string &val) : value(val) {}
-        bVariant(const char *val) : value(std::string(val)) {}
-        bVariant(long int val) : value((long int) val) {}
-        bVariant(double val) : value((double) val) {}
-        bVariant(int val) : value((long int) val) {}
-        bVariant(bool val) : value((bool) val) {}
-        bVariant(boost::uuids::uuid val) : value(val) {}
-        bVariant(std::vector<BYTE> val) : value(val) {}
+        explicit bVariant(const std::string &val) : value(val) {}
+        explicit bVariant(const char *val) : value(std::string(val)) {}
+        explicit bVariant(long int val) : value((long int) val) {}
+        explicit bVariant(double val) : value((double) val) {}
+        explicit bVariant(int val) : value((long int) val) {}
+        explicit bVariant(bool val) : value((bool) val) {}
+        explicit bVariant(boost::uuids::uuid val) : value(val) {}
+        explicit bVariant(std::vector<BYTE> val) : value(val) {}
 
         bVariant() = default;
 

@@ -22,7 +22,7 @@ WebCore::WebCore(){
     callback_status _status = std::bind(&WebCore::on_status_changed, this, std::placeholders::_1);
     callback_close _on_close = std::bind(&WebCore::on_stop, this);
 
-    client = new bClient();
+    //client = new websocket_client();
     _port = 8080;
     _user_name = "unknown";
     _hash = "";

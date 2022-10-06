@@ -25,6 +25,7 @@ public:
     void set_certificate_file(const std::string& file);
 
     void send_message(const std::string& message);
+    void command_to_server(const std::string& command, const std::string& param = "");
 
 private:
     client::bClientData m_data;
@@ -32,6 +33,7 @@ private:
     ssl::context& ctx_;
     boost::shared_ptr<shared_state> state_;
     boost::filesystem::path certificate_file_;
+    client::ClientParam client_param_;
 
     void set_certificates(ssl::context& ctx);
 

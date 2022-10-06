@@ -13,6 +13,10 @@
 #include <unordered_set>
 #include <map>
 #include <set>
+#include <variant>
+#include <vector>
+#include <ctime>
+#include <functional>
 
 #include <pre/json/from_json.hpp>
 #include <pre/json/to_json.hpp>
@@ -22,6 +26,10 @@
 #include <boost/fusion/include/define_struct.hpp>
 
 #include "http.hpp"
+#include "command_list.hpp"
+#include "types.hpp"
+
+#define UNDEFINED std::monostate()
 
 template<class Derived>
 class websocket_session;
@@ -29,48 +37,64 @@ class plain_websocket_session;
 class ssl_websocket_session;
 class subscriber;
 
+template<class... Ts>
+struct overloaded : Ts ... {
+    using Ts::operator()...;
+};
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+typedef std::variant<
+        std::monostate,
+        int32_t,
+        double,
+        bool,
+        std::string,
+        std::tm,
+        std::vector<char>
+> variant_t;
+
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), user_info,
         (int, _id)
-                (std::string, first)
-                (std::string, second)
-                (std::string, ref)
-                (std::string, hash)
-                (std::string, role)
-                (std::string, performance)
-                (std::string, parent)
-                (std::string, cache));
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, hash)
+        (std::string, role)
+        (std::string, performance)
+        (std::string, parent)
+        (std::string, cache));
 
 BOOST_FUSION_DEFINE_STRUCT(
         (public_struct), server_settings,
         (std::string, ServerHost)
-                (int, ServerPort)
-                (std::string, ServerUser)
-                (std::string, ServerUserHash)
-                (std::string, ServerName)
-                (std::string, ServerHttpRoot)
-                (std::string, ServerWorkingDirectory)
-                (std::string, AutoConnect)
-                (bool, UseLocalWebDavDirectory)
-                (std::string, LocalWebDavDirectory)
-                (std::string, WebDavHost)
-                (std::string, WebDavUser)
-                (std::string, WebDavPwd)
-                (bool, WebDavSSL)
-                (int, SQLFormat)
-                (std::string, SQLHost)
-                (std::string, SQLUser)
-                (std::string, SQLPassword)
-                (std::string, HSHost)
-                (std::string, HSUser)
-                (std::string, HSPassword)
-                (bool, ServerSSL)
-                (std::string, SSL_crt_file)
-                (std::string, SSL_key_file)
-                (bool, UseAuthorization)
-                (std::string, ApplicationProfile)
-                (int, ThreadsCount)
-                (std::string, Version)
+        (int, ServerPort)
+        (std::string, ServerUser)
+        (std::string, ServerUserHash)
+        (std::string, ServerName)
+        (std::string, ServerHttpRoot)
+        (std::string, ServerWorkingDirectory)
+        (std::string, AutoConnect)
+        (bool, UseLocalWebDavDirectory)
+        (std::string, LocalWebDavDirectory)
+        (std::string, WebDavHost)
+        (std::string, WebDavUser)
+        (std::string, WebDavPwd)
+        (bool, WebDavSSL)
+        (int, SQLFormat)
+        (std::string, SQLHost)
+        (std::string, SQLUser)
+        (std::string, SQLPassword)
+        (std::string, HSHost)
+        (std::string, HSUser)
+        (std::string, HSPassword)
+        (bool, ServerSSL)
+        (std::string, SSL_crt_file)
+        (std::string, SSL_key_file)
+        (bool, UseAuthorization)
+        (std::string, ApplicationProfile)
+        (int, ThreadsCount)
+        (std::string, Version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -83,8 +107,6 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 using namespace arcirk;
 using namespace public_struct;
-
-//typedef std::function<void(const std::string&, const std::string&, const std::string&, const std::string&)> server_events;
 
 namespace arcirk{
     enum DatabaseType{
@@ -149,13 +171,14 @@ namespace arcirk{
     }
 }
 
+typedef std::function<std::string(arcirk::json::Message&, std::string&, std::string&)> ServerEvents;
 
-// Represents the shared server state
 class shared_state
 {
     std::map<boost::uuids::uuid const, subscriber*> sessions_;
     std::map<boost::uuids::uuid, std::vector<subscriber*>> user_sessions;
     std::mutex mutex_;
+    std::map<arcirk::server::ServerCommands, ServerEvents> m_command_list;
 
 public:
     explicit
@@ -166,20 +189,95 @@ public:
     void join(subscriber* session);
 
     void leave(const boost::uuids::uuid& session_uuid, const std::string& user_name);
+
     void deliver(const std::string& message, subscriber* session);
+
     template<typename T>
     void send(const std::string& message);
 
-    bool use_authorization() const;
+    [[nodiscard]] bool use_authorization() const;
 
     bool verify_connection(const std::string& basic_auth);
 
+    std::string get_clients_list(const variant_t& msg, variant_t& custom_result, variant_t& error);
+
+    std::string server_version();
+
+    template<typename T, typename C, typename ... Ts>
+    void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
+                   std::map<long, variant_t> &&def_args = {});
+
+    bool call_as_proc(const long method_num, std::vector<variant_t> params);
+
+    bool call_as_func(const long method_num, variant_t *ret_value, std::vector<variant_t> params);
+
+//    static std::vector<variant_t> parseParams(tVariant *params, long array_size);
+//
+//    static variant_t toStlVariant(tVariant src);
+//
+//    static std::string toUTF8String(std::basic_string_view<WCHAR_T> src);
+
+    long find_method(const std::string& method_name);
+
+    void command_to_server(ServerResponse& resp);
+
 private:
+    class MethodMeta;
+
+    template<size_t... Indices>
+    static auto ref_tuple_gen(std::vector<variant_t> &v, std::index_sequence<Indices...>);
+
     public_struct::server_settings sett;
+    std::vector<MethodMeta> methods_meta;
 
     bool verify_auth(const std::string& usr, const std::string& pwd) const;
+    bool is_cmd(const std::string& message) const { return message.substr(0, 3) == "cmd";};
+    void execute_command_handler(const std::string& message, subscriber *session = nullptr);
+
+    void fail(const std::string what, const std::string error){
+        std::cerr << what << ": " << arcirk::local_8bit(error) << std::endl;
+    };
+
+    //std::vector<variant_t> parse_params(const std::string& json_param);
 
 };
 
+class shared_state::MethodMeta{
+public:
+    MethodMeta &operator=(const MethodMeta &) = delete;
+    MethodMeta(const MethodMeta &) = delete;
+    MethodMeta(MethodMeta &&) = default;
+    MethodMeta &operator=(MethodMeta &&) = default;
+
+    std::string alias;
+    long params_count;
+    bool returns_value;
+    std::map<long, variant_t> default_args;
+    std::function<variant_t(std::vector<variant_t> &params)> call;
+};
+
+template<size_t... Indices>
+auto shared_state::ref_tuple_gen(std::vector<variant_t> &v, std::index_sequence<Indices...>) {
+    return std::forward_as_tuple(v[Indices]...);
+}
+
+template<typename T, typename C, typename ... Ts>
+void shared_state::add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
+                             std::map<long, variant_t> &&def_args) {
+
+    MethodMeta meta{alias, sizeof...(Ts), !std::is_same<T, void>::value, std::move(def_args),
+                    [f, c](std::vector<variant_t> &params) -> variant_t {
+                        auto args = ref_tuple_gen(params, std::make_index_sequence<sizeof...(Ts)>());
+                        if constexpr (std::is_same<T, void>::value) {
+                            std::apply(f, std::tuple_cat(std::make_tuple(c), args));
+                            return UNDEFINED;
+                        } else {
+                            return std::apply(f, std::tuple_cat(std::make_tuple(c), args));
+                        }
+                    }
+    };
+
+    methods_meta.push_back(std::move(meta));
+};
 
 #endif //BWEBSOCKETS_SHARED_STATE_HPP

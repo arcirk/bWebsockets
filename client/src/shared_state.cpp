@@ -69,3 +69,21 @@ void shared_state::set_basic_auth_string(const std::string &value) {
 std::string shared_state::basic_auth_string() const {
     return basic_auth_string_;
 }
+
+void shared_state::command_to_server(const std::string &command, const std::string &param) {
+
+    if(command.empty())
+        return;
+
+    std::string cmd = "cmd " + command;
+
+    if(!param.empty()){
+        cmd.append(" ");
+        cmd.append(arcirk::base64::base64_encode(param));
+    }
+
+    auto const ss = boost::make_shared<std::string const>(std::move(cmd));
+
+    send(ss);
+
+}

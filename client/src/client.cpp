@@ -8,6 +8,7 @@ websocket_client::websocket_client(ssl::context& ctx, client::ClientParam &clien
 : ctx_(ctx)
 {
     state_ = nullptr;
+    client_param_ = client_param;
 }
 
 void websocket_client::connect(const client::bClientEvent &event, const client::callbacks &f) {
@@ -39,7 +40,15 @@ void websocket_client::start(arcirk::Uri &url) {
     bool _ssl = url.Protocol == "wss";
     set_certificates(ctx_);
     state_ = boost::make_shared<shared_state>();
-    state_->set_basic_auth_string(url.BasicAuth);
+    if(!url.BasicAuth.empty())
+        state_->set_basic_auth_string(url.BasicAuth);
+    else
+    {
+        if(!client_param_.password.empty()){
+            std::string basic_auth = "Basic " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
+            state_->set_basic_auth_string(basic_auth);
+        }
+    }
     state_->connect(client::bClientEvent::wsMessage, (callback_message)std::bind(&websocket_client::on_message, this, std::placeholders::_1));
     state_->connect(client::bClientEvent::wsStatusChanged, (callback_status)std::bind(&websocket_client::on_status_changed, this, std::placeholders::_1));
     state_->connect(client::bClientEvent::wsError, (callback_error)std::bind(&websocket_client::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -117,4 +126,10 @@ void websocket_client::send_message(const std::string &message) {
         return;
     auto const ss = boost::make_shared<std::string const>(std::move(message));
     state_->send(ss);
+}
+
+void websocket_client::command_to_server(const std::string &command, const std::string &param) {
+    if(!state_)
+        return;
+    state_->command_to_server(command, param);
 }

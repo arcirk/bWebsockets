@@ -4,11 +4,23 @@
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 
+#include <algorithm>
+#include <codecvt>
+#include <cwctype>
+#include <locale>
+#include <nlohmann/json.hpp>
+
 shared_state::shared_state(){
 
     sett = public_struct::server_settings();
     read_conf(sett);
 
+//    m_command_list.insert(std::pair(arcirk::server::ServerCommands::ServerVersion, std::bind(&shared_state::server_version, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+//    m_command_list.insert(std::pair(arcirk::server::ServerCommands::ServerGetClientsList, std::bind(&shared_state::get_clients_list, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+
+
+    add_method("ServerVersion", this, &shared_state::server_version);
+    add_method("ServerGetClientsList", this, &shared_state::get_clients_list);
 }
 
 void shared_state::join(subscriber *session) {
@@ -31,22 +43,85 @@ void shared_state::deliver(const std::string &message, subscriber *session) {
 
     std::string result = message;
 
-    //std::cout << "message: " << message << std::endl;
-
     if (result == "\n")
         return;
 
     if (result == "ping")
         result = "pong";
 
-    std::cout << "message: " << message << std::endl;
+    if(use_authorization()){
+        if(!session->authorized())
+            return fail("shared_state::deliver", "Пользователь не авторизован! Команда отменена");
+    }
 
-    if(!session->is_ssl())
-        send<plain_websocket_session>(result);
-    else
-        send<ssl_websocket_session>(result);
-
+    if(!is_cmd(message)){
+        if(!session->is_ssl())
+            send<plain_websocket_session>(result);
+        else
+            send<ssl_websocket_session>(result);
+    }else{
+        execute_command_handler(message, session);
+    }
 }
+
+void shared_state::execute_command_handler(const std::string& message, subscriber *session) {
+
+    arcirk::T_vec v = split(message, " ");
+
+    if(v.size() < 2){
+        fail("shared_state::execute_command_handler", "Не верный формат команды!");
+        std::cout << message << std::endl;
+        return;
+    }
+
+    long command_index = find_method(v[1]);
+    if(command_index < 0){
+        fail("shared_state::execute_command_handler", arcirk::str_sample("Команда (%1%) не найдена!", v[1]));
+        std::cout << message << std::endl;
+        return;
+    }
+
+    std::string json_params = "";
+    if(v.size() > 2){
+        try {
+            json_params = arcirk::base64::base64_decode(v[2]);
+        } catch (std::exception &e) {
+            fail("shared_state::execute_command_handler:parse_params", e.what());
+            return;
+        }
+    }
+
+    std::vector<variant_t> params_v;
+    if(!json_params.empty()){
+        using nlohmann_json = nlohmann::json;
+        auto params_ = nlohmann_json::parse(json_params);
+        for (auto& el : params_.items()) {
+            std::cout << el.key() << " : " << el.value() << "\n";
+            auto value = el.value();
+            if(value.is_string()){
+                params_v.emplace_back(value.get<std::string>());
+            }else if(value.is_number()){
+                params_v.emplace_back(value.get<double>());
+            }else if(value.is_boolean()){
+                params_v.emplace_back(value.get<bool>());
+            }
+        }
+    }
+    variant_t return_value;
+    call_as_func(command_index, &return_value, params_v);
+
+    std::string result = std::get<std::string>(return_value);
+    if(session){
+        if(!result.empty()){
+            if(!session->is_ssl())
+                send<plain_websocket_session>(result);
+            else
+                send<ssl_websocket_session>(result);
+        }
+    }
+}
+
+
 
 bool shared_state::use_authorization() const{
     return sett.UseAuthorization;
@@ -129,3 +204,114 @@ bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) c
     }
     return false;
 }
+
+std::string shared_state::get_clients_list(const variant_t& msg, variant_t& custom_result, variant_t& error){
+    //
+    return "test get_clients_list";
+}
+
+std::string shared_state::server_version(){
+    return sett.Version;
+}
+
+bool shared_state::call_as_proc(const long method_num, std::vector<variant_t> params) {
+
+    try {
+        //auto args = parseParams(params, array_size);
+        //methods_meta[method_num].call(args);
+        methods_meta[method_num].call(params);
+//#ifdef OUT_PARAMS
+//        storeParams(args, params);
+//#endif
+    } catch (const std::exception &e) {
+        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
+        return false;
+    } catch (...) {
+        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
+        return false;
+    }
+
+    return true;
+}
+
+bool shared_state::call_as_func(const long method_num, variant_t *ret_value, std::vector<variant_t> params) {
+
+    try {
+        //auto args = parseParams(params, array_size);
+        //variant_t result = methods_meta[method_num].call(args);
+        //storeVariable(result, *ret_value);
+        *ret_value = methods_meta[method_num].call(params);
+//#ifdef OUT_PARAMS
+//        storeParams(args, params);
+//#endif
+    } catch (const std::exception &e) {
+        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
+        return false;
+    } catch (...) {
+        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
+        return false;
+    }
+
+    return true;
+
+}
+
+long shared_state::find_method(const std::string &method_name) {
+    for (auto i = 0u; i < methods_meta.size(); ++i) {
+        if (methods_meta[i].alias == method_name) {
+            return static_cast<long>(i);
+        }
+    }
+    return -1;
+}
+
+void shared_state::command_to_server(ServerResponse& resp) {
+
+}
+
+//std::vector<variant_t> shared_state::parseParams(tVariant *params, long array_size) {
+//    std::vector<variant_t> result;
+//
+//    auto size = static_cast<const unsigned long>(array_size);
+//    result.reserve(size);
+//    for (size_t i = 0; i < size; i++) {
+//        result.emplace_back(toStlVariant(params[i]));
+//    }
+//
+//    return result;
+//}
+
+//variant_t shared_state::toStlVariant(tVariant src) {
+//    switch (src.vt) {
+//        case VTYPE_EMPTY:
+//            return UNDEFINED;
+//        case VTYPE_I4: //int32_t
+//            return src.lVal;
+//        case VTYPE_R8: //double
+//            return src.dblVal;
+//        case VTYPE_PWSTR: { //std::string
+//            return toUTF8String(std::basic_string_view(src.pwstrVal, src.wstrLen));
+//        }
+//        case VTYPE_BOOL:
+//            return src.bVal;
+//        case VTYPE_BLOB:
+//            return std::vector<char>(src.pstrVal, src.pstrVal + src.strLen);
+//        case VTYPE_TM:
+//            return src.tmVal;
+//        default:
+//            throw std::bad_cast();
+//    }
+//}
+//
+//std::string shared_state::toUTF8String(std::basic_string_view<WCHAR_T> src) {
+//#ifdef _WINDOWS
+//    // VS bug
+//    // https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
+//    static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> cvt_utf8_utf16;
+//    return cvt_utf8_utf16.to_bytes(src.data(), src.data() + src.size());
+//#else
+//    static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt_utf8_utf16;
+//    return cvt_utf8_utf16.to_bytes(reinterpret_cast<const char16_t *>(src.data()),
+//                                   reinterpret_cast<const char16_t *>(src.data() + src.size()));
+//#endif
+//}
