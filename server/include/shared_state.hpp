@@ -178,7 +178,7 @@ class shared_state
     std::map<boost::uuids::uuid const, subscriber*> sessions_;
     std::map<boost::uuids::uuid, std::vector<subscriber*>> user_sessions;
     std::mutex mutex_;
-    std::map<arcirk::server::ServerCommands, ServerEvents> m_command_list;
+    std::map<arcirk::server::ServerPublicCommands, ServerEvents> m_command_list;
 
 public:
     explicit

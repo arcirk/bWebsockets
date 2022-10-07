@@ -8,19 +8,20 @@
 #include <codecvt>
 #include <cwctype>
 #include <locale>
-#include <nlohmann/json.hpp>
+//#include <nlohmann/json.hpp>
 
 shared_state::shared_state(){
 
+    using n_json = nlohmann::json;
+    using namespace arcirk::server;
+
     sett = public_struct::server_settings();
     read_conf(sett);
-
-//    m_command_list.insert(std::pair(arcirk::server::ServerCommands::ServerVersion, std::bind(&shared_state::server_version, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-//    m_command_list.insert(std::pair(arcirk::server::ServerCommands::ServerGetClientsList, std::bind(&shared_state::get_clients_list, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-
-
-    add_method("ServerVersion", this, &shared_state::server_version);
-    add_method("ServerGetClientsList", this, &shared_state::get_clients_list);
+    //n_json(arcirk::server::ServerPublicCommands::ServerVersion).get<std::string>();
+    add_method(arcirk::server::synonym(ServerPublicCommands::ServerVersion), this, &shared_state::server_version);
+    add_method(arcirk::server::synonym(ServerPublicCommands::ServerOnlineClientsList), this, &shared_state::get_clients_list);
+//    add_method("ServerVersion", this, &shared_state::server_version);
+//    add_method("ServerOnlineClientsList", this, &shared_state::get_clients_list);
 }
 
 void shared_state::join(subscriber *session) {

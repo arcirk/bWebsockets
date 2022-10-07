@@ -8,6 +8,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/variant.hpp>
+#include <nlohmann/json.hpp>
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::json), Message,
@@ -22,10 +23,22 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 namespace arcirk::server{
 
-    enum ServerCommands{
-        ServerVersion = 0,
-        ServerGetClientsList
+    enum ServerPublicCommands{
+        ServerVersion,
+        ServerOnlineClientsList,
+        TS_INVALID=-1,
+    };
 
+    NLOHMANN_JSON_SERIALIZE_ENUM(ServerPublicCommands, {
+        {TS_INVALID, nullptr}    ,
+        {ServerVersion, "ServerVersion"}  ,
+        {ServerOnlineClientsList, "ServerOnlineClientsList"}    ,
+
+    })
+
+    static inline std::string synonym(ServerPublicCommands value){
+        using n_json = nlohmann::json;
+        return n_json(value).get<std::string>();
     };
 
 }

@@ -148,6 +148,25 @@ private:
     std::vector <std::string> tokens{};
 };
 
+void get_online_users(std::shared_ptr<websocket_client> client){
+
+    using json_nl = nlohmann::json;
+
+    json_nl param = {
+            {"table", true}
+    };
+
+    json_nl alias = arcirk::client::ServerPublicCommands::ServerOnlineClientsList;
+
+    std::string cmd = "cmd ";
+    cmd.append(alias.get<std::string>());
+    cmd.append(" ");
+    cmd.append(arcirk::base64::base64_encode(param.dump()));
+
+    //std::cout << cmd << std::endl;
+    client->send_message(cmd);
+}
+
 int
 main(int argc, char* argv[]){
 
@@ -250,9 +269,12 @@ main(int argc, char* argv[]){
         else if (line == "send")
         {
             m_client->send_message("test message");
-        }else{
+        }else if (line == "get_users") {
+            get_online_users(m_client);
+        }else {
             m_client->send_message(line);
         }
     }
+
     return EXIT_SUCCESS;
 }

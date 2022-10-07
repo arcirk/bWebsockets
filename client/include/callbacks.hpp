@@ -12,6 +12,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/variant.hpp>
+#include <nlohmann/json.hpp>
 
 typedef std::function<void(const std::string&)> callback_message;
 typedef std::function<void(bool)> callback_status;
@@ -78,5 +79,18 @@ namespace arcirk::client{
         wsError
     };
 
+    enum ServerPublicCommands{
+        ServerVersion,
+        ServerOnlineClientsList,
+        TS_INVALID=-1,
+    };
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(ServerPublicCommands, {
+        {TS_INVALID, nullptr}    ,
+        {ServerVersion, "ServerVersion"}  ,
+        {ServerOnlineClientsList, "ServerOnlineClientsList"}    ,
+
+    })
 }
+
 #endif //ARCIRK_SOLUTION_CALLBACKS_H
