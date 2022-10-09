@@ -6,6 +6,9 @@
 #define BWEBSOCKETS_SHARED_STATE_HPP
 
 #include <arcirk.hpp>
+#include <shared_struct.hpp>
+#include <database_struct.hpp>
+
 #include <boost/smart_ptr.hpp>
 #include <memory>
 #include <mutex>
@@ -16,20 +19,9 @@
 #include <variant>
 #include <vector>
 #include <ctime>
-#include <functional>
-
-#include <pre/json/from_json.hpp>
-#include <pre/json/to_json.hpp>
-
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/adapted/struct/define_struct.hpp>
-#include <boost/fusion/include/define_struct.hpp>
 
 #include "http.hpp"
-#include "command_list.hpp"
-#include "types.hpp"
 
-#define UNDEFINED std::monostate()
 
 template<class Derived>
 class websocket_session;
@@ -53,58 +45,6 @@ typedef std::variant<
         std::vector<char>
 > variant_t;
 
-BOOST_FUSION_DEFINE_STRUCT(
-        (public_struct), user_info,
-        (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, hash)
-        (std::string, role)
-        (std::string, performance)
-        (std::string, parent)
-        (std::string, cache));
-
-BOOST_FUSION_DEFINE_STRUCT(
-        (public_struct), server_settings,
-        (std::string, ServerHost)
-        (int, ServerPort)
-        (std::string, ServerUser)
-        (std::string, ServerUserHash)
-        (std::string, ServerName)
-        (std::string, ServerHttpRoot)
-        (std::string, ServerWorkingDirectory)
-        (std::string, AutoConnect)
-        (bool, UseLocalWebDavDirectory)
-        (std::string, LocalWebDavDirectory)
-        (std::string, WebDavHost)
-        (std::string, WebDavUser)
-        (std::string, WebDavPwd)
-        (bool, WebDavSSL)
-        (int, SQLFormat)
-        (std::string, SQLHost)
-        (std::string, SQLUser)
-        (std::string, SQLPassword)
-        (std::string, HSHost)
-        (std::string, HSUser)
-        (std::string, HSPassword)
-        (bool, ServerSSL)
-        (std::string, SSL_crt_file)
-        (std::string, SSL_key_file)
-        (bool, UseAuthorization)
-        (std::string, ApplicationProfile)
-        (int, ThreadsCount)
-        (std::string, Version)
-);
-
-BOOST_FUSION_DEFINE_STRUCT(
-        (public_struct), ServerResponse,
-        (std::string, command)
-        (std::string, message)
-        (std::string, uuid_form)
-        (std::string, param)
-        );
-
 using namespace arcirk;
 using namespace public_struct;
 
@@ -126,7 +66,7 @@ namespace arcirk{
 
         return app_conf;
     }
-    static inline void read_conf(server_settings & result){
+    static inline void read_conf(server::server_config & result){
 
         //файл конфигурации всегда лежит либо в домашней папке на линуксе либо в programdata на windows
         using namespace boost::filesystem;
@@ -141,7 +81,7 @@ namespace arcirk{
                 std::ifstream file(conf.string(), std::ios_base::in);
                 std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
                 if(!str.empty()){
-                    result = pre::json::from_json<server_settings>(str);
+                    result = pre::json::from_json<server::server_config>(str);
                 }
             }
         } catch (std::exception &e) {
@@ -150,7 +90,7 @@ namespace arcirk{
 
     }
 
-    static inline void write_conf(server_settings & conf, const boost::filesystem::path& root_conf) {
+    static inline void write_conf(server::server_config & conf, const boost::filesystem::path& root_conf) {
         using namespace boost::filesystem;
 
         if (!exists(arcirk::local_8bit(root_conf.string())))
@@ -171,14 +111,11 @@ namespace arcirk{
     }
 }
 
-typedef std::function<std::string(arcirk::json::Message&, std::string&, std::string&)> ServerEvents;
-
 class shared_state
 {
     std::map<boost::uuids::uuid const, subscriber*> sessions_;
     std::map<boost::uuids::uuid, std::vector<subscriber*>> user_sessions;
     std::mutex mutex_;
-    std::map<arcirk::server::ServerPublicCommands, ServerEvents> m_command_list;
 
 public:
     explicit
@@ -199,46 +136,57 @@ public:
 
     bool verify_connection(const std::string& basic_auth);
 
-    std::string get_clients_list(const variant_t& msg, variant_t& custom_result, variant_t& error);
-
-    std::string server_version();
+    //команды сервера
+    std::string get_clients_list(const variant_t& param, const variant_t& session_id);
+    std::string server_version(const variant_t& session_id);
+    std::string set_client_param(const variant_t& param, const variant_t& session_id);
 
     template<typename T, typename C, typename ... Ts>
     void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
                    std::map<long, variant_t> &&def_args = {});
 
-    bool call_as_proc(const long method_num, std::vector<variant_t> params);
+    bool call_as_proc(const long& method_num, std::vector<variant_t> params);
 
-    bool call_as_func(const long method_num, variant_t *ret_value, std::vector<variant_t> params);
-
-//    static std::vector<variant_t> parseParams(tVariant *params, long array_size);
-//
-//    static variant_t toStlVariant(tVariant src);
-//
-//    static std::string toUTF8String(std::basic_string_view<WCHAR_T> src);
+    bool call_as_func(const long& method_num, variant_t *ret_value, std::vector<variant_t> params);
 
     long find_method(const std::string& method_name);
+    [[nodiscard]] std::string get_method_name(const long& num) const;
 
-    void command_to_server(ServerResponse& resp);
+    [[nodiscard]] std::string base64_to_string(const std::string& base64str) const;
 
 private:
+    subscriber* get_session(boost::uuids::uuid &uuid);
+    std::vector<subscriber *> get_sessions(boost::uuids::uuid &user_uuid);
+
     class MethodMeta;
 
     template<size_t... Indices>
     static auto ref_tuple_gen(std::vector<variant_t> &v, std::index_sequence<Indices...>);
 
-    public_struct::server_settings sett;
+    server::server_config sett;
     std::vector<MethodMeta> methods_meta;
 
-    bool verify_auth(const std::string& usr, const std::string& pwd) const;
-    bool is_cmd(const std::string& message) const { return message.substr(0, 3) == "cmd";};
-    void execute_command_handler(const std::string& message, subscriber *session = nullptr);
+    [[nodiscard]] bool verify_auth(const std::string& usr, const std::string& pwd) const;
+    static bool is_cmd(const std::string& message) { return message.substr(0, 3) == "cmd";};
+    static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
+    void execute_command_handler(const std::string& message, subscriber *session);
+    void forward_message(const std::string& message, subscriber *session);
 
-    void fail(const std::string what, const std::string error){
-        std::cerr << what << ": " << arcirk::local_8bit(error) << std::endl;
+    static void fail(const std::string& what, const std::string& error, bool conv = true){
+        if(conv)
+            std::cerr << what << ": " << arcirk::local_8bit(error) << std::endl;
+        else
+            std::cerr << what << ": " << error << std::endl;
     };
 
-    //std::vector<variant_t> parse_params(const std::string& json_param);
+    static void log(const std::string& what, const std::string& message, bool conv = true){
+        if(conv)
+            std::cout << what << ": " << arcirk::local_8bit(message) << std::endl;
+        else
+            std::cout << what << ": " <<message << std::endl;
+    };
+
+    [[nodiscard]] long param_count(const long& method_num) const;
 
 };
 
@@ -279,5 +227,6 @@ void shared_state::add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
 
     methods_meta.push_back(std::move(meta));
 };
+
 
 #endif //BWEBSOCKETS_SHARED_STATE_HPP

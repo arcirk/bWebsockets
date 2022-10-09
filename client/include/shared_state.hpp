@@ -2,7 +2,8 @@
 #define WEBSOCKET_CLIENT_SHARED_STATE_HPP
 
 #include <arcirk.hpp>
-#include "callbacks.hpp"
+#include <shared_struct.hpp>
+#include <database_struct.hpp>
 
 class session_base;
 
@@ -22,24 +23,28 @@ public:
     void on_connect(session_base * base);
     void on_status_changed(bool status);
 
-    void connect(const client::bClientEvent& event, const client::callbacks& f);
+    void connect(const client::client_events& event, const client::callbacks& f);
     void close(bool disable_notify);
 
     void send(boost::shared_ptr<std::string const> const& ss);
 
     void set_basic_auth_string(const std::string& value);
 
-    std::string basic_auth_string() const;
+    [[nodiscard]] std::string basic_auth_string() const;
 
     void command_to_server(const std::string& command, const std::string& param = "");
 
+    [[nodiscard]] boost::uuids::uuid session_uuid() const;
+
+    void set_uuid_session(const boost::uuids::uuid& value){
+        session_uuid_ = value;
+    }
+
 private:
     session_base * session_base_;
-    client::bClientData m_data;
+    client::client_data m_data;
     std::string basic_auth_string_;
-
-
-
+    boost::uuids::uuid session_uuid_{};
 };
 
 #endif

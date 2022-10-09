@@ -48,6 +48,7 @@ public:
 
     virtual void close(bool disable_notify) = 0;
     virtual void send_message(boost::shared_ptr<std::string const> const& ss) = 0;
+
 };
 
 template<class Derived>
@@ -140,7 +141,7 @@ public:
         || ec.value() == 2
         || ec.value() == 109
         || ec.value() == 125){
-            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
+            //derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
             return;
         }
 
@@ -328,9 +329,9 @@ public:
 
         std::cout << "session::on_connect: successful connection!" << std::endl;
 
-        state_->on_connect(this);
-
         started_ = true;
+
+        state_->on_connect(this);
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
         _super->start_read();
@@ -433,9 +434,9 @@ public:
         if(ec)
             return fail(ec, "handshake (ssl)");
 
-        state_->on_connect(this);
-
         started_ = true;
+
+        state_->on_connect(this);
 
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
 

@@ -5,10 +5,6 @@
 #include <arcirk.hpp>
 #include <client.hpp>
 #include <functional>
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/adapted/struct/define_struct.hpp>
-#include <pre/json/from_json.hpp>
-#include <pre/json/to_json.hpp>
 #include <boost/beast/ssl.hpp>
 
 const std::string version = "1.1.0";
@@ -17,33 +13,6 @@ boost::filesystem::path m_root_conf;
 
 namespace ssl = boost::asio::ssl;
 
-BOOST_FUSION_DEFINE_STRUCT(
-        (), settings,
-        (std::string, ServerHost)
-        (int, ServerPort)
-        (std::string, ServerUser)
-        (std::string, ServerUserHash)
-        (std::string, ServerName)
-        (std::string, ServerHttpRoot)
-        (std::string, AutoConnect)
-        (bool, UseLocalWebDavDirectory)
-        (std::string, LocalWebDavDirectory)
-        (std::string, WebDavHost)
-        (std::string, WebDavUser)
-        (std::string, WebDavPwd)
-        (bool, WebDavSSL)
-        (std::string, SQLFormat)
-        (std::string, SQLHost)
-        (std::string, SQLUser)
-        (std::string, SQLPassword)
-        (std::string, HSHost)
-        (std::string, HSUser)
-        (std::string, HSPassword)
-        (bool, ServerSSL)
-        (std::string, SSL_csr_file)
-        (std::string, SSL_key_file)
-        (bool, UseAuthorization)
-        )
 
 void verify_directories(){
     using namespace boost::filesystem;
@@ -65,7 +34,7 @@ void verify_directories(){
     }
 }
 
-void read_conf(settings & result){
+void read_conf(server::server_config & result){
 
     using namespace boost::filesystem;
 
@@ -78,12 +47,12 @@ void read_conf(settings & result){
         std::ifstream file(conf.string(), std::ios_base::in);
         std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
         if(!str.empty()){
-            result = pre::json::from_json<settings>(str);
+            result = pre::json::from_json<server::server_config>(str);
         }
     }
 }
 
-void write_conf(settings & conf){
+void write_conf(server::server_config & conf){
     using namespace boost::filesystem;
 
     if(!exists(arcirk::local_8bit(m_root_conf.string())))
@@ -116,7 +85,7 @@ void on_stop(){
 }
 void
 on_error(const std::string &what, const std::string &err, int code){
-    std::cerr << what << "(" << code << "): " << arcirk::local_8bit(err) << std::endl;
+    std::cerr << "websocket on_error: " <<  what << "(" << code << "): " << arcirk::local_8bit(err) << std::endl;
 }
 
 void on_status_changed(bool status){
@@ -148,7 +117,7 @@ private:
     std::vector <std::string> tokens{};
 };
 
-void get_online_users(std::shared_ptr<websocket_client> client){
+void get_online_users(const std::shared_ptr<websocket_client>& client){
 
     using json_nl = nlohmann::json;
 
@@ -156,15 +125,9 @@ void get_online_users(std::shared_ptr<websocket_client> client){
             {"table", true}
     };
 
-    json_nl alias = arcirk::client::ServerPublicCommands::ServerOnlineClientsList;
-
-    std::string cmd = "cmd ";
-    cmd.append(alias.get<std::string>());
-    cmd.append(" ");
-    cmd.append(arcirk::base64::base64_encode(param.dump()));
-
-    //std::cout << cmd << std::endl;
-    client->send_message(cmd);
+    std::string alias = json_nl(arcirk::server::server_commands::ServerOnlineClientsList).get<std::string>();
+    std::string param_ = param.dump();
+    client->send_command(alias, param_);
 }
 
 int
@@ -192,7 +155,7 @@ main(int argc, char* argv[]){
 
     verify_directories();
 
-    settings app_conf;
+    server::server_config app_conf;
     read_conf(app_conf);
 
     std::string host = app_conf.ServerHost;
@@ -202,9 +165,7 @@ main(int argc, char* argv[]){
 
     std::shared_ptr<websocket_client> m_client;
 
-    //boost::asio::io_context ioc;
-
-    client::ClientParam client_param = client::ClientParam();
+    client::client_param client_param = client::client_param();
     client_param.app_name = "websocket_client";
     client_param.user_name = "admin";
     client_param.password = "admin";
@@ -229,11 +190,11 @@ main(int argc, char* argv[]){
 
     std::cout << url << std:: endl;
 
-    m_client->connect(client::bClientEvent::wsMessage, _message);
-    m_client->connect(client::bClientEvent::wsStatusChanged, _status);
-    m_client->connect(client::bClientEvent::wsError, _err);
-    m_client->connect(client::bClientEvent::wsConnect, _connect);
-    m_client->connect(client::bClientEvent::wsClose, _on_close);
+    m_client->connect(client::client_events::wsMessage, _message);
+    m_client->connect(client::client_events::wsStatusChanged, _status);
+    m_client->connect(client::client_events::wsError, _err);
+    m_client->connect(client::client_events::wsConnect, _connect);
+    m_client->connect(client::client_events::wsClose, _on_close);
 
     app_conf.ServerPort = port;
     app_conf.ServerHost = host;
@@ -242,16 +203,6 @@ main(int argc, char* argv[]){
     m_client->set_certificate_file("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
 
     std::string line;
-
-//    std::string auth_cred;
-//    if(_usr.empty()){
-//        auth_cred = "admin:admin";
-//    }else{
-//        auth_cred = _usr + ":" + _pwd;
-//    }
-//    std::string encoded_auth_cred = "Basic " + arcirk::base64::base64_encode(auth_cred);
-
-
 
     while (getline(std::cin, line)) {
         if (line.empty()) {

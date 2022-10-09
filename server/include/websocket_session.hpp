@@ -36,6 +36,12 @@ public:
         _uuid_session = value;
     }
 
+    virtual void set_user_name(const std::string& value){
+        _user_name = value;
+    }
+    virtual void set_user_uuid(const boost::uuids::uuid& value){
+        _user_uuid = value;
+    }
     virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
 
     virtual bool is_ssl() = 0;

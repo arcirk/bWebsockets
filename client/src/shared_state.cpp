@@ -3,6 +3,7 @@
 
 shared_state::shared_state() {
     session_base_ = nullptr;
+    session_uuid_ = arcirk::uuids::nil_uuid();
 }
 
 void shared_state::on_message(const std::string &message) {
@@ -23,7 +24,6 @@ void shared_state::on_close() {
 
 void shared_state::on_connect(session_base * base) {
     session_base_ = base;
-
     if(m_data.on_connect)
         m_data.on_connect();
 }
@@ -33,16 +33,16 @@ void shared_state::on_status_changed(bool status) {
         m_data.on_status_changed(status);
 }
 
-void shared_state::connect(const client::bClientEvent &event, const client::callbacks &f) {
-    if(event == client::bClientEvent::wsClose){
+void shared_state::connect(const client::client_events &event, const client::callbacks &f) {
+    if(event == client::client_events::wsClose){
         m_data.on_close= boost::get<callback_close>(f);
-    }else if(event == client::bClientEvent::wsConnect){
+    }else if(event == client::client_events::wsConnect){
         m_data.on_connect = boost::get<callback_connect>(f);
-    }else if(event == client::bClientEvent::wsError){
+    }else if(event == client::client_events::wsError){
         m_data.on_error = boost::get<callback_error>(f);
-    }else if(event == client::bClientEvent::wsMessage){
+    }else if(event == client::client_events::wsMessage){
         m_data.on_message = boost::get<callback_message>(f);
-    }else if(event == client::bClientEvent::wsStatusChanged){
+    }else if(event == client::client_events::wsStatusChanged){
         m_data.on_status_changed = boost::get<callback_status>(f);
     }
 }
@@ -78,12 +78,19 @@ void shared_state::command_to_server(const std::string &command, const std::stri
     std::string cmd = "cmd " + command;
 
     if(!param.empty()){
+        using json_nl = nlohmann::json;
+        std::string private_param = arcirk::base64::base64_encode(param);
+        json_nl param_ = {
+                {"parameters", private_param}
+        };
         cmd.append(" ");
-        cmd.append(arcirk::base64::base64_encode(param));
+        cmd.append(arcirk::base64::base64_encode(param_.dump()));
     }
 
     auto const ss = boost::make_shared<std::string const>(std::move(cmd));
-
     send(ss);
+}
 
+boost::uuids::uuid shared_state::session_uuid() const {
+    return session_uuid_;
 }

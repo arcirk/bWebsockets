@@ -1,3 +1,7 @@
+#include <arcirk.hpp>
+#include <database_struct.hpp>
+#include <shared_struct.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/smart_ptr.hpp>
@@ -8,15 +12,14 @@
 #include "include/shared_state.hpp"
 #include "include/listener.hpp"
 
-#include <arcirk.hpp>
-#include <soci/soci.h>
-#include <soci/sqlite3/soci-sqlite3.h>
 
-#include <openssl/rsa.h> // Алгоритм RSA
-#include <openssl/pem.h> // Для работы с файлами ключей
+//#include <soci/soci.h>
+//#include <soci/sqlite3/soci-sqlite3.h>
+
+//#include <openssl/rsa.h> // Алгоритм RSA
+//#include <openssl/pem.h> // Для работы с файлами ключей
 
 using namespace arcirk;
-using namespace public_struct;
 
 const std::string version = "1.1.0";
 
@@ -88,7 +91,7 @@ void verify_directories(const std::string& working_directory_dir = ""){
     }
 }
 
-void copy_ssl_file(const std::string& file_patch, server_settings& conf){
+void copy_ssl_file(const std::string& file_patch, server::server_config& conf){
 
     using namespace boost::filesystem;
     if(!exists(m_root_conf))
@@ -225,51 +228,7 @@ void verify_database(){
     }
 }
 
-//void read_conf(server_settings & result){
-//
-//    //файл конфигурации всегда лежит либо в домашней папке на линуксе либо в programdata на windows
-//    using namespace boost::filesystem;
-//
-//    if(!exists(program_data()))
-//        return;
-//
-//    try {
-//        path conf = program_data() /+ "server_conf.json";
-//
-//        if(exists(conf)){
-//            std::ifstream file(conf.string(), std::ios_base::in);
-//            std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-//            if(!str.empty()){
-//                result = pre::json::from_json<server_settings>(str);
-//            }
-//        }
-//    } catch (std::exception &e) {
-//        std::cerr << e.what() << std::endl;
-//    }
-//
-//}
-//
-//void write_conf(server_settings & conf){
-//    using namespace boost::filesystem;
-//
-//    if(!exists(arcirk::local_8bit(m_root_conf.string())))
-//        return;
-//    try {
-//        std::string result = to_string(pre::json::to_json(conf)) ;
-//        std::ofstream out;
-//        path conf_file = program_data() /+ "server_conf.json";
-//        out.open(arcirk::local_8bit(conf_file.string()));
-//        if(out.is_open()){
-//            out << result;
-//            out.close();
-//        }
-//    } catch (std::exception &e) {
-//        std::cerr << e.what() << std::endl;
-//    }
-//
-//}
-
-void read_command_line(const command_line_parser::cmd_parser& parser, server_settings& conf){
+void read_command_line(const command_line_parser::cmd_parser& parser, server::server_config& conf){
 
     if(parser.option_exists("-h")){
         conf.ServerHost = parser.option("-h");
@@ -302,13 +261,13 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server_set
     conf.UseAuthorization = parser.option_exists("-use_auth");
 }
 
-void save_conf_is_not_exits(server_settings& conf){
+void save_conf_is_not_exits(server::server_config& conf){
 
     using namespace boost::filesystem;
 
     path conf_file = program_data() /+ "server_conf.json";
     //if(!exists(conf_file)){
-        write_conf(conf, m_root_conf);
+    write_conf(conf, m_root_conf);
     //}
 
 }
@@ -325,7 +284,7 @@ int main(int argc, char* argv[])
         std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << version << std::endl;
         return EXIT_SUCCESS;
     }
-    auto conf = server_settings();
+    auto conf = server::server_config();
     //инициализируем настройки
     read_conf(conf);
     //если рабочий каталог не задан используем каталог по умолчанию

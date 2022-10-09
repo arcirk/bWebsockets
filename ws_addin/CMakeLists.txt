@@ -5,10 +5,10 @@ if (MSVC)
     include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
 endif ()
 
-project(ws_addin)
+project(webcore)
 
 set(CMAKE_CXX_STANDARD 17)
-set(TARGET ws_addin)
+set(TARGET webcore)
 
 if(MSVC)
     add_compile_options(
