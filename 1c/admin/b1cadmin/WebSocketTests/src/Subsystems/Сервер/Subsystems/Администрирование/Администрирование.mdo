@@ -7,5 +7,8 @@
   </synonym>
   <includeHelpInContents>true</includeHelpInContents>
   <includeInCommandInterface>true</includeInCommandInterface>
+  <content>CommonCommand.ОткрытьФормуНастроекКомпоненты</content>
+  <content>Constant.РежимОтладки</content>
+  <content>Constant.ПутьККаталогуКомпоненты</content>
   <parentSubsystem>Subsystem.Сервер</parentSubsystem>
 </mdclass:Subsystem>

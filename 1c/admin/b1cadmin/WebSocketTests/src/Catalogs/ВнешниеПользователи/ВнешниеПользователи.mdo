@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Catalog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="743615a3-6a73-4261-b514-f7877b99bb28">
+  <producedTypes>
+    <objectType typeId="230fd7cd-e56b-483b-87a4-207ed099f5bc" valueTypeId="858bd913-dd8a-4578-9268-4a8485c63cab"/>
+    <refType typeId="0b9ac852-8dbc-43e0-be5e-c95f400dacce" valueTypeId="8d125dd5-4d89-497f-af49-3fb2ea662588"/>
+    <selectionType typeId="fe63997e-7402-49a8-a12d-bc12fb849e12" valueTypeId="03529479-8130-4a4e-8fe7-8b793640d685"/>
+    <listType typeId="a6fe4836-3880-4d5b-8492-8134edcd6498" valueTypeId="64b193ff-8fdd-4c80-8e19-795c34ee89d0"/>
+    <managerType typeId="30084128-5183-4c61-8e46-2e8897cb640e" valueTypeId="9983ab6a-b2e1-4bd2-9001-bf2d67f131ef"/>
+  </producedTypes>
+  <name>ВнешниеПользователи</name>
+  <synonym>
+    <key>ru</key>
+    <value>Внешние пользователи</value>
+  </synonym>
+  <useStandardCommands>true</useStandardCommands>
+  <inputByString>Catalog.ВнешниеПользователи.StandardAttribute.Code</inputByString>
+  <inputByString>Catalog.ВнешниеПользователи.StandardAttribute.Description</inputByString>
+  <fullTextSearchOnInputByString>DontUse</fullTextSearchOnInputByString>
+  <createOnInput>Use</createOnInput>
+  <dataLockControlMode>Managed</dataLockControlMode>
+  <fullTextSearch>Use</fullTextSearch>
+  <levelCount>2</levelCount>
+  <foldersOnTop>true</foldersOnTop>
+  <codeLength>9</codeLength>
+  <descriptionLength>25</descriptionLength>
+  <codeType>String</codeType>
+  <codeAllowedLength>Variable</codeAllowedLength>
+  <checkUnique>true</checkUnique>
+  <autonumbering>true</autonumbering>
+  <defaultPresentation>AsDescription</defaultPresentation>
+  <editType>InDialog</editType>
+  <choiceMode>BothWays</choiceMode>
+  <attributes uuid="11ca98b6-4ab1-4662-8687-3d8610c69ef2">
+    <name>ИдентификаторПользователяИБ</name>
+    <synonym>
+      <key>ru</key>
+      <value>Идентификатор пользователя ИБ</value>
+    </synonym>
+    <type>
+      <types>UUID</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+</mdclass:Catalog>

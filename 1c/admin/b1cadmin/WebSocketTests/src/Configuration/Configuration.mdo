@@ -39,11 +39,17 @@
     </synonym>
     <languageCode>ru</languageCode>
   </languages>
-  <subsystems>Subsystem.Параметры</subsystems>
+  <subsystems>Subsystem.Администрирование</subsystems>
+  <subsystems>Subsystem.Клиент</subsystems>
   <subsystems>Subsystem.Сервер</subsystems>
+  <sessionParameters>SessionParameter.АвторизованныйПользователь</sessionParameters>
+  <sessionParameters>SessionParameter.ТекущийПользователь</sessionParameters>
   <roles>Role.ПолныеПрава</roles>
   <commonModules>CommonModule.ВебСокетКлиент</commonModules>
   <commonModules>CommonModule.ВебСокетСервер</commonModules>
+  <commonModules>CommonModule.Пользователи</commonModules>
+  <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
+  <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
   <constants>Constant.UrlВебСокетСервера</constants>
   <constants>Constant.АдресHttpСервиса</constants>
   <constants>Constant.ИмяАдминистратораСервера</constants>
@@ -52,7 +58,12 @@
   <constants>Constant.ПарольАдминистратораСервера</constants>
   <constants>Constant.ПользовательHttpСериса</constants>
   <constants>Constant.ПорольПользователяHttpСервиса</constants>
+  <constants>Constant.ПутьККаталогуКомпоненты</constants>
   <constants>Constant.РазрешитьИспользованиеВебСокет</constants>
+  <constants>Constant.РежимОтладки</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
+  <catalogs>Catalog.ВнешниеПользователи</catalogs>
+  <catalogs>Catalog.Пользователи</catalogs>
+  <dataProcessors>DataProcessor.ВебСокетКлиент</dataProcessors>
 </mdclass:Configuration>

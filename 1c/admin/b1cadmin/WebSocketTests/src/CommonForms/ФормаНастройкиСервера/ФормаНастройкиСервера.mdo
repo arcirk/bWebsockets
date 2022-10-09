@@ -3,7 +3,7 @@
   <name>ФормаНастройкиСервера</name>
   <synonym>
     <key>ru</key>
-    <value>Форма настройки сервера</value>
+    <value>Основные настройки</value>
   </synonym>
   <usePurposes>PersonalComputer</usePurposes>
   <usePurposes>MobileDevice</usePurposes>
