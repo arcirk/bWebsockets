@@ -25,7 +25,7 @@ public:
     ~WebCore() override;
 
     void close(const variant_t& exit_base = false);
-    void open(const variant_t &url, const variant_t &user, const variant_t &user_uuid, const variant_t &pwd = "");
+    void open(const variant_t &url, const variant_t &user_uuid);
 
 private:
     std::shared_ptr<websocket_client> m_client;

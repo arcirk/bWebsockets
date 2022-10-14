@@ -126,51 +126,25 @@ void WebCore::emit(const std::string& command, const std::string &resp, const st
 
 
 void WebCore::close(const variant_t &exit_base) {
-//    if (client)
-//    {
-//        if (client->started())
-//        {
-//            client->close(std::get<bool>(exit_base));
-//        }
-//
-//    }
+    if (m_client)
+    {
+        if (m_client->started())
+        {
+            m_client->close(std::get<bool>(exit_base));
+        }
+
+    }
 }
 
-void WebCore::open(const variant_t &url, const variant_t &user, const variant_t &userUuid, const variant_t &pwd) {
+void WebCore::open(const variant_t &url, const variant_t &userUuid) {
 
-//    if (client->started()) {
-//        return;
-//    }
-//
-//    std::string m_url = std::get<std::string>(url);
-//    if(!m_url.empty())
-//        _url = m_url;
-//
-//    std::string m_usr = std::get<std::string>(user);
-//    if(!m_usr.empty())
-//        _user_name = m_usr;
-//
-//
-//    std::string _u_uuid = std::get<std::string>(userUuid);
-//    arcirk::uuids::is_valid_uuid(_u_uuid, _user_uuid);
-//
-//    std::string m_pwd = std::get<std::string>(pwd);
-//    if(!m_pwd.empty())
-//        _hash = arcirk::get_hash(_user_name, m_pwd);
-//    else
-//        _hash = arcirk::get_hash(_user_name, _u_uuid);
-//
-//    arcirk::Uri u = arcirk::Uri::Parse(_url);
-//    _host = u.Host;
-//    try{
-//        _port = std::stoi(u.Port);
-//    }catch(...){
-//        //
-//    }
-//
-//    client->client_details(_app_name, _user_name, _user_uuid, _hash);
-//
-//    client->open();
+    if (m_client->started()) {
+        return;
+    }
+
+    url_ = std::get<std::string>(url);
+    m_client->open(arcirk::Uri::Parse(url_));
+
 
 }
 
