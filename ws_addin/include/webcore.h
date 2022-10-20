@@ -9,8 +9,8 @@
 
 #include "Component.h"
 #include <arcirk.hpp>
-#include <client.hpp>
-#include <boost/beast/ssl.hpp>
+//#include <client.hpp>
+//#include <boost/beast/ssl.hpp>
 
 class WebCore final : public Component {
 
@@ -28,9 +28,9 @@ public:
     void open(const variant_t &url, const variant_t &user_uuid);
 
 private:
-    std::shared_ptr<websocket_client> m_client;
-    client::client_param client_param;
-    server::server_config app_conf;
+    //std::shared_ptr<websocket_client> m_client;
+    //client::client_param client_param;
+    //server::server_config app_conf;
     std::string url_;
 
 //    std::string _client_param;
@@ -88,8 +88,8 @@ private:
     void on_status_changed(bool status);
 
     void verify_directories();
-    void read_conf(server::server_config & result);
-    void write_conf(server::server_config & conf);
+    //void read_conf(server::server_config & result);
+    //void write_conf(server::server_config & conf);
 
     void get_online_users();
 };

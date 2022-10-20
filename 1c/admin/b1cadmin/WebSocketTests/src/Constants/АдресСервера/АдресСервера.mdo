@@ -5,10 +5,10 @@
     <valueManagerType typeId="8c547d49-04fc-4c66-bf8a-015bcc1215b4" valueTypeId="26e1b734-9beb-4ba9-a7c1-c29bfda1e155"/>
     <valueKeyType typeId="4615e23b-4346-4140-9eb0-3fa1be457d78" valueTypeId="b5f9d6c3-1a72-430e-a810-5192be199449"/>
   </producedTypes>
-  <name>UrlВебСокетСервера</name>
+  <name>АдресСервера</name>
   <synonym>
     <key>ru</key>
-    <value>Url ВебСокет сервера</value>
+    <value>Адрес сервера</value>
   </synonym>
   <type>
     <types>String</types>

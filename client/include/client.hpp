@@ -67,7 +67,7 @@ private:
 
     void start(arcirk::Uri& url);
 
-    std::string base64_to_string(const std::string& base64str) const;
+    [[nodiscard]] std::string base64_to_string(const std::string& base64str) const;
 };
 
 #endif

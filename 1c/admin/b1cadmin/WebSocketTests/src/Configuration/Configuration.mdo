@@ -45,21 +45,18 @@
   <sessionParameters>SessionParameter.АвторизованныйПользователь</sessionParameters>
   <sessionParameters>SessionParameter.ТекущийПользователь</sessionParameters>
   <roles>Role.ПолныеПрава</roles>
-  <commonModules>CommonModule.ВебСокетКлиент</commonModules>
   <commonModules>CommonModule.ВебСокетСервер</commonModules>
+  <commonModules>CommonModule.МенеджерВебСокетКлент</commonModules>
   <commonModules>CommonModule.Пользователи</commonModules>
   <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
-  <constants>Constant.UrlВебСокетСервера</constants>
   <constants>Constant.АдресHttpСервиса</constants>
-  <constants>Constant.ИмяАдминистратораСервера</constants>
-  <constants>Constant.ИспользуетсяSSL</constants>
+  <constants>Constant.АдресСервера</constants>
+  <constants>Constant.ИспользоватьПрофильПользователя</constants>
   <constants>Constant.КаталогУстановкиСервера</constants>
-  <constants>Constant.ПарольАдминистратораСервера</constants>
   <constants>Constant.ПользовательHttpСериса</constants>
   <constants>Constant.ПорольПользователяHttpСервиса</constants>
   <constants>Constant.ПутьККаталогуКомпоненты</constants>
-  <constants>Constant.РазрешитьИспользованиеВебСокет</constants>
   <constants>Constant.РежимОтладки</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>

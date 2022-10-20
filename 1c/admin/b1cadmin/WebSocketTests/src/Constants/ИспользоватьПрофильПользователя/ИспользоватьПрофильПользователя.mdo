@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="00397c35-145a-4016-a51e-16cb00e8ff8d">
+  <producedTypes>
+    <managerType typeId="8f5a46b4-4904-4743-832b-e6388039726c" valueTypeId="4c6d7c05-02f5-49ad-a5b5-28b1337eea3e"/>
+    <valueManagerType typeId="9053c2d5-6aa8-49f0-93a7-7fcb7c273836" valueTypeId="dd6cfc3d-7a3e-4b4d-87b0-174fd01ba247"/>
+    <valueKeyType typeId="26fec94b-25a2-4549-b485-336acdd0a3a0" valueTypeId="42c71d0c-19e9-4ad2-93af-b345cb03e976"/>
+  </producedTypes>
+  <name>ИспользоватьПрофильПользователя</name>
+  <synonym>
+    <key>ru</key>
+    <value>Использовать профиль пользователя</value>
+  </synonym>
+  <type>
+    <types>Boolean</types>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>
