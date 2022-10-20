@@ -121,6 +121,7 @@ add_library(${TARGET} SHARED
         ${CPPH}
         ../../arcirk/beast.hpp
         ../../arcirk/net.hpp
+        ../../ws_addin/src/addin.def
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
