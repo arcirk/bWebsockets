@@ -4,7 +4,7 @@
     <name>ГруппаСервер</name>
     <id>30</id>
     <items xsi:type="form:FormGroup">
-      <name>ГруппаКаталогУстановкиСервера</name>
+      <name>ГруппаСерверКаталогБинарныхФайлов</name>
       <id>37</id>
       <items xsi:type="form:FormField">
         <name>КаталогУстановкиСервера</name>
@@ -15,7 +15,7 @@
           <common>true</common>
         </userVisible>
         <dataPath xsi:type="form:DataPath">
-          <segments>НаборКонстант.КаталогУстановкиСервера</segments>
+          <segments>НаборКонстант.КаталогБинарныхФайловСервера</segments>
         </dataPath>
         <extendedTooltip>
           <name>КаталогУстановкиСервераРасширеннаяПодсказка</name>
@@ -112,12 +112,8 @@
       <userVisible>
         <common>true</common>
       </userVisible>
-      <title>
-        <key>ru</key>
-        <value>Группа1</value>
-      </title>
       <extendedTooltip>
-        <name>ГруппаКаталогУстановкиСервераРасширеннаяПодсказка</name>
+        <name>ГруппаСерверКаталогБинарныхФайловРасширеннаяПодсказка</name>
         <id>38</id>
         <visible>true</visible>
         <enabled>true</enabled>
@@ -320,7 +316,7 @@
         <common>true</common>
       </userVisible>
       <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.РежимОтладки</segments>
+        <segments>РежимОтладки</segments>
       </dataPath>
       <handlers>
         <event>OnChange</event>
@@ -359,18 +355,19 @@
       <extInfo xsi:type="form:CheckBoxFieldExtInfo"/>
     </items>
     <items xsi:type="form:FormField">
-      <name>ПутьККаталогуКомпоненты</name>
-      <id>27</id>
+      <name>КаталогОтладки</name>
+      <id>39</id>
       <visible>true</visible>
+      <enabled>true</enabled>
       <userVisible>
         <common>true</common>
       </userVisible>
       <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.ПутьККаталогуКомпоненты</segments>
+        <segments>КаталогОтладки</segments>
       </dataPath>
       <extendedTooltip>
-        <name>ПутьККаталогуКомпонентыРасширеннаяПодсказка</name>
-        <id>29</id>
+        <name>КаталогОтладкиРасширеннаяПодсказка</name>
+        <id>41</id>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
@@ -384,8 +381,8 @@
         </extInfo>
       </extendedTooltip>
       <contextMenu>
-        <name>ПутьККаталогуКомпонентыКонтекстноеМеню</name>
-        <id>28</id>
+        <name>КаталогОтладкиКонтекстноеМеню</name>
+        <id>40</id>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
@@ -401,7 +398,7 @@
       <extInfo xsi:type="form:InputFieldExtInfo">
         <handlers>
           <event>StartChoice</event>
-          <name>ПутьККаталогуКомпонентыНачалоВыбора</name>
+          <name>КаталогОтладкиНачалоВыбора</name>
         </handlers>
         <autoMaxWidth>true</autoMaxWidth>
         <autoMaxHeight>true</autoMaxHeight>
@@ -419,7 +416,7 @@
     </userVisible>
     <title>
       <key>ru</key>
-      <value>Компонента</value>
+      <value>Настройки клиента</value>
     </title>
     <extendedTooltip>
       <name>ГруппаКомпонентаРасширеннаяПодсказка</name>
@@ -484,13 +481,13 @@
       <common>true</common>
     </edit>
     <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
-      <segments>НаборКонстант.АдресСервера</segments>
-    </notDefaultUseAlwaysAttributes>
-    <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
       <segments>НаборКонстант.АдресHttpСервиса</segments>
     </notDefaultUseAlwaysAttributes>
     <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
-      <segments>НаборКонстант.КаталогУстановкиСервера</segments>
+      <segments>НаборКонстант.АдресСервера</segments>
+    </notDefaultUseAlwaysAttributes>
+    <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
+      <segments>НаборКонстант.КаталогБинарныхФайловСервера</segments>
     </notDefaultUseAlwaysAttributes>
     <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
       <segments>НаборКонстант.ПользовательHttpСериса</segments>
@@ -504,9 +501,50 @@
     <main>true</main>
     <savedData>true</savedData>
   </attributes>
+  <attributes>
+    <name>КаталогОтладки</name>
+    <title>
+      <key>ru</key>
+      <value>Каталог отладки</value>
+    </title>
+    <id>2</id>
+    <valueType>
+      <types>String</types>
+      <stringQualifiers/>
+    </valueType>
+    <view>
+      <common>true</common>
+    </view>
+    <edit>
+      <common>true</common>
+    </edit>
+    <savedData>true</savedData>
+  </attributes>
+  <attributes>
+    <name>РежимОтладки</name>
+    <title>
+      <key>ru</key>
+      <value>Режим отладки</value>
+    </title>
+    <id>3</id>
+    <valueType>
+      <types>Boolean</types>
+    </valueType>
+    <view>
+      <common>true</common>
+    </view>
+    <edit>
+      <common>true</common>
+    </edit>
+  </attributes>
   <commandInterface>
     <navigationPanel/>
     <commandBar/>
   </commandInterface>
-  <extInfo xsi:type="form:ConstantsFormExtInfo"/>
+  <extInfo xsi:type="form:ConstantsFormExtInfo">
+    <handlers>
+      <event>OnWriteAtServer</event>
+      <name>ПриЗаписиНаСервере</name>
+    </handlers>
+  </extInfo>
 </form:Form>

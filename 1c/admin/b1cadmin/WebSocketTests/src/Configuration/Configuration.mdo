@@ -16,6 +16,7 @@
   <defaultRunMode>ManagedApplication</defaultRunMode>
   <usePurposes>PersonalComputer</usePurposes>
   <scriptVariant>Russian</scriptVariant>
+  <dynamicListsUserSettingsStorage>SettingsStorage.ПользовательскиеНастройки</dynamicListsUserSettingsStorage>
   <usedMobileApplicationFunctionalities>
     <functionality>
       <use>true</use>
@@ -46,18 +47,18 @@
   <sessionParameters>SessionParameter.ТекущийПользователь</sessionParameters>
   <roles>Role.ПолныеПрава</roles>
   <commonModules>CommonModule.ВебСокетСервер</commonModules>
+  <commonModules>CommonModule.МенеджерВебСокетВызовСервера</commonModules>
   <commonModules>CommonModule.МенеджерВебСокетКлент</commonModules>
   <commonModules>CommonModule.Пользователи</commonModules>
   <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
+  <settingsStorages>SettingsStorage.ПользовательскиеНастройки</settingsStorages>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
   <constants>Constant.АдресHttpСервиса</constants>
   <constants>Constant.АдресСервера</constants>
   <constants>Constant.ИспользоватьПрофильПользователя</constants>
-  <constants>Constant.КаталогУстановкиСервера</constants>
+  <constants>Constant.КаталогБинарныхФайловСервера</constants>
   <constants>Constant.ПользовательHttpСериса</constants>
   <constants>Constant.ПорольПользователяHttpСервиса</constants>
-  <constants>Constant.ПутьККаталогуКомпоненты</constants>
-  <constants>Constant.РежимОтладки</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>

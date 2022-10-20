@@ -5,10 +5,10 @@
     <valueManagerType typeId="ae08a6f6-87c1-4473-8f63-b50152c18f05" valueTypeId="70771e1c-856e-4df0-b3d0-02ed9e39dd56"/>
     <valueKeyType typeId="5b09ed6e-202f-4e1e-9fdd-9bd8936660ed" valueTypeId="187085b6-b0bf-49ad-b45f-5d4088ecbb65"/>
   </producedTypes>
-  <name>КаталогУстановкиСервера</name>
+  <name>КаталогБинарныхФайловСервера</name>
   <synonym>
     <key>ru</key>
-    <value>Каталог установки сервера</value>
+    <value>Каталог бинарных файлов сервера</value>
   </synonym>
   <type>
     <types>String</types>
