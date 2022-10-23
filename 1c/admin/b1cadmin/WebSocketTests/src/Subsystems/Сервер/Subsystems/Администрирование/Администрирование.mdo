@@ -8,5 +8,6 @@
   <includeHelpInContents>true</includeHelpInContents>
   <includeInCommandInterface>true</includeInCommandInterface>
   <content>CommonCommand.ОткрытьФормуНастроекКомпоненты</content>
+  <content>Constant.DavСервис</content>
   <parentSubsystem>Subsystem.Сервер</parentSubsystem>
 </mdclass:Subsystem>

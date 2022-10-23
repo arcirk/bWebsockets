@@ -70,7 +70,7 @@ private:
 //
 //    void connect_to_recipient(const variant_t &recipient);
 //
-//    std::string getSha1(const variant_t &source);
+    std::string sha1_hash(const variant_t &source);
 //
 //    void set_document_name(const variant_t &value);
 //

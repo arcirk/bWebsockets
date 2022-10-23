@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="311eb254-dc79-458f-b1e7-9ff7e7cc3d94">
+  <producedTypes>
+    <managerType typeId="552238b2-db12-4279-95ab-846f0db3100f" valueTypeId="cb98a36b-56eb-4341-b25e-a84768b9713d"/>
+    <valueManagerType typeId="cff8d411-28ab-47e4-8b52-761a25c76a19" valueTypeId="5bdaf764-0d9c-4e56-80f0-69590e9bff1e"/>
+    <valueKeyType typeId="dff3613c-a40f-48eb-a462-51f49ce1e2f9" valueTypeId="99692c1b-e300-4f1e-8bc1-86b7d808f71f"/>
+  </producedTypes>
+  <name>DavСервисПароль</name>
+  <synonym>
+    <key>ru</key>
+    <value>Пароль на облако</value>
+  </synonym>
+  <type>
+    <types>String</types>
+    <stringQualifiers>
+      <length>150</length>
+    </stringQualifiers>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>

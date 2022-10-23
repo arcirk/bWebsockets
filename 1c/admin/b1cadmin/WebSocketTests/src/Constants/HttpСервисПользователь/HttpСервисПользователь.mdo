@@ -5,10 +5,10 @@
     <valueManagerType typeId="c9f9a9af-21a5-48cb-8f45-a9d24cda35ee" valueTypeId="60e31944-6164-43d8-a7fa-779b2997945e"/>
     <valueKeyType typeId="2b9b528f-1b46-4e1b-8754-b235eae90cd8" valueTypeId="a8cd2224-8f64-412e-b2b8-ff6e7f88efa0"/>
   </producedTypes>
-  <name>ПользовательHttpСериса</name>
+  <name>HttpСервисПользователь</name>
   <synonym>
     <key>ru</key>
-    <value>Пользователь http сериса</value>
+    <value>Пользователь</value>
   </synonym>
   <type>
     <types>String</types>

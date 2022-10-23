@@ -102,7 +102,7 @@ WebCore::WebCore(){
     AddMethod(L"GetOnlineUsers", L"ПолучитьПользователейВСети", this, &WebCore::get_online_users);
 //    AddMethod(L"CommandToClient", L"КомандаКлиенту", this, &WebCore::command_to_client);
 //    AddMethod(L"CommandToServer", L"КомандаСерверу", this, &WebCore::command_to_server);
-//    AddMethod(L"GetSha1", L"ПолучитьSha1", this, &WebCore::getSha1);
+    AddMethod(L"Sha1Hash", L"Sha1Hash", this, &WebCore::sha1_hash);
 //    AddMethod(L"SetAppName", L"УстановитьИмяПриложения", this, &WebCore::set_app_name);
     AddMethod(L"SessionUuid", L"ИдентификаторСессии", this, &WebCore::session_uuid);
 //    AddMethod(L"SetJobData", L"УстановитьПараметрыРабочегоМеста", this, &WebCore::set_job_data);
@@ -183,4 +183,12 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
 
 void WebCore::on_status_changed(bool status){
     std::cout << "websocket on_status_changed: " << status << std::endl;
+}
+
+std::string WebCore::sha1_hash(const variant_t &source) {
+    std::string _source = std::get<std::string>(source);
+    if(!_source.empty())
+        return arcirk::get_sha1(_source);
+    else
+        return std::string();
 }

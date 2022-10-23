@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="6b0c0a78-1762-46bf-8241-8640bcbe0874">
+  <producedTypes>
+    <managerType typeId="3f27f58b-e051-475a-8f20-614ec430ffa4" valueTypeId="10797216-5912-4a83-ac4d-13b9088eccc3"/>
+    <valueManagerType typeId="b13bc077-9c51-49d7-9459-d8db7792ee23" valueTypeId="4c83894d-3b6a-431a-98a3-7050c7667986"/>
+    <valueKeyType typeId="54393d3f-f825-41a2-a2ba-3a3ea65bb7a2" valueTypeId="cf599eb8-920d-451d-8dad-0ef82340469a"/>
+  </producedTypes>
+  <name>DavСеривсПользователь</name>
+  <synonym>
+    <key>ru</key>
+    <value>Пользователь облака</value>
+  </synonym>
+  <type>
+    <types>String</types>
+    <stringQualifiers>
+      <length>150</length>
+    </stringQualifiers>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>

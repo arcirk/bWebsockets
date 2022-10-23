@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="e69af857-269d-48fb-aee0-6148accf88f4">
+  <producedTypes>
+    <managerType typeId="440094b4-5e40-4105-9288-3872aaef6611" valueTypeId="8b2ab943-2fe5-4e86-9351-b10e1644f484"/>
+    <valueManagerType typeId="766d4b64-0302-4ea0-a370-e57a269679c2" valueTypeId="9087fd22-c774-4d3b-902d-e2323f9d07b3"/>
+    <valueKeyType typeId="e8382853-a69e-4165-9751-376fe80579c6" valueTypeId="ee0987b9-c2d0-45c0-9131-780084694b66"/>
+  </producedTypes>
+  <name>DavСервис</name>
+  <synonym>
+    <key>ru</key>
+    <value>Адрес облачного хранилища</value>
+  </synonym>
+  <type>
+    <types>String</types>
+    <stringQualifiers>
+      <length>255</length>
+    </stringQualifiers>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>

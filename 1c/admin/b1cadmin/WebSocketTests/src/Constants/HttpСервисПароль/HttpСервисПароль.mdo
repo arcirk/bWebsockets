@@ -5,10 +5,10 @@
     <valueManagerType typeId="89bd9321-b816-4b73-8730-58c35663b5ad" valueTypeId="378221a8-100c-4feb-9ec1-15d83eb195d1"/>
     <valueKeyType typeId="0477482d-52ea-4035-bca6-522e8b4c05e2" valueTypeId="1c44308e-5435-48fd-975c-58cae793158e"/>
   </producedTypes>
-  <name>ПорольПользователяHttpСервиса</name>
+  <name>HttpСервисПароль</name>
   <synonym>
     <key>ru</key>
-    <value>Пороль пользователя http сервиса</value>
+    <value>Пароль</value>
   </synonym>
   <type>
     <types>String</types>

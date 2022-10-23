@@ -53,12 +53,14 @@
   <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
   <settingsStorages>SettingsStorage.ПользовательскиеНастройки</settingsStorages>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
-  <constants>Constant.АдресHttpСервиса</constants>
+  <constants>Constant.DavСервис</constants>
+  <constants>Constant.DavСервисПароль</constants>
+  <constants>Constant.DavСеривсПользователь</constants>
+  <constants>Constant.HttpСервис</constants>
+  <constants>Constant.HttpСервисПароль</constants>
+  <constants>Constant.HttpСервисПользователь</constants>
   <constants>Constant.АдресСервера</constants>
-  <constants>Constant.ИспользоватьПрофильПользователя</constants>
-  <constants>Constant.КаталогБинарныхФайловСервера</constants>
-  <constants>Constant.ПользовательHttpСериса</constants>
-  <constants>Constant.ПорольПользователяHttpСервиса</constants>
+  <constants>Constant.РабочийКаталогСервера</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>

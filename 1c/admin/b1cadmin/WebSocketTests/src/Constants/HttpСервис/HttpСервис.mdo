@@ -5,14 +5,16 @@
     <valueManagerType typeId="3593f50b-976a-41b9-aa04-70d7da88977b" valueTypeId="ee28ab6e-53a1-4817-a109-fb88bf1ad61a"/>
     <valueKeyType typeId="2bb75d53-d49f-4ae6-8b9b-c16ab513def4" valueTypeId="9cda0d8c-4846-4545-9e07-d47b6ddf2077"/>
   </producedTypes>
-  <name>АдресHttpСервиса</name>
+  <name>HttpСервис</name>
   <synonym>
     <key>ru</key>
-    <value>Адрес http сервиса</value>
+    <value>Http сервис</value>
   </synonym>
   <type>
     <types>String</types>
-    <stringQualifiers/>
+    <stringQualifiers>
+      <length>255</length>
+    </stringQualifiers>
   </type>
   <useStandardCommands>true</useStandardCommands>
   <minValue xsi:type="core:UndefinedValue"/>
