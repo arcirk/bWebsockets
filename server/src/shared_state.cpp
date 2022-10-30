@@ -303,10 +303,15 @@ std::string shared_state::get_clients_list(const variant_t& param, const variant
     auto rows = n_json::array();
 
     for (auto itr = sessions_.cbegin(); itr != sessions_.cend() ; ++itr) {
+        char cur_date[100];
+        auto tm = itr->second->start_date();
+        std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
+        std::string dt = arcirk::to_utf(cur_date);
         n_json row = {
             {"session_uuid", arcirk::uuids::uuid_to_string(itr->second->uuid_session())},
             {"user_name", itr->second->user_name()},
-            {"user_name", arcirk::uuids::uuid_to_string(itr->second->user_uuid())}
+            {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
+            {"start_date", dt} //std::string(std::move(cur_date))
         };
         rows += row;
     }

@@ -20,6 +20,10 @@ class subscriber{
 
 public:
 
+   virtual std::tm start_date() const{
+        return start_date_;
+   }
+
     [[nodiscard]] virtual std::string user_name() const{
         return _user_name;
     }
@@ -46,7 +50,7 @@ public:
 
     virtual bool is_ssl() = 0;
 
-    virtual bool authorized() const{
+    [[nodiscard]] virtual bool authorized() const{
         return authorized_;
     };
 
@@ -61,6 +65,7 @@ protected:
     boost::uuids::uuid _user_uuid{};
     boost::uuids::uuid _uuid_session{};
     bool authorized_ = false;
+    std::tm start_date_{};
 };
 
 template<class Derived>
@@ -333,6 +338,7 @@ public:
     }
 
     void join(){
+        start_date_ = arcirk::current_date();
         state_->join(this);
     }
 
@@ -398,12 +404,11 @@ public:
     }
 
     void join(){
+        start_date_ = arcirk::current_date();
         state_->join(this);
-//        state_->join_adv(this);
     }
 
     void send(boost::shared_ptr<std::string const> const& ss) override{
-        //super()->send(ss);
         auto _super = boost::dynamic_pointer_cast<ssl_websocket_session>(shared_from_this());
         _super->send_message(ss);
     }
