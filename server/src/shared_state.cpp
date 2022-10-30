@@ -22,7 +22,10 @@ void shared_state::join(subscriber *session) {
 
     std::lock_guard<std::mutex> lock(mutex_);
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(session->uuid_session(), session));
-    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()));
+    std::tm tm = arcirk::current_date();
+    char cur_date[100];
+    std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
+    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + std::string(cur_date));
 
 }
 
@@ -31,7 +34,10 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
     if (iter != sessions_.end() ){
         sessions_.erase(session_uuid);
     }
-    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")");
+    std::tm tm = arcirk::current_date();
+    char cur_date[100];
+    std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
+    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" + " " + std::string(cur_date));
 }
 
 void shared_state::deliver(const std::string &message, subscriber *session) {

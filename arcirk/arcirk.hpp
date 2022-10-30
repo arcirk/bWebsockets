@@ -62,6 +62,8 @@ namespace arcirk {
     template<typename... Arguments>
     std::string str_sample(const std::string& format_string, const Arguments&... args){return boost::str((boost::format(format_string) % ... % args));}
 
+    std::tm current_date();
+
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);
         boost::uuids::uuid string_to_uuid(const std::string& sz_uuid, bool random_uuid = false);

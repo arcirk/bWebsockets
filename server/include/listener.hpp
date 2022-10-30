@@ -67,7 +67,9 @@ public:
     void
     run()
     {
-        std::cout << "server run" << std::endl;
+        std::tm tm = arcirk::current_date();
+        std::cout.imbue(std::locale("ru_RU.utf8"));
+        std::cout << "server run " << std::put_time(&tm, "%c %Z") << std::endl;
         do_accept();
     }
 
