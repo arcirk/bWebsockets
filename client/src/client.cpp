@@ -3,6 +3,7 @@
 #include "../include/session.hpp"
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
+#include <iostream>
 
 websocket_client::websocket_client(ssl::context& ctx, client::client_param &client_param)
 : ctx_(ctx)
@@ -214,4 +215,21 @@ boost::uuids::uuid websocket_client::session_uuid() const {
         return arcirk::uuids::nil_uuid();
 
     return state_->session_uuid();
+}
+
+void websocket_client::update_client_param(client::client_param& client_param) {
+    if(started())
+        throw std::exception("Клиент запущен. Изменение параметров запрещено.");
+
+    if(!client_param.app_name.empty())
+        client_param_.app_name = client_param.app_name;
+    if(!client_param.user_name.empty())
+        client_param_.user_name = client_param.user_name;
+    if(!client_param.user_uuid.empty())
+        client_param_.user_uuid = client_param.user_uuid;
+    if(!client_param.hash.empty())
+        client_param_.hash = client_param.hash;
+    if(!client_param.password.empty())
+        client_param_.password = client_param.password;
+
 }

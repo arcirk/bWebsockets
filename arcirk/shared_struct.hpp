@@ -73,11 +73,24 @@ namespace arcirk::client{
     };
 
     enum client_events{
-        wsMessage = 0,
+        wsMessage,
         wsStatusChanged,
         wsConnect,
         wsClose,
-        wsError
+        wsError,
+        TS_INVALID=-1,
+    };
+    NLOHMANN_JSON_SERIALIZE_ENUM(client_events, {
+        {TS_INVALID, nullptr}    ,
+        {wsMessage, "Message"}  ,
+        {wsStatusChanged, "StatusChanged"}    ,
+        {wsClose, "Close"}    ,
+        {wsError, "Error"}    ,
+
+    })
+    static inline std::string synonym(client_events value){
+        using n_json = nlohmann::json;
+        return n_json(value).get<std::string>();
     };
 }
 

@@ -9,5 +9,8 @@
   <includeInCommandInterface>true</includeInCommandInterface>
   <content>CommonCommand.ОткрытьФормуНастроекКомпоненты</content>
   <content>Constant.DavСервис</content>
+  <content>Constant.DavСервисПароль</content>
+  <content>Constant.DavСеривсПользователь</content>
+  <content>CommonForm.ФормаНастройкиСервера</content>
   <parentSubsystem>Subsystem.Сервер</parentSubsystem>
 </mdclass:Subsystem>

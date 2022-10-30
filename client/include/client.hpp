@@ -49,6 +49,8 @@ public:
             std::cerr << what << ":error: " << err << std::endl;
     }
 
+    void update_client_param(client::client_param& client_param);
+
 private:
     client::client_data m_data;
     ssl::context& ctx_;

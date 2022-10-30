@@ -1,2 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<cmi:CommandInterface xmlns:cmi="http://g5.1c.ru/v8/dt/cmi"/>
+<cmi:CommandInterface xmlns:cmi="http://g5.1c.ru/v8/dt/cmi">
+  <commandsVisibility>
+    <visibilityFragments>
+      <command>CommonForm.ФормаНастройкиСервера.StandardCommand.Open</command>
+      <visible/>
+    </visibilityFragments>
+    <visibilityFragments>
+      <command>Constant.DavСервис.StandardCommand.Open</command>
+      <visible/>
+    </visibilityFragments>
+    <visibilityFragments>
+      <command>Constant.DavСервисПароль.StandardCommand.Open</command>
+      <visible/>
+    </visibilityFragments>
+    <visibilityFragments>
+      <command>Constant.DavСеривсПользователь.StandardCommand.Open</command>
+      <visible/>
+    </visibilityFragments>
+  </commandsVisibility>
+  <commandsOrder>
+    <orderFragments>
+      <group>ActionsPanelTools</group>
+      <commands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commands>
+      <commands>CommonForm.ФормаНастройкиСервера.StandardCommand.Open</commands>
+      <commands>Constant.DavСервис.StandardCommand.Open</commands>
+      <commands>Constant.DavСервисПароль.StandardCommand.Open</commands>
+      <commands>Constant.DavСеривсПользователь.StandardCommand.Open</commands>
+    </orderFragments>
+  </commandsOrder>
+</cmi:CommandInterface>

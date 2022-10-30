@@ -24,6 +24,7 @@ void shared_state::on_close() {
 
 void shared_state::on_connect(session_base * base) {
     session_base_ = base;
+    start_date_ = arcirk::current_date();
     if(m_data.on_connect)
         m_data.on_connect();
 }

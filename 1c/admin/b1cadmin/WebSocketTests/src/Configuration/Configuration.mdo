@@ -46,9 +46,8 @@
   <sessionParameters>SessionParameter.АвторизованныйПользователь</sessionParameters>
   <sessionParameters>SessionParameter.ТекущийПользователь</sessionParameters>
   <roles>Role.ПолныеПрава</roles>
-  <commonModules>CommonModule.ВебСокетСервер</commonModules>
   <commonModules>CommonModule.МенеджерВебСокетВызовСервера</commonModules>
-  <commonModules>CommonModule.МенеджерВебСокетКлент</commonModules>
+  <commonModules>CommonModule.МенеджерВебСокетКлиент</commonModules>
   <commonModules>CommonModule.Пользователи</commonModules>
   <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
   <settingsStorages>SettingsStorage.ПользовательскиеНастройки</settingsStorages>
@@ -62,8 +61,8 @@
   <constants>Constant.АдресСервера</constants>
   <constants>Constant.РабочийКаталогСервера</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
+  <commonForms>CommonForm.ФормаАктивныеПользователи</commonForms>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>
   <catalogs>Catalog.Пользователи</catalogs>
-  <dataProcessors>DataProcessor.ВебСокетКлиент</dataProcessors>
 </mdclass:Configuration>

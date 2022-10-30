@@ -7,6 +7,6 @@
   </synonym>
   <includeHelpInContents>true</includeHelpInContents>
   <includeInCommandInterface>true</includeInCommandInterface>
-  <content>DataProcessor.ВебСокетКлиент</content>
   <content>SettingsStorage.ПользовательскиеНастройки</content>
+  <content>CommonForm.ФормаНастройкиСервера</content>
 </mdclass:Subsystem>

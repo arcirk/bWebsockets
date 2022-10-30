@@ -189,123 +189,15 @@
         <textEdit>true</textEdit>
       </extInfo>
     </items>
-    <items xsi:type="form:FormField">
-      <name>DavСервис</name>
-      <id>78</id>
-      <title>
-        <key>ru</key>
-        <value>Адрес облачного хранилища (WebDav)</value>
-      </title>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.DavСервис</segments>
-      </dataPath>
-      <extendedTooltip>
-        <name>DavСервисРасширеннаяПодсказка</name>
-        <id>80</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>DavСервисКонтекстноеМеню</name>
-        <id>79</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <type>InputField</type>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
-      <extInfo xsi:type="form:InputFieldExtInfo">
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <wrap>true</wrap>
-        <chooseType>true</chooseType>
-        <typeDomainEnabled>true</typeDomainEnabled>
-        <textEdit>true</textEdit>
-      </extInfo>
-    </items>
-    <items xsi:type="form:FormField">
-      <name>DavСеривсПользователь</name>
-      <id>81</id>
-      <title>
-        <key>ru</key>
-        <value>Пользователь (WebDav)</value>
-      </title>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.DavСеривсПользователь</segments>
-      </dataPath>
-      <extendedTooltip>
-        <name>DavСеривсПользовательРасширеннаяПодсказка</name>
-        <id>83</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>DavСеривсПользовательКонтекстноеМеню</name>
-        <id>82</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <type>InputField</type>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
-      <extInfo xsi:type="form:InputFieldExtInfo">
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <wrap>true</wrap>
-        <chooseType>true</chooseType>
-        <typeDomainEnabled>true</typeDomainEnabled>
-        <textEdit>true</textEdit>
-      </extInfo>
-    </items>
     <items xsi:type="form:FormGroup">
-      <name>ГруппаDavПароль</name>
-      <id>84</id>
+      <name>ГруппаОблачноеХранилище</name>
+      <id>91</id>
       <items xsi:type="form:FormField">
-        <name>DavСервисПароль</name>
-        <id>86</id>
+        <name>DavСервис</name>
+        <id>78</id>
         <title>
           <key>ru</key>
-          <value>Пароль (WebDav)</value>
+          <value>Адрес</value>
         </title>
         <visible>true</visible>
         <enabled>true</enabled>
@@ -313,11 +205,11 @@
           <common>true</common>
         </userVisible>
         <dataPath xsi:type="form:DataPath">
-          <segments>НаборКонстант.DavСервисПароль</segments>
+          <segments>НаборКонстант.DavСервис</segments>
         </dataPath>
         <extendedTooltip>
-          <name>DavСервисПарольРасширеннаяПодсказка</name>
-          <id>88</id>
+          <name>DavСервисРасширеннаяПодсказка</name>
+          <id>80</id>
           <visible>true</visible>
           <enabled>true</enabled>
           <userVisible>
@@ -331,8 +223,8 @@
           </extInfo>
         </extendedTooltip>
         <contextMenu>
-          <name>DavСервисПарольКонтекстноеМеню</name>
-          <id>87</id>
+          <name>DavСервисКонтекстноеМеню</name>
+          <id>79</id>
           <visible>true</visible>
           <enabled>true</enabled>
           <userVisible>
@@ -354,17 +246,24 @@
           <textEdit>true</textEdit>
         </extInfo>
       </items>
-      <items xsi:type="form:Button">
-        <name>DavСервисПоказатьПароль</name>
-        <id>89</id>
+      <items xsi:type="form:FormField">
+        <name>DavСеривсПользователь</name>
+        <id>81</id>
+        <title>
+          <key>ru</key>
+          <value>Пользователь</value>
+        </title>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
           <common>true</common>
         </userVisible>
+        <dataPath xsi:type="form:DataPath">
+          <segments>НаборКонстант.DavСеривсПользователь</segments>
+        </dataPath>
         <extendedTooltip>
-          <name>DavСервисПоказатьПарольРасширеннаяПодсказка</name>
-          <id>90</id>
+          <name>DavСеривсПользовательРасширеннаяПодсказка</name>
+          <id>83</id>
           <visible>true</visible>
           <enabled>true</enabled>
           <userVisible>
@@ -377,13 +276,151 @@
             <horizontalAlign>Left</horizontalAlign>
           </extInfo>
         </extendedTooltip>
-        <type>UsualButton</type>
-        <commandName>Form.Command.DavСервисПоказатьПароль</commandName>
-        <representation>Auto</representation>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <placementArea>UserCmds</placementArea>
-        <representationInContextMenu>Auto</representationInContextMenu>
+        <contextMenu>
+          <name>DavСеривсПользовательКонтекстноеМеню</name>
+          <id>82</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <autoFill>true</autoFill>
+        </contextMenu>
+        <type>InputField</type>
+        <editMode>Enter</editMode>
+        <showInHeader>true</showInHeader>
+        <headerHorizontalAlign>Left</headerHorizontalAlign>
+        <showInFooter>true</showInFooter>
+        <extInfo xsi:type="form:InputFieldExtInfo">
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <wrap>true</wrap>
+          <chooseType>true</chooseType>
+          <typeDomainEnabled>true</typeDomainEnabled>
+          <textEdit>true</textEdit>
+        </extInfo>
+      </items>
+      <items xsi:type="form:FormGroup">
+        <name>ГруппаDavПароль</name>
+        <id>84</id>
+        <items xsi:type="form:FormField">
+          <name>DavСервисПароль</name>
+          <id>86</id>
+          <title>
+            <key>ru</key>
+            <value>Пароль (WebDav)</value>
+          </title>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <dataPath xsi:type="form:DataPath">
+            <segments>НаборКонстант.DavСервисПароль</segments>
+          </dataPath>
+          <extendedTooltip>
+            <name>DavСервисПарольРасширеннаяПодсказка</name>
+            <id>88</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <type>Label</type>
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <extInfo xsi:type="form:LabelDecorationExtInfo">
+              <horizontalAlign>Left</horizontalAlign>
+            </extInfo>
+          </extendedTooltip>
+          <contextMenu>
+            <name>DavСервисПарольКонтекстноеМеню</name>
+            <id>87</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <autoFill>true</autoFill>
+          </contextMenu>
+          <type>InputField</type>
+          <editMode>Enter</editMode>
+          <showInHeader>true</showInHeader>
+          <headerHorizontalAlign>Left</headerHorizontalAlign>
+          <showInFooter>true</showInFooter>
+          <extInfo xsi:type="form:InputFieldExtInfo">
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <wrap>true</wrap>
+            <chooseType>true</chooseType>
+            <typeDomainEnabled>true</typeDomainEnabled>
+            <textEdit>true</textEdit>
+          </extInfo>
+        </items>
+        <items xsi:type="form:Button">
+          <name>DavСервисПоказатьПароль</name>
+          <id>89</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <extendedTooltip>
+            <name>DavСервисПоказатьПарольРасширеннаяПодсказка</name>
+            <id>90</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <type>Label</type>
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <extInfo xsi:type="form:LabelDecorationExtInfo">
+              <horizontalAlign>Left</horizontalAlign>
+            </extInfo>
+          </extendedTooltip>
+          <type>UsualButton</type>
+          <commandName>Form.Command.DavСервисПоказатьПароль</commandName>
+          <representation>Auto</representation>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <placementArea>UserCmds</placementArea>
+          <representationInContextMenu>Auto</representationInContextMenu>
+        </items>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <title>
+          <key>ru</key>
+          <value>Группа1</value>
+        </title>
+        <extendedTooltip>
+          <name>ГруппаDavПарольРасширеннаяПодсказка</name>
+          <id>85</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <type>Label</type>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <extInfo xsi:type="form:LabelDecorationExtInfo">
+            <horizontalAlign>Left</horizontalAlign>
+          </extInfo>
+        </extendedTooltip>
+        <type>UsualGroup</type>
+        <extInfo xsi:type="form:UsualGroupExtInfo">
+          <group>AlwaysHorizontal</group>
+          <behavior>Auto</behavior>
+          <showLeftMargin>true</showLeftMargin>
+          <united>true</united>
+          <throughAlign>Auto</throughAlign>
+          <currentRowUse>Auto</currentRowUse>
+        </extInfo>
       </items>
       <visible>true</visible>
       <enabled>true</enabled>
@@ -392,11 +429,11 @@
       </userVisible>
       <title>
         <key>ru</key>
-        <value>Группа1</value>
+        <value>Облачное хранилище</value>
       </title>
       <extendedTooltip>
-        <name>ГруппаDavПарольРасширеннаяПодсказка</name>
-        <id>85</id>
+        <name>ГруппаОблачноеХранилищеРасширеннаяПодсказка</name>
+        <id>92</id>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
@@ -411,10 +448,272 @@
       </extendedTooltip>
       <type>UsualGroup</type>
       <extInfo xsi:type="form:UsualGroupExtInfo">
-        <group>AlwaysHorizontal</group>
+        <group>Vertical</group>
         <behavior>Auto</behavior>
         <showLeftMargin>true</showLeftMargin>
         <united>true</united>
+        <showTitle>true</showTitle>
+        <throughAlign>Auto</throughAlign>
+        <currentRowUse>Auto</currentRowUse>
+      </extInfo>
+    </items>
+    <items xsi:type="form:FormGroup">
+      <name>ГруппаHttpСервис</name>
+      <id>61</id>
+      <items xsi:type="form:FormField">
+        <name>HttpСервис</name>
+        <id>63</id>
+        <title>
+          <key>ru</key>
+          <value>Адрес сервиса</value>
+        </title>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <dataPath xsi:type="form:DataPath">
+          <segments>НаборКонстант.HttpСервис</segments>
+        </dataPath>
+        <extendedTooltip>
+          <name>HttpСервисРасширеннаяПодсказка</name>
+          <id>65</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <type>Label</type>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <extInfo xsi:type="form:LabelDecorationExtInfo">
+            <horizontalAlign>Left</horizontalAlign>
+          </extInfo>
+        </extendedTooltip>
+        <contextMenu>
+          <name>HttpСервисКонтекстноеМеню</name>
+          <id>64</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <autoFill>true</autoFill>
+        </contextMenu>
+        <type>InputField</type>
+        <editMode>Enter</editMode>
+        <showInHeader>true</showInHeader>
+        <headerHorizontalAlign>Left</headerHorizontalAlign>
+        <showInFooter>true</showInFooter>
+        <extInfo xsi:type="form:InputFieldExtInfo">
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <wrap>true</wrap>
+          <chooseType>true</chooseType>
+          <typeDomainEnabled>true</typeDomainEnabled>
+          <textEdit>true</textEdit>
+        </extInfo>
+      </items>
+      <items xsi:type="form:FormField">
+        <name>HttpСервисПользователь</name>
+        <id>68</id>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <dataPath xsi:type="form:DataPath">
+          <segments>НаборКонстант.HttpСервисПользователь</segments>
+        </dataPath>
+        <extendedTooltip>
+          <name>HttpСервисПользовательРасширеннаяПодсказка</name>
+          <id>70</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <type>Label</type>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <extInfo xsi:type="form:LabelDecorationExtInfo">
+            <horizontalAlign>Left</horizontalAlign>
+          </extInfo>
+        </extendedTooltip>
+        <contextMenu>
+          <name>HttpСервисПользовательКонтекстноеМеню</name>
+          <id>69</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <autoFill>true</autoFill>
+        </contextMenu>
+        <type>InputField</type>
+        <editMode>Enter</editMode>
+        <showInHeader>true</showInHeader>
+        <headerHorizontalAlign>Left</headerHorizontalAlign>
+        <showInFooter>true</showInFooter>
+        <extInfo xsi:type="form:InputFieldExtInfo">
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <wrap>true</wrap>
+          <chooseType>true</chooseType>
+          <typeDomainEnabled>true</typeDomainEnabled>
+          <textEdit>true</textEdit>
+        </extInfo>
+      </items>
+      <items xsi:type="form:FormGroup">
+        <name>ГруппаПарольHttpСервис</name>
+        <id>66</id>
+        <items xsi:type="form:FormField">
+          <name>HttpСервисПароль</name>
+          <id>71</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <dataPath xsi:type="form:DataPath">
+            <segments>НаборКонстант.HttpСервисПароль</segments>
+          </dataPath>
+          <extendedTooltip>
+            <name>HttpСервисПарольРасширеннаяПодсказка</name>
+            <id>73</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <type>Label</type>
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <extInfo xsi:type="form:LabelDecorationExtInfo">
+              <horizontalAlign>Left</horizontalAlign>
+            </extInfo>
+          </extendedTooltip>
+          <contextMenu>
+            <name>HttpСервисПарольКонтекстноеМеню</name>
+            <id>72</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <autoFill>true</autoFill>
+          </contextMenu>
+          <type>InputField</type>
+          <editMode>Enter</editMode>
+          <showInHeader>true</showInHeader>
+          <headerHorizontalAlign>Left</headerHorizontalAlign>
+          <showInFooter>true</showInFooter>
+          <extInfo xsi:type="form:InputFieldExtInfo">
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <wrap>true</wrap>
+            <chooseType>true</chooseType>
+            <typeDomainEnabled>true</typeDomainEnabled>
+            <textEdit>true</textEdit>
+          </extInfo>
+        </items>
+        <items xsi:type="form:Button">
+          <name>HttpСервисПоказатьПароль</name>
+          <id>74</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <extendedTooltip>
+            <name>HttpСервисПоказатьПарольРасширеннаяПодсказка</name>
+            <id>75</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <type>Label</type>
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <extInfo xsi:type="form:LabelDecorationExtInfo">
+              <horizontalAlign>Left</horizontalAlign>
+            </extInfo>
+          </extendedTooltip>
+          <type>UsualButton</type>
+          <commandName>Form.Command.HttpСервисПоказатьПароль</commandName>
+          <representation>Auto</representation>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <placementArea>UserCmds</placementArea>
+          <check>true</check>
+          <representationInContextMenu>Auto</representationInContextMenu>
+        </items>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <title>
+          <key>ru</key>
+          <value>Группа1</value>
+        </title>
+        <extendedTooltip>
+          <name>ГруппаПарольHttpСервисРасширеннаяПодсказка</name>
+          <id>67</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <type>Label</type>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <extInfo xsi:type="form:LabelDecorationExtInfo">
+            <horizontalAlign>Left</horizontalAlign>
+          </extInfo>
+        </extendedTooltip>
+        <type>UsualGroup</type>
+        <extInfo xsi:type="form:UsualGroupExtInfo">
+          <group>AlwaysHorizontal</group>
+          <behavior>Auto</behavior>
+          <showLeftMargin>true</showLeftMargin>
+          <united>true</united>
+          <throughAlign>Auto</throughAlign>
+          <currentRowUse>Auto</currentRowUse>
+        </extInfo>
+      </items>
+      <visible>true</visible>
+      <enabled>true</enabled>
+      <userVisible>
+        <common>true</common>
+      </userVisible>
+      <title>
+        <key>ru</key>
+        <value>HTTP Сервис</value>
+      </title>
+      <extendedTooltip>
+        <name>ГруппаHttpСервисРасширеннаяПодсказка</name>
+        <id>62</id>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <type>Label</type>
+        <autoMaxWidth>true</autoMaxWidth>
+        <autoMaxHeight>true</autoMaxHeight>
+        <extInfo xsi:type="form:LabelDecorationExtInfo">
+          <horizontalAlign>Left</horizontalAlign>
+        </extInfo>
+      </extendedTooltip>
+      <type>UsualGroup</type>
+      <extInfo xsi:type="form:UsualGroupExtInfo">
+        <group>Vertical</group>
+        <behavior>Auto</behavior>
+        <showLeftMargin>true</showLeftMargin>
+        <united>true</united>
+        <showTitle>true</showTitle>
         <throughAlign>Auto</throughAlign>
         <currentRowUse>Auto</currentRowUse>
       </extInfo>
@@ -546,7 +845,6 @@
       <name>КаталогОтладки</name>
       <id>39</id>
       <visible>true</visible>
-      <enabled>true</enabled>
       <userVisible>
         <common>true</common>
       </userVisible>
@@ -813,6 +1111,37 @@
             <currentRowUse>Auto</currentRowUse>
           </extInfo>
         </items>
+        <items xsi:type="form:Button">
+          <name>УстановитьПарольПользователя</name>
+          <id>50</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <extendedTooltip>
+            <name>УстановитьПарольПользователяРасширеннаяПодсказка</name>
+            <id>51</id>
+            <visible>true</visible>
+            <enabled>true</enabled>
+            <userVisible>
+              <common>true</common>
+            </userVisible>
+            <type>Label</type>
+            <autoMaxWidth>true</autoMaxWidth>
+            <autoMaxHeight>true</autoMaxHeight>
+            <extInfo xsi:type="form:LabelDecorationExtInfo">
+              <horizontalAlign>Left</horizontalAlign>
+            </extInfo>
+          </extendedTooltip>
+          <type>UsualButton</type>
+          <commandName>Form.Command.УстановитьПарольПользователя</commandName>
+          <representation>Auto</representation>
+          <autoMaxWidth>true</autoMaxWidth>
+          <autoMaxHeight>true</autoMaxHeight>
+          <placementArea>UserCmds</placementArea>
+          <representationInContextMenu>Auto</representationInContextMenu>
+        </items>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
@@ -835,7 +1164,7 @@
         </extendedTooltip>
         <type>UsualGroup</type>
         <extInfo xsi:type="form:UsualGroupExtInfo">
-          <group>Vertical</group>
+          <group>AlwaysHorizontal</group>
           <behavior>Auto</behavior>
           <showLeftMargin>true</showLeftMargin>
           <united>true</united>
@@ -843,17 +1172,20 @@
           <currentRowUse>Auto</currentRowUse>
         </extInfo>
       </items>
-      <items xsi:type="form:Button">
-        <name>УстановитьПарольПользователя</name>
-        <id>50</id>
+      <items xsi:type="form:FormField">
+        <name>ПодключатсяАвтоматически</name>
+        <id>93</id>
         <visible>true</visible>
         <enabled>true</enabled>
         <userVisible>
           <common>true</common>
         </userVisible>
+        <dataPath xsi:type="form:DataPath">
+          <segments>ПодключатсяАвтоматически</segments>
+        </dataPath>
         <extendedTooltip>
-          <name>УстановитьПарольПользователяРасширеннаяПодсказка</name>
-          <id>51</id>
+          <name>ПодключатсяАвтоматическиРасширеннаяПодсказка</name>
+          <id>95</id>
           <visible>true</visible>
           <enabled>true</enabled>
           <userVisible>
@@ -866,13 +1198,22 @@
             <horizontalAlign>Left</horizontalAlign>
           </extInfo>
         </extendedTooltip>
-        <type>UsualButton</type>
-        <commandName>Form.Command.УстановитьПарольПользователя</commandName>
-        <representation>Auto</representation>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <placementArea>UserCmds</placementArea>
-        <representationInContextMenu>Auto</representationInContextMenu>
+        <contextMenu>
+          <name>ПодключатсяАвтоматическиКонтекстноеМеню</name>
+          <id>94</id>
+          <visible>true</visible>
+          <enabled>true</enabled>
+          <userVisible>
+            <common>true</common>
+          </userVisible>
+          <autoFill>true</autoFill>
+        </contextMenu>
+        <type>CheckBoxField</type>
+        <editMode>Enter</editMode>
+        <showInHeader>true</showInHeader>
+        <headerHorizontalAlign>Left</headerHorizontalAlign>
+        <showInFooter>true</showInFooter>
+        <extInfo xsi:type="form:CheckBoxFieldExtInfo"/>
       </items>
       <visible>true</visible>
       <enabled>true</enabled>
@@ -900,7 +1241,7 @@
       </extendedTooltip>
       <type>UsualGroup</type>
       <extInfo xsi:type="form:UsualGroupExtInfo">
-        <group>HorizontalIfPossible</group>
+        <group>Vertical</group>
         <behavior>Auto</behavior>
         <showLeftMargin>true</showLeftMargin>
         <united>true</united>
@@ -944,270 +1285,69 @@
       <currentRowUse>Auto</currentRowUse>
     </extInfo>
   </items>
-  <items xsi:type="form:FormGroup">
-    <name>ГруппаHttpСервис</name>
-    <id>61</id>
-    <items xsi:type="form:FormField">
-      <name>HttpСервис</name>
-      <id>63</id>
-      <title>
-        <key>ru</key>
-        <value>Адрес сервиса</value>
-      </title>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.HttpСервис</segments>
-      </dataPath>
-      <extendedTooltip>
-        <name>HttpСервисРасширеннаяПодсказка</name>
-        <id>65</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>HttpСервисКонтекстноеМеню</name>
-        <id>64</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <type>InputField</type>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
-      <extInfo xsi:type="form:InputFieldExtInfo">
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <wrap>true</wrap>
-        <chooseType>true</chooseType>
-        <typeDomainEnabled>true</typeDomainEnabled>
-        <textEdit>true</textEdit>
-      </extInfo>
-    </items>
-    <items xsi:type="form:FormField">
-      <name>HttpСервисПользователь</name>
-      <id>68</id>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <dataPath xsi:type="form:DataPath">
-        <segments>НаборКонстант.HttpСервисПользователь</segments>
-      </dataPath>
-      <extendedTooltip>
-        <name>HttpСервисПользовательРасширеннаяПодсказка</name>
-        <id>70</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>HttpСервисПользовательКонтекстноеМеню</name>
-        <id>69</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <type>InputField</type>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
-      <extInfo xsi:type="form:InputFieldExtInfo">
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <wrap>true</wrap>
-        <chooseType>true</chooseType>
-        <typeDomainEnabled>true</typeDomainEnabled>
-        <textEdit>true</textEdit>
-      </extInfo>
-    </items>
-    <items xsi:type="form:FormGroup">
-      <name>ГруппаПарольHttpСервис</name>
-      <id>66</id>
-      <items xsi:type="form:FormField">
-        <name>HttpСервисПароль</name>
-        <id>71</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <dataPath xsi:type="form:DataPath">
-          <segments>НаборКонстант.HttpСервисПароль</segments>
-        </dataPath>
-        <extendedTooltip>
-          <name>HttpСервисПарольРасширеннаяПодсказка</name>
-          <id>73</id>
-          <visible>true</visible>
-          <enabled>true</enabled>
-          <userVisible>
-            <common>true</common>
-          </userVisible>
-          <type>Label</type>
-          <autoMaxWidth>true</autoMaxWidth>
-          <autoMaxHeight>true</autoMaxHeight>
-          <extInfo xsi:type="form:LabelDecorationExtInfo">
-            <horizontalAlign>Left</horizontalAlign>
-          </extInfo>
-        </extendedTooltip>
-        <contextMenu>
-          <name>HttpСервисПарольКонтекстноеМеню</name>
-          <id>72</id>
-          <visible>true</visible>
-          <enabled>true</enabled>
-          <userVisible>
-            <common>true</common>
-          </userVisible>
-          <autoFill>true</autoFill>
-        </contextMenu>
-        <type>InputField</type>
-        <editMode>Enter</editMode>
-        <showInHeader>true</showInHeader>
-        <headerHorizontalAlign>Left</headerHorizontalAlign>
-        <showInFooter>true</showInFooter>
-        <extInfo xsi:type="form:InputFieldExtInfo">
-          <autoMaxWidth>true</autoMaxWidth>
-          <autoMaxHeight>true</autoMaxHeight>
-          <wrap>true</wrap>
-          <chooseType>true</chooseType>
-          <typeDomainEnabled>true</typeDomainEnabled>
-          <textEdit>true</textEdit>
-        </extInfo>
-      </items>
-      <items xsi:type="form:Button">
-        <name>HttpСервисПоказатьПароль</name>
-        <id>74</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <extendedTooltip>
-          <name>HttpСервисПоказатьПарольРасширеннаяПодсказка</name>
-          <id>75</id>
-          <visible>true</visible>
-          <enabled>true</enabled>
-          <userVisible>
-            <common>true</common>
-          </userVisible>
-          <type>Label</type>
-          <autoMaxWidth>true</autoMaxWidth>
-          <autoMaxHeight>true</autoMaxHeight>
-          <extInfo xsi:type="form:LabelDecorationExtInfo">
-            <horizontalAlign>Left</horizontalAlign>
-          </extInfo>
-        </extendedTooltip>
-        <type>UsualButton</type>
-        <commandName>Form.Command.HttpСервисПоказатьПароль</commandName>
-        <representation>Auto</representation>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <placementArea>UserCmds</placementArea>
-        <check>true</check>
-        <representationInContextMenu>Auto</representationInContextMenu>
-      </items>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <title>
-        <key>ru</key>
-        <value>Группа1</value>
-      </title>
-      <extendedTooltip>
-        <name>ГруппаПарольHttpСервисРасширеннаяПодсказка</name>
-        <id>67</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <type>UsualGroup</type>
-      <extInfo xsi:type="form:UsualGroupExtInfo">
-        <group>AlwaysHorizontal</group>
-        <behavior>Auto</behavior>
-        <showLeftMargin>true</showLeftMargin>
-        <united>true</united>
-        <throughAlign>Auto</throughAlign>
-        <currentRowUse>Auto</currentRowUse>
-      </extInfo>
-    </items>
-    <visible>true</visible>
-    <enabled>true</enabled>
-    <userVisible>
-      <common>true</common>
-    </userVisible>
-    <title>
-      <key>ru</key>
-      <value>HTTP Сервис</value>
-    </title>
-    <extendedTooltip>
-      <name>ГруппаHttpСервисРасширеннаяПодсказка</name>
-      <id>62</id>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <type>Label</type>
-      <autoMaxWidth>true</autoMaxWidth>
-      <autoMaxHeight>true</autoMaxHeight>
-      <extInfo xsi:type="form:LabelDecorationExtInfo">
-        <horizontalAlign>Left</horizontalAlign>
-      </extInfo>
-    </extendedTooltip>
-    <type>UsualGroup</type>
-    <extInfo xsi:type="form:UsualGroupExtInfo">
-      <group>Vertical</group>
-      <behavior>Auto</behavior>
-      <showLeftMargin>true</showLeftMargin>
-      <united>true</united>
-      <showTitle>true</showTitle>
-      <throughAlign>Auto</throughAlign>
-      <currentRowUse>Auto</currentRowUse>
-    </extInfo>
-  </items>
   <autoCommandBar>
     <name>ФормаКоманднаяПанель</name>
     <id>-1</id>
+    <items xsi:type="form:Button">
+      <name>ФормаПодключитьКлиента</name>
+      <id>96</id>
+      <visible>true</visible>
+      <enabled>true</enabled>
+      <userVisible>
+        <common>true</common>
+      </userVisible>
+      <extendedTooltip>
+        <name>ФормаПодключитьКлиентаРасширеннаяПодсказка</name>
+        <id>97</id>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <type>Label</type>
+        <autoMaxWidth>true</autoMaxWidth>
+        <autoMaxHeight>true</autoMaxHeight>
+        <extInfo xsi:type="form:LabelDecorationExtInfo">
+          <horizontalAlign>Left</horizontalAlign>
+        </extInfo>
+      </extendedTooltip>
+      <commandName>Form.Command.ПодключитьКлиента</commandName>
+      <representation>Auto</representation>
+      <autoMaxWidth>true</autoMaxWidth>
+      <autoMaxHeight>true</autoMaxHeight>
+      <placementArea>UserCmds</placementArea>
+      <representationInContextMenu>Auto</representationInContextMenu>
+    </items>
+    <items xsi:type="form:Button">
+      <name>ФормаОтключитьКлиента</name>
+      <id>98</id>
+      <visible>true</visible>
+      <enabled>true</enabled>
+      <userVisible>
+        <common>true</common>
+      </userVisible>
+      <extendedTooltip>
+        <name>ФормаОтключитьКлиентаРасширеннаяПодсказка</name>
+        <id>99</id>
+        <visible>true</visible>
+        <enabled>true</enabled>
+        <userVisible>
+          <common>true</common>
+        </userVisible>
+        <type>Label</type>
+        <autoMaxWidth>true</autoMaxWidth>
+        <autoMaxHeight>true</autoMaxHeight>
+        <extInfo xsi:type="form:LabelDecorationExtInfo">
+          <horizontalAlign>Left</horizontalAlign>
+        </extInfo>
+      </extendedTooltip>
+      <commandName>Form.Command.ОтключитьКлиента</commandName>
+      <representation>Auto</representation>
+      <autoMaxWidth>true</autoMaxWidth>
+      <autoMaxHeight>true</autoMaxHeight>
+      <placementArea>UserCmds</placementArea>
+      <representationInContextMenu>Auto</representationInContextMenu>
+    </items>
     <visible>true</visible>
     <enabled>true</enabled>
     <userVisible>
@@ -1262,6 +1402,15 @@
     </notDefaultUseAlwaysAttributes>
     <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
       <segments>НаборКонстант.ТребуетсяАвторизацияНаСервере</segments>
+    </notDefaultUseAlwaysAttributes>
+    <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
+      <segments>НаборКонстант.DavСервис</segments>
+    </notDefaultUseAlwaysAttributes>
+    <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
+      <segments>НаборКонстант.DavСервисПароль</segments>
+    </notDefaultUseAlwaysAttributes>
+    <notDefaultUseAlwaysAttributes xsi:type="form:DataPath">
+      <segments>НаборКонстант.DavСеривсПользователь</segments>
     </notDefaultUseAlwaysAttributes>
     <main>true</main>
     <savedData>true</savedData>
@@ -1373,6 +1522,23 @@
       <common>true</common>
     </edit>
   </attributes>
+  <attributes>
+    <name>ПодключатсяАвтоматически</name>
+    <title>
+      <key>ru</key>
+      <value>Подключатся автоматически</value>
+    </title>
+    <id>8</id>
+    <valueType>
+      <types>Boolean</types>
+    </valueType>
+    <view>
+      <common>true</common>
+    </view>
+    <edit>
+      <common>true</common>
+    </edit>
+  </attributes>
   <formCommands>
     <name>УстановитьПарольПользователя</name>
     <title>
@@ -1447,6 +1613,40 @@
       </handler>
     </action>
     <representation>Picture</representation>
+    <currentRowUse>Auto</currentRowUse>
+  </formCommands>
+  <formCommands>
+    <name>ПодключитьКлиента</name>
+    <title>
+      <key>ru</key>
+      <value>Подключить клиента</value>
+    </title>
+    <id>5</id>
+    <use>
+      <common>true</common>
+    </use>
+    <action xsi:type="form:FormCommandHandlerContainer">
+      <handler>
+        <name>ПодключитьКлиента</name>
+      </handler>
+    </action>
+    <currentRowUse>Auto</currentRowUse>
+  </formCommands>
+  <formCommands>
+    <name>ОтключитьКлиента</name>
+    <title>
+      <key>ru</key>
+      <value>Отключить клиента</value>
+    </title>
+    <id>6</id>
+    <use>
+      <common>true</common>
+    </use>
+    <action xsi:type="form:FormCommandHandlerContainer">
+      <handler>
+        <name>ОтключитьКлиента</name>
+      </handler>
+    </action>
     <currentRowUse>Auto</currentRowUse>
   </formCommands>
   <commandInterface>
