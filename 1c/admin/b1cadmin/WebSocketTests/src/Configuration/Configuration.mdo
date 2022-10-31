@@ -51,6 +51,7 @@
   <commonModules>CommonModule.Пользователи</commonModules>
   <commonModules>CommonModule.СтроковыеФункцииКлиентСервер</commonModules>
   <settingsStorages>SettingsStorage.ПользовательскиеНастройки</settingsStorages>
+  <commonCommands>CommonCommand.ОткрытьФормуАктивныеПользователи</commonCommands>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
   <constants>Constant.DavСервис</constants>
   <constants>Constant.DavСервисПароль</constants>

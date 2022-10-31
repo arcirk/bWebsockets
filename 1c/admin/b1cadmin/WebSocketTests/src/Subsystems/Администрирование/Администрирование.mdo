@@ -12,4 +12,6 @@
   <content>SessionParameter.ТекущийПользователь</content>
   <content>SessionParameter.АвторизованныйПользователь</content>
   <content>Catalog.ВнешниеПользователи</content>
+  <content>CommonForm.ФормаАктивныеПользователи</content>
+  <content>CommonCommand.ОткрытьФормуАктивныеПользователи</content>
 </mdclass:Subsystem>

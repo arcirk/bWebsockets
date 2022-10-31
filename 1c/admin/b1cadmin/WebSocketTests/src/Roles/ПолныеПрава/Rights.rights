@@ -796,4 +796,18 @@
 			<value>true</value>
 		</right>
 	</object>
+	<object>
+		<name>CommonForm.ФормаАктивныеПользователи</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>CommonCommand.ОткрытьФормуАктивныеПользователи</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
 </Rights>

@@ -92,12 +92,12 @@ WebCore::WebCore(){
 //        set_document_name(v);
 //    });
 
-//    AddProperty(L"IsSourceEventUuidFrom", L"ИдентификаторФормыКакИсточникСобытия", [&]() {
-//        const bool m_is_source_event_uuid_form = _is_source_event_uuid_form;
-//        return std::make_shared<variant_t>(std::move(m_is_source_event_uuid_form));
-//    }, [&](const variant_t& v){
-//        _is_source_event_uuid_form = std::get<bool>(v);
-//    });
+    AddProperty(L"IsSourceEventUuidFrom", L"ИдентификаторФормыКакИсточникСобытия", [&]() {
+        const bool m_is_source_event_uuid_form = _is_source_event_uuid_form;
+        return std::make_shared<variant_t>(std::move(m_is_source_event_uuid_form));
+    }, [&](const variant_t& v){
+        _is_source_event_uuid_form = std::get<bool>(v);
+    });
 
     AddMethod(L"Open", L"Открыть", this, &WebCore::open);
     AddMethod(L"Close", L"Закрыть", this, &WebCore::close);
