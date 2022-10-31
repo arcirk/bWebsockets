@@ -84,6 +84,7 @@ namespace arcirk::client{
         {TS_INVALID, nullptr}    ,
         {wsMessage, "Message"}  ,
         {wsStatusChanged, "StatusChanged"}    ,
+        {wsConnect, "Connect"}    ,
         {wsClose, "Close"}    ,
         {wsError, "Error"}    ,
 
