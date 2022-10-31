@@ -58,6 +58,7 @@ private:
     boost::filesystem::path certificate_file_;
     client::client_param client_param_;
     boost::uuids::uuid session_uuid_{};
+    bool _disable_notify_on_close;
 
     void set_certificates(ssl::context& ctx);
 

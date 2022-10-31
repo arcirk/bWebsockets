@@ -10,6 +10,7 @@ websocket_client::websocket_client(ssl::context& ctx, client::client_param &clie
 {
     state_ = nullptr;
     client_param_ = client_param;
+    _disable_notify_on_close = false;
 }
 
 void websocket_client::connect(const client::client_events &event, const client::callbacks &f) {
@@ -63,7 +64,8 @@ void websocket_client::start(arcirk::Uri &url) {
 
     log("websocket_client::start", "exit thread" );
 
-    on_status_changed(false);
+    if(!_disable_notify_on_close)
+        on_status_changed(false);
 }
 
 void websocket_client::set_certificates(ssl::context& ctx) {
@@ -162,7 +164,7 @@ void websocket_client::close(bool disable_notify) {
 
     if(!state_)
         return;
-
+    _disable_notify_on_close = disable_notify;
     state_->close(disable_notify);
 }
 

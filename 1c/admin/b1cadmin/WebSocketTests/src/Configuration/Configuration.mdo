@@ -3,7 +3,7 @@
   <name>WebSocketTests</name>
   <synonym>
     <key>ru</key>
-    <value>Web socket tests</value>
+    <value>WebSockets тест</value>
   </synonym>
   <containedObjects classId="9cd510cd-abfc-11d4-9434-004095e12fc7" objectId="9df6e44c-6feb-4303-96e3-74495191416a"/>
   <containedObjects classId="9fcd25a0-4822-11d4-9414-008048da11f9" objectId="3923af4d-4ebc-4af1-b5ef-e0e470169f8c"/>

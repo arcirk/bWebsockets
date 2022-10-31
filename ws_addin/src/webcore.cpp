@@ -102,7 +102,7 @@ WebCore::WebCore(){
     AddMethod(L"Open", L"Открыть", this, &WebCore::open);
     AddMethod(L"Close", L"Закрыть", this, &WebCore::close);
     AddMethod(L"Started", L"Запущен", this, &WebCore::started);
-    AddMethod(L"GetOnlineUsers", L"ПолучитьПользователейВСети", this, &WebCore::get_online_users);
+    AddMethod(L"GetOnlineUsers", L"АктивныеПользователи", this, &WebCore::get_online_users);
 //    AddMethod(L"CommandToClient", L"КомандаКлиенту", this, &WebCore::command_to_client);
 //    AddMethod(L"CommandToServer", L"КомандаСерверу", this, &WebCore::command_to_server);
     AddMethod(L"Sha1Hash", L"Sha1Hash", this, &WebCore::sha1_hash);
@@ -110,6 +110,7 @@ WebCore::WebCore(){
     AddMethod(L"SessionUuid", L"ИдентификаторСессии", this, &WebCore::session_uuid);
 //    AddMethod(L"SetJobData", L"УстановитьПараметрыРабочегоМеста", this, &WebCore::set_job_data);
     AddMethod(L"SetParam", L"УстановитьПараметры", this, &WebCore::set_client_param);
+
 }
 
 void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
@@ -143,6 +144,12 @@ void WebCore::emit(const std::string& command, const std::string &resp, const st
     if(_is_source_event_uuid_form && !uuid_form.empty() && uuid_form != arcirk::uuids::nil_string_uuid()){
         source_event = uuid_form;
     }
+    //this->CleanEventBuffer();
+    long sz = this->GetEventBufferDepth();
+    if(sz == 1)
+        this->SetEventBufferDepth(sz + 1);
+    //const long sz = 5;
+
     this->ExternalEvent(source_event, command, resp);
 }
 
@@ -194,9 +201,13 @@ std::string WebCore::session_uuid() {
 //    _job_description = std::get<std::string>(jobDescription);
 //}
 void WebCore::on_connect(){
-    using namespace arcirk::client;
-    std::string command = arcirk::client::synonym(client_events::wsConnect);
-    emit(command, "WebCore::on_connect");
+
+    auto response = arcirk::server::server_response();
+    response.command = "on_connect";
+    response.message = "ok";
+    response.result = "success";
+    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+    emit(arcirk::client::synonym(arcirk::client::client_events::wsConnect), msg);
 }
 
 void WebCore::on_message(const std::string& message){
@@ -205,17 +216,31 @@ void WebCore::on_message(const std::string& message){
 }
 
 void WebCore::on_stop(){
-    using namespace arcirk::client;
-    emit(synonym(client_events::wsClose), "WebCore::on_stop");
+    auto response = arcirk::server::server_response();
+    response.command = "on_stop";
+    response.message = "ok";
+    response.result = "success";
+    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+    emit(arcirk::client::synonym(arcirk::client::client_events::wsClose), msg);
 }
 void
 WebCore::on_error(const std::string &what, const std::string &err, int code){
-    error(what, err);
+    auto response = arcirk::server::server_response();
+    response.command = "on_error";
+    response.message = err;
+    response.result = "error";
+    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+    emit(arcirk::client::synonym(arcirk::client::client_events::wsError), msg);
+    //error(what, err);
 }
 
 void WebCore::on_status_changed(bool status){
-    using namespace arcirk::client;
-    emit(synonym(client_events::wsStatusChanged), "WebCore::on_status_changed");
+    auto response = arcirk::server::server_response();
+    response.command = "on_status_changed";
+    response.message = "ok";
+    response.result = status ? "true" : "false";
+    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+    emit(arcirk::client::synonym(arcirk::client::client_events::wsStatusChanged), msg);
 }
 
 std::string WebCore::sha1_hash(const variant_t &source) {
@@ -227,5 +252,6 @@ std::string WebCore::sha1_hash(const variant_t &source) {
 }
 
 void WebCore::error(const std::string& src, const std::string &msg) {
+
     AddError(ADDIN_E_FAIL, src, msg, false);
 }

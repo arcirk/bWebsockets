@@ -285,6 +285,10 @@ bool Component::ExternalEvent(const std::string &src, const std::string &msg, co
     return success;
 }
 
+void Component::CleanEventBuffer(){
+    connection->CleanEventBuffer();
+}
+
 bool Component::SetEventBufferDepth(long depth) {
     return connection->SetEventBufferDepth(depth);
 }

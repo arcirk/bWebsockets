@@ -104,6 +104,8 @@ protected:
 
     bool ExternalEvent(const std::string &src, const std::string &msg, const std::string &data);
 
+    void CleanEventBuffer();
+
     bool SetEventBufferDepth(long depth);
 
     long GetEventBufferDepth();

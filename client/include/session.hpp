@@ -49,6 +49,11 @@ public:
     virtual void close(bool disable_notify) = 0;
     virtual void send_message(boost::shared_ptr<std::string const> const& ss) = 0;
 
+    virtual bool disable_notify(){return disable_notify_;};
+
+protected:
+    bool disable_notify_ = false;
+
 };
 
 template<class Derived>
@@ -189,7 +194,8 @@ public:
         if(ec)
             return fail(ec, "close");
 
-        derived().state()->on_close();
+        if(!derived().disable_notify())
+            derived().state()->on_close();
 
     }
 
@@ -339,6 +345,7 @@ public:
     }
 
     void close(bool disable_notify) override{
+        disable_notify_ = disable_notify;
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
         _super->stop();
     }
@@ -445,6 +452,7 @@ public:
     }
 
     void close(bool disable_notify) override{
+        disable_notify_ = disable_notify;
         auto _super = boost::dynamic_pointer_cast<plain_session>(shared_from_this());
         _super->stop();
     }

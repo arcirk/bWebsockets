@@ -80,19 +80,22 @@ namespace arcirk::client{
         wsError,
         TS_INVALID=-1,
     };
+
+
     NLOHMANN_JSON_SERIALIZE_ENUM(client_events, {
         {TS_INVALID, nullptr}    ,
-        {wsMessage, "Message"}  ,
-        {wsStatusChanged, "StatusChanged"}    ,
-        {wsConnect, "Connect"}    ,
-        {wsClose, "Close"}    ,
-        {wsError, "Error"}    ,
+        {wsMessage, "WebCore::Message"}  ,
+        {wsStatusChanged, "WebCore::StatusChanged"}    ,
+        {wsConnect, "WebCore::Connect"}    ,
+        {wsClose, "WebCore::Close"}    ,
+        {wsError, "WebCore::Error"}    ,
 
     })
     static inline std::string synonym(client_events value){
         using n_json = nlohmann::json;
         return n_json(value).get<std::string>();
     };
+
 }
 
 namespace arcirk::server{
