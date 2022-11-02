@@ -107,7 +107,7 @@
 		</right>
 	</object>
 	<object>
-		<name>Configuration.WebSocketTests</name>
+		<name>Configuration.WebSocketDemo</name>
 		<right>
 			<name>Administration</name>
 			<value>true</value>

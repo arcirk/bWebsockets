@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mdclass:Configuration xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="2d76175f-f952-4884-a52f-0744425e1080">
-  <name>WebSocketTests</name>
+  <name>WebSocketDemo</name>
   <synonym>
     <key>ru</key>
-    <value>WebSockets тест</value>
+    <value>WebSockets Демо</value>
   </synonym>
   <containedObjects classId="9cd510cd-abfc-11d4-9434-004095e12fc7" objectId="9df6e44c-6feb-4303-96e3-74495191416a"/>
   <containedObjects classId="9fcd25a0-4822-11d4-9414-008048da11f9" objectId="3923af4d-4ebc-4af1-b5ef-e0e470169f8c"/>
