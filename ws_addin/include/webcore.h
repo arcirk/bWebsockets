@@ -92,7 +92,7 @@ private:
     //void read_conf(server::server_config & result);
     //void write_conf(server::server_config & conf);
 
-    void get_online_users();
+    void get_online_users(const variant_t &uuid_form);
 
     void set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName);
 

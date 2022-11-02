@@ -287,7 +287,7 @@ std::string shared_state::get_clients_list(const variant_t& param, const variant
     }
     auto param_ = n_json::parse(json_param, nullptr, false);
     if(param_.is_discarded()){
-        fail("shared_state::get_clients_lis", "Не верные параметры!");
+        fail("shared_state::get_clients_list", "Не верные параметры!");
         return "error";
     }
 

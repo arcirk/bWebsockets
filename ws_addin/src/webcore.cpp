@@ -10,15 +10,20 @@
 #include <unistd.h>
 #endif
 
-void WebCore::get_online_users(){
+void WebCore::get_online_users(const variant_t &uuid_form) {
 
     if(!m_client->started())
         return;
 
     using json_nl = nlohmann::json;
 
+    std::string uuid_form_ = std::get<std::string>(uuid_form);
+    if(uuid_form_.empty())
+        uuid_form_ = arcirk::uuids::nil_string_uuid();
+
     json_nl param = {
-            {"table", true}
+            {"table", true},
+            {"uuid_form", uuid_form_}
     };
 
     std::string alias = json_nl(arcirk::server::server_commands::ServerOnlineClientsList).get<std::string>();
