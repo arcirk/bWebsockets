@@ -29,6 +29,8 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, result)
         (std::string, sender)
         (std::string, receiver)
+        (std::string, uuid_form)
+        (std::string, app_name)
 )
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_command_result,
@@ -152,6 +154,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (int, ThreadsCount)
         (std::string, Version)
         (bool, ResponseTransferToBase64)
+        (bool, AllowDelayedAuthorization)
 );
 
 #endif

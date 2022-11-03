@@ -36,6 +36,14 @@ public:
         return _uuid_session;
     }
 
+    [[nodiscard]] virtual std::string app_name() const{
+        return _app_name;
+    }
+
+    virtual void set_app_name(const std::string& value){
+       _app_name = value;
+    }
+
     virtual void set_uuid_session(const boost::uuids::uuid& value){
         _uuid_session = value;
     }
@@ -54,6 +62,10 @@ public:
         return authorized_;
     };
 
+    virtual void set_authorized(bool value){
+        authorized_ = value;
+    }
+
     template<class Derived>
     Derived& derived()
     {
@@ -66,6 +78,7 @@ protected:
     boost::uuids::uuid _uuid_session{};
     bool authorized_ = false;
     std::tm start_date_{};
+    std::string _app_name = UnknownApplication;
 };
 
 template<class Derived>

@@ -175,6 +175,12 @@ main(int argc, char* argv[]){
     client_param.app_name = "websocket_client";
     client_param.user_name = "admin";
     client_param.password = "admin";
+    client_param.user_uuid = arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid());
+
+    if(!_usr.empty())
+        client_param.user_name = _usr;
+    if(!_pwd.empty())
+        client_param.password = _pwd;
 
     m_client = std::make_shared<websocket_client>(ctx, client_param);
 
@@ -188,11 +194,6 @@ main(int argc, char* argv[]){
             port = 8080;
         url = "wss://" + host + ":" + boost::to_string(port);
     }
-
-    if(!_usr.empty())
-        client_param.user_name = _usr;
-    if(!_pwd.empty())
-        client_param.password = _pwd;
 
     std::cout << url << std:: endl;
 

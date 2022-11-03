@@ -20,12 +20,45 @@ shared_state::shared_state(){
 
 void shared_state::join(subscriber *session) {
 
-    std::lock_guard<std::mutex> lock(mutex_);
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(session->uuid_session(), session));
     std::tm tm = arcirk::current_date();
     char cur_date[100];
     std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
     log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + std::string(cur_date));
+
+    //Оповещаем всех пользователей об подключении нового клиента
+    if(use_authorization())
+        if(session->authorized())
+            send_notify("Client Join", session, "ClientJoin");
+    else
+        send_notify("Client Join", session, "ClientJoin");
+}
+
+void shared_state::send_notify(const std::string &message, subscriber *sender, const std::string& notify_command, const boost::uuids::uuid& sender_uuid) {
+
+    server::server_response resp;
+    resp.command = notify_command;
+    resp.message = message;
+    resp.result = "OK";
+    if(sender){
+        resp.sender = arcirk::uuids::uuid_to_string(sender->uuid_session());
+        resp.app_name = sender->app_name();
+    }else{
+        if(sender_uuid != boost::uuids::nil_uuid())
+            resp.sender = arcirk::uuids::uuid_to_string(sender_uuid);
+    }
+    std::string response =  to_string(pre::json::to_json(resp));
+
+    if(sender){
+        if(sender->is_ssl())
+            send<ssl_websocket_session>(response, sender);
+        else
+            send<plain_websocket_session>(response, sender);
+    }else{
+        send<ssl_websocket_session>(response);
+        send<plain_websocket_session>(response);
+    }
+
 
 }
 
@@ -38,6 +71,9 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
     char cur_date[100];
     std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
     log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" + " " + std::string(cur_date));
+
+    //Оповещаем всех пользователей об отключении клиента
+    send_notify("Client Leave", nullptr, "ClientLeave", session_uuid);
 }
 
 void shared_state::deliver(const std::string &message, subscriber *session) {
@@ -51,8 +87,8 @@ void shared_state::deliver(const std::string &message, subscriber *session) {
         result = "pong";
 
     if(use_authorization()){
-        if(!session->authorized())
-            return fail("shared_state::deliver", "Пользователь не авторизован! Команда отменена");
+        if(!session->authorized() && message.find("SetClientParam") == std::string::npos)
+            return fail("shared_state::deliver", "Пользователь не авторизован! Команда отменена.");
     }
 
     if(!is_cmd(message)){
@@ -91,6 +127,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
     resp.result = "OK";
     resp.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     resp.receiver = receiver;
+    resp.app_name = session->app_name();
 
     std::string response =  to_string(pre::json::to_json(resp));
 
@@ -121,14 +158,14 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     if(v.size() < 2){
         fail("shared_state::execute_command_handler:error", "Не верный формат команды!");
-        std::cout << message << std::endl;
+        //std::cout << message << std::endl;
         return;
     }
 
     long command_index = find_method(v[1]);
     if(command_index < 0){
         fail("shared_state::execute_command_handler:error", arcirk::str_sample("Команда (%1%) не найдена!", v[1]));
-        std::cout << message << std::endl;
+       // std::cout << message << std::endl;
         return;
     }
 
@@ -147,7 +184,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         using nlohmann_json = nlohmann::json;
         auto params_ = nlohmann_json::parse(json_params);
         for (auto& el : params_.items()) {
-            std::cout << el.key() << " : " << el.value() << "\n";
+            //std::cout << el.key() << " : " << el.value() << "\n";
             auto value = el.value();
             if(value.is_string()){
                 params_v.emplace_back(value.get<std::string>());
@@ -167,19 +204,20 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     log("shared_state::execute_command_handler", get_method_name(command_index));
 
-    variant_t return_value;
+    arcirk::server::server_command_result return_value;
     call_as_func(command_index, &return_value, params_v);
-
-    std::string result = std::get<std::string>(return_value);
 
     using namespace arcirk::server;
     std::string response;
     server::server_response result_response;
     result_response.command = get_method_name(command_index);
-    result_response.message = result != "error" ? "OK" : "error";
-    result_response.result = result; //base64 string
+    result_response.message = return_value.result != "error" ? "OK" : "error";
+    result_response.result = return_value.result; //base64 string
     result_response.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     result_response.receiver = arcirk::uuids::uuid_to_string(session->uuid_session());
+    result_response.uuid_form = return_value.uuid_form;
+    result_response.app_name = session->app_name();
+
     response = to_string(pre::json::to_json(result_response));
 
     if(sett.ResponseTransferToBase64){
@@ -196,14 +234,21 @@ bool shared_state::use_authorization() const{
 }
 
 template<typename T>
-void shared_state::send(const std::string &message) {
+void shared_state::send(const std::string &message, subscriber* skip_session) {
+
+    bool ssl_ = typeid(T) == typeid(ssl_websocket_session);
 
     std::vector<std::weak_ptr<T>> v;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         v.reserve(sessions_.size());
-        for(auto p : sessions_)
-            v.emplace_back(p.second->template derived<T>().weak_from_this());
+        for(auto p : sessions_){
+            if(ssl_ != p.second->is_ssl())
+                continue;
+            if(p.second != skip_session)
+                v.emplace_back(p.second->template derived<T>().weak_from_this());
+        }
+
     }
     for(auto const& wp : v)
         if(auto sp = wp.lock()){
@@ -215,7 +260,8 @@ void shared_state::send(const std::string &message) {
 
 bool shared_state::verify_connection(const std::string &basic_auth) {
 
-    std::cout << "verify_connection: " << basic_auth << std::endl;
+    //std::cout << "verify_connection: " << basic_auth << std::endl;
+
 
     if(basic_auth.empty())
         return false;
@@ -235,13 +281,13 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 
     return false;
 }
+bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) const {
 
-bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) const {
+    std::cout << "verify_connection ... " << std::endl;
 
     using namespace boost::filesystem;
     using namespace soci;
 
-    std::string hash = arcirk::get_hash(usr, pwd);
     if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
         if(sett.ServerWorkingDirectory.empty())
         {
@@ -273,22 +319,70 @@ bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) c
     return false;
 }
 
-std::string shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
+bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) const {
+
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    std::string hash = arcirk::get_hash(usr, pwd);
+    return verify_auth_from_hash(usr, hash);
+
+//    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+//        if(sett.ServerWorkingDirectory.empty())
+//        {
+//            fail("shared_state::verify_auth:error", "Ошибки в параметрах сервера!");
+//            return false;
+//        }
+//
+//        path database(sett.ServerWorkingDirectory);
+//        database /= sett.Version;
+//        database /= "data";
+//        database /= "arcirk.sqlite";
+//
+//        if(!exists(database)){
+//            fail("shared_state::verify_auth:error", "Файл базы данных не найден!");
+//            return false;
+//        }
+//
+//        try {
+//            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+//            session sql(soci::sqlite3, connection_string);
+//            int count = -1;
+//            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
+//            return count > 0;
+//        } catch (std::exception &e) {
+//            fail("shared_state::verify_auth:error", e.what(), false);
+//        }
+//
+//    }
+//    return false;
+}
+
+
+
+arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
 
     using n_json = nlohmann::json;
 
     std::string base64 = std::get<std::string>(param);
     std::string json_param;
+
+    using namespace arcirk::server;
+    server::server_command_result result;
+    result.command = arcirk::server::synonym(server::server_commands::ServerOnlineClientsList);
+
     try {
         json_param = arcirk::base64::base64_decode(base64);
     } catch (std::exception &e) {
         fail("hared_state::get_clients_list", e.what(), false);
-        return "error";
+        result.result = "error";
+        return result;
     }
     auto param_ = n_json::parse(json_param, nullptr, false);
     if(param_.is_discarded()){
         fail("shared_state::get_clients_list", "Не верные параметры!");
-        return "error";
+        result.result = "error";
+        return result;
     }
 
     bool is_table = param_.value("table", false);
@@ -311,7 +405,8 @@ std::string shared_state::get_clients_list(const variant_t& param, const variant
             {"session_uuid", arcirk::uuids::uuid_to_string(itr->second->uuid_session())},
             {"user_name", itr->second->user_name()},
             {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
-            {"start_date", dt} //std::string(std::move(cur_date))
+            {"start_date", dt},
+            {"app_name", itr->second->app_name()}
         };
         rows += row;
     }
@@ -320,17 +415,18 @@ std::string shared_state::get_clients_list(const variant_t& param, const variant
     std::string table = arcirk::base64::base64_encode(table_object.dump());
     std::string  uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
 
-    using namespace arcirk::server;
-    server::server_command_result result;
-    result.command = arcirk::server::synonym(server::server_commands::ServerOnlineClientsList);
     result.uuid_form = uuid_form;
     result.result = table;
-    return arcirk::base64::base64_encode(to_string(pre::json::to_json(result)));
+    return result; //arcirk::base64::base64_encode(to_string(pre::json::to_json(result)));
 
 }
 
-std::string shared_state::server_version(const variant_t& session_id){
-    return sett.Version;
+arcirk::server::server_command_result shared_state::server_version(const variant_t& session_id){
+    using namespace arcirk::server;
+    server::server_command_result result;
+    result.command = arcirk::server::synonym(server::server_commands::ServerVersion);
+    result.result = sett.Version;
+    return result;
 }
 
 bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> params) {
@@ -352,8 +448,8 @@ bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> p
 
     return true;
 }
-
-bool shared_state::call_as_func(const long& method_num, variant_t *ret_value, std::vector<variant_t> params) {
+//bool shared_state::call_as_func(const long& method_num, variant_t *ret_value, std::vector<variant_t> params) {
+bool shared_state::call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params) {
 
     try {
         //auto args = parseParams(params, array_size);
@@ -392,15 +488,22 @@ std::string shared_state::get_method_name(const long &num) const {
     return methods_meta[num].alias;
 }
 
-std::string shared_state::set_client_param(const variant_t &param, const variant_t& session_id) {
+//std::string shared_state::set_client_param(const variant_t &param, const variant_t& session_id) {
+arcirk::server::server_command_result shared_state::set_client_param(const variant_t &param, const variant_t& session_id) {
 
     auto uuid_ = uuids::string_to_uuid(std::get<std::string>(session_id));
     auto session = get_session(uuid_);
 
-    if(!session)
-        return "error";
+    using namespace arcirk::server;
+    server::server_command_result result;
+    result.command = arcirk::server::synonym(server::server_commands::SetClientParam);
 
-    std::string result;
+    if(!session){
+        result.result = "error";
+        return result;
+    }
+
+   // std::string result_;
     try {
         auto param_ = pre::json::from_json<client::client_param>(base64_to_string(std::get<std::string>(param)));
         if(!param_.user_name.empty())
@@ -408,16 +511,30 @@ std::string shared_state::set_client_param(const variant_t &param, const variant
         if(!param_.user_uuid.empty()){
             boost::uuids::uuid user_uuid_{};
             arcirk::uuids::is_valid_uuid(param_.user_uuid, user_uuid_);
-            session->set_user_uuid(uuid_);
+            session->set_user_uuid(user_uuid_);
         }
         param_.session_uuid = uuids::uuid_to_string(session->uuid_session());
-        result = to_string(pre::json::to_json(param_)) ;
+        result.result = arcirk::base64::base64_encode(to_string(pre::json::to_json(param_)) );
+        session->set_app_name(param_.app_name);
+        if(!session->authorized()){
+            if(!param_.hash.empty()){
+                bool result_auth = verify_auth_from_hash(param_.user_name, param_.hash);
+                if(!result_auth)
+                    fail("shared_state::set_client_param", "failed authorization");
+                else{
+                    log("shared_state::set_client_param", "successful authorization");
+                    session->set_authorized(true);
+                }
+
+            }
+
+        }
     } catch (std::exception &e) {
         fail("shared_state::set_client_param:error", e.what(), false);
-        return "error";
+        result.result = "error";
     }
 
-    return arcirk::base64::base64_encode(result);
+    return result;//arcirk::base64::base64_encode(result);
 }
 
 subscriber*
@@ -445,4 +562,8 @@ std::string shared_state::base64_to_string(const std::string &base64str) const {
     } catch (std::exception &e) {
         return base64str;
     }
+}
+
+bool shared_state::allow_delayed_authorization() const {
+    return sett.AllowDelayedAuthorization;
 }

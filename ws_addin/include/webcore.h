@@ -47,7 +47,7 @@ private:
 //
 //    std::string  _current_recipient;
 //    std::string _document_name;
-    bool _is_source_event_uuid_form;
+//    bool _is_source_event_uuid_form;
 //    std::string  _job;
 //    std::string  _job_description;
 //
@@ -58,7 +58,7 @@ private:
 //
 //    void processServeResponse(const std::string &jsonResp);
 //
-    void emit(const std::string& command, const std::string &resp, const std::string &uuid_form = "");
+    void emit(const std::string& command, const std::string &resp);
     void error(const std::string& src, const std::string& msg);
 //
     bool started();

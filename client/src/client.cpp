@@ -46,10 +46,16 @@ void websocket_client::start(arcirk::Uri &url) {
         state_->set_basic_auth_string(url.BasicAuth);
     else
     {
-        if(!client_param_.password.empty()){
-            std::string basic_auth = "Basic " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
+        if(client_param_.hash.empty()){
+            if(!client_param_.password.empty()){
+                std::string basic_auth = "Basic " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
+                state_->set_basic_auth_string(basic_auth);
+            }
+        }else{
+            std::string basic_auth = "Token " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
             state_->set_basic_auth_string(basic_auth);
         }
+
     }
     state_->connect(client::client_events::wsMessage, (callback_message)std::bind(&websocket_client::on_message, this, std::placeholders::_1));
     state_->connect(client::client_events::wsStatusChanged, (callback_status)std::bind(&websocket_client::on_status_changed, this, std::placeholders::_1));
@@ -127,28 +133,29 @@ void websocket_client::on_message(const std::string &message) {
     if(message.empty())
         return;
 
-    std::string resp_;
-    if(message.find(' ') != std::string::npos)
-        resp_ = base64_to_string(message);
+    bool isSetParam = message.find(server::synonym(server::server_commands::SetClientParam)) != std::string::npos;
 
-    try {
-        auto resp = pre::json::from_json<server::server_response>(message);
-        if(resp.command == server::synonym(server::server_commands::SetClientParam)){
-            client::client_param client_param;
-            if(!resp.result.empty()){
-                std::string r = arcirk::base64::base64_decode(resp.result);
-                client_param = pre::json::from_json<client::client_param>(r);
-                client_param_.session_uuid = client_param.session_uuid;
-                boost::uuids::uuid uuid{};
-                if(arcirk::uuids::is_valid_uuid(client_param_.session_uuid, uuid))
-                    state_->set_uuid_session(uuid);
+    if(isSetParam){
+        //парсим ответ если это установка параметров
+        try {
+            auto resp = pre::json::from_json<server::server_response>(message);
+            if(resp.command == server::synonym(server::server_commands::SetClientParam)){
+                client::client_param client_param;
+                if(!resp.result.empty()){
+                    std::string r = arcirk::base64::base64_decode(resp.result);
+                    client_param = pre::json::from_json<client::client_param>(r);
+                    client_param_.session_uuid = client_param.session_uuid;
+                    boost::uuids::uuid uuid{};
+                    if(arcirk::uuids::is_valid_uuid(client_param_.session_uuid, uuid))
+                        state_->set_uuid_session(uuid);
 
-                log("websocket_client::on_message", resp.command + ": current uuid " +  client_param_.session_uuid);
-                return;
+                    log("websocket_client::on_message", resp.command + ": session uuid " +  client_param_.session_uuid + ": user uuid " + client_param_.user_uuid);
+                    return;
+                }
             }
+        } catch (std::exception &e) {
+            return fail("websocket_client::on_message", e.what(), false);
         }
-    } catch (std::exception &e) {
-        return fail("websocket_client::on_message", e.what(), false);
     }
 
     if(m_data.on_message)

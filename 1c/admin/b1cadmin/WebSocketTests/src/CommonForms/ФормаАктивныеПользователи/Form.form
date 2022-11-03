@@ -543,8 +543,10 @@
       </title>
       <id>8</id>
       <valueType>
-        <types>Date</types>
-        <dateQualifiers/>
+        <types>String</types>
+        <stringQualifiers>
+          <length>100</length>
+        </stringQualifiers>
       </valueType>
       <view>
         <common>true</common>

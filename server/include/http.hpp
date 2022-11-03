@@ -30,6 +30,7 @@ class plain_websocket_session;
 class ssl_websocket_session;
 
 #define UnknownUser         "Unknown user"
+#define UnknownApplication  "Unknown application"
 
 static beast::string_view
 mime_type(beast::string_view path)

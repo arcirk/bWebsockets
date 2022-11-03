@@ -175,7 +175,8 @@ public:
             http_authorization = state_->verify_connection(auth);
             if(!http_authorization){
                 std::cerr << "failed http authorization" << std::endl;
-            }
+            }else
+                std::cout << "Authorization passed successfully" << std::endl;
         }
 
         // See if it is a WebSocket Upgrade

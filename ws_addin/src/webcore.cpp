@@ -57,7 +57,7 @@ WebCore::WebCore(){
     client_param.system_user = getlogin();
 #endif
 
-    _is_source_event_uuid_form = false;
+    //_is_source_event_uuid_form = false;
 
     m_client = std::make_shared<websocket_client>(ctx, client_param);
 
@@ -97,12 +97,12 @@ WebCore::WebCore(){
 //        set_document_name(v);
 //    });
 
-    AddProperty(L"IsSourceEventUuidFrom", L"ИдентификаторФормыКакИсточникСобытия", [&]() {
-        const bool m_is_source_event_uuid_form = _is_source_event_uuid_form;
-        return std::make_shared<variant_t>(std::move(m_is_source_event_uuid_form));
-    }, [&](const variant_t& v){
-        _is_source_event_uuid_form = std::get<bool>(v);
-    });
+//    AddProperty(L"IsSourceEventUuidFrom", L"ИдентификаторФормыКакИсточникСобытия", [&]() {
+//        const bool m_is_source_event_uuid_form = _is_source_event_uuid_form;
+//        return std::make_shared<variant_t>(std::move(m_is_source_event_uuid_form));
+//    }, [&](const variant_t& v){
+//        _is_source_event_uuid_form = std::get<bool>(v);
+//    });
 
     AddMethod(L"Open", L"Открыть", this, &WebCore::open);
     AddMethod(L"Close", L"Закрыть", this, &WebCore::close);
@@ -144,11 +144,11 @@ WebCore::~WebCore() {
     m_client->close(true);
 }
 
-void WebCore::emit(const std::string& command, const std::string &resp, const std::string &uuid_form) {
-    std::string source_event = "WebSocketClient";
-    if(_is_source_event_uuid_form && !uuid_form.empty() && uuid_form != arcirk::uuids::nil_string_uuid()){
-        source_event = uuid_form;
-    }
+void WebCore::emit(const std::string& command, const std::string &resp) {
+    const std::string source_event = "WebSocketClient";
+//    if(_is_source_event_uuid_form && !uuid_form.empty() && uuid_form != arcirk::uuids::nil_string_uuid()){
+//        source_event = uuid_form;
+//    }
     //this->CleanEventBuffer();
     long sz = this->GetEventBufferDepth();
     if(sz == 1)
