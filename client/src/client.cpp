@@ -51,10 +51,11 @@ void websocket_client::start(arcirk::Uri &url) {
                 std::string basic_auth = "Basic " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
                 state_->set_basic_auth_string(basic_auth);
             }
-        }else{
-            std::string basic_auth = "Token " + arcirk::base64::base64_encode(client_param_.user_name +":" + client_param_.password);
-            state_->set_basic_auth_string(basic_auth);
         }
+//        else{
+//            std::string basic_auth = "Token " + client_param_.hash;
+//            state_->set_basic_auth_string(basic_auth);
+//        }
 
     }
     state_->connect(client::client_events::wsMessage, (callback_message)std::bind(&websocket_client::on_message, this, std::placeholders::_1));

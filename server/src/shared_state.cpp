@@ -272,6 +272,8 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
                 const std::string base64 = v[1];
                 std::string auth = arcirk::base64::base64_decode(base64);
                 arcirk::T_vec m_auth = split(auth, ":");
+                if(m_auth.size() != 2)
+                    return false;
                 return verify_auth(m_auth[0], m_auth[1]);
             }
         } catch (std::exception &e) {
@@ -516,7 +518,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         param_.session_uuid = uuids::uuid_to_string(session->uuid_session());
         result.result = arcirk::base64::base64_encode(to_string(pre::json::to_json(param_)) );
         session->set_app_name(param_.app_name);
-        if(!session->authorized()){
+        if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.user_name, param_.hash);
                 if(!result_auth)
