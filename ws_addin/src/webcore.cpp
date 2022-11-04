@@ -260,3 +260,25 @@ void WebCore::error(const std::string& src, const std::string &msg) {
 
     AddError(ADDIN_E_FAIL, src, msg, false);
 }
+
+void WebCore::start_reconnect() {
+
+    using namespace boost::asio;
+
+    if(m_client){
+        if(m_client->started())
+            return;
+    }
+
+    io_service io;
+
+    steady_timer connection_timer{io, std::chrono::seconds{60}};
+    connection_timer.async_wait([m_client, &connection_timer](const boost::system::error_code &ec)
+    {
+        std::cout << "3 sec\n";
+
+    });
+
+
+    io.run();
+}

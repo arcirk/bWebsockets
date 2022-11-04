@@ -179,17 +179,25 @@ private:
     void forward_message(const std::string& message, subscriber *session);
 
     static void fail(const std::string& what, const std::string& error, bool conv = true){
+        std::tm tm = arcirk::current_date();
+        char cur_date[100];
+        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
         if(conv)
-            std::cerr << what << ": " << arcirk::local_8bit(error) << std::endl;
+            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
         else
-            std::cerr << what << ": " << error << std::endl;
+            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
     };
 
     static void log(const std::string& what, const std::string& message, bool conv = true){
+        std::tm tm = arcirk::current_date();
+        char cur_date[100];
+        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
         if(conv)
-            std::cout << what << ": " << arcirk::local_8bit(message) << std::endl;
+            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
         else
-            std::cout << what << ": " <<message << std::endl;
+            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
     };
 
     [[nodiscard]] long param_count(const long& method_num) const;

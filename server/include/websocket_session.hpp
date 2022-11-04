@@ -130,10 +130,14 @@ class websocket_session
         derived().set_uuid_session(arcirk::uuids::random_uuid());
         derived().join();
         if(derived().state()->use_authorization() && !derived().authorized()){
-            //Запускаем таймер ожидания авторизации
-            derived().dead_line().expires_after(std::chrono::seconds(60));
-            derived().dead_line().async_wait(boost::bind(&websocket_session::check_dead_line, derived().shared_from_this()));
+            if(derived().state()->allow_delayed_authorization()){
+                //Запускаем таймер ожидания авторизации
+                derived().dead_line().expires_after(std::chrono::seconds(60));
+                derived().dead_line().async_wait(boost::bind(&websocket_session::check_dead_line, derived().shared_from_this()));
+            }
+
         }
+
         // Read a message
         do_read();
     }
@@ -141,15 +145,16 @@ class websocket_session
     void
     check_dead_line()
     {
-//        if(this->last_error < 0)
-//            return;
+        if(this->last_error < 0)
+            return;
 
         if (derived().authorized()){
             derived().dead_line().cancel();
         }else{
             if (derived().dead_line().expiry() <= steady_timer::clock_type::now())
             {
-                std::cerr << arcirk::local_8bit("Превышено время на авторизацию! Отключение клиента...") << std::endl;
+                beast::error_code ec{};
+                fail(ec, "Превышено время на авторизацию! Отключение клиента...");
                 derived().ws().async_close(websocket::close_code::normal,
                                 beast::bind_front_handler(
                                         &websocket_session::on_close,
@@ -277,14 +282,13 @@ public:
     void
     run(http::request<Body, http::basic_fields<Allocator>> req)
     {
-//        if(derived().state()->use_authorization()){
-//            std::string auth = req[http::field::authorization].to_string();
-//            if(!state_->verify_connection(auth)){
-//                std::cerr << "failed authorization" << std::endl;
-//                return handle_request(*doc_root_, parser_->release(), queue_, true);
-//            }
-//
-//        }
+        if(derived().state()->use_authorization()){
+            if(!derived().state()->allow_delayed_authorization() && !derived().authorized()){
+                beast::error_code ec{};
+                return fail(ec, "Unauthorized");
+            }
+
+        }
         // Accept the WebSocket upgrade request
         do_accept(std::move(req));
     }
@@ -300,7 +304,8 @@ public:
                         ss));
     }
 
-//protected:
+protected:
+    int last_error;
 //    auto super()
 //    {
 //        return this;
@@ -327,6 +332,7 @@ public:
             , dead_line_(stream.socket().get_executor())
     {
         authorized_ = is_http_authorization;
+        last_error = 0;
     }
 
     ~plain_websocket_session(){
@@ -374,6 +380,13 @@ public:
     bool is_ssl() override{
         return false;
     }
+
+    void set_authorized(bool value) override{
+        authorized_ = value;
+        if(value)
+            dead_line_.cancel();
+
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -397,6 +410,7 @@ public:
             , dead_line_(stream.next_layer().socket().get_executor())
     {
         authorized_ = is_http_authorization;
+        last_error = 0;
     }
 
     ~ssl_websocket_session(){
@@ -437,6 +451,13 @@ public:
     steady_timer&
     dead_line(){
         return dead_line_;
+    }
+
+    void set_authorized(bool value) override{
+        authorized_ = value;
+        if(value)
+            dead_line_.cancel();
+
     }
 };
 

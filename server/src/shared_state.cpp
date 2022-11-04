@@ -21,10 +21,7 @@ shared_state::shared_state(){
 void shared_state::join(subscriber *session) {
 
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(session->uuid_session(), session));
-    std::tm tm = arcirk::current_date();
-    char cur_date[100];
-    std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
-    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + std::string(cur_date));
+    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) );
 
     //Оповещаем всех пользователей об подключении нового клиента
     if(use_authorization())
@@ -59,7 +56,6 @@ void shared_state::send_notify(const std::string &message, subscriber *sender, c
         send<plain_websocket_session>(response);
     }
 
-
 }
 
 void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::string& user_name) {
@@ -67,10 +63,7 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
     if (iter != sessions_.end() ){
         sessions_.erase(session_uuid);
     }
-    std::tm tm = arcirk::current_date();
-    char cur_date[100];
-    std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
-    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" + " " + std::string(cur_date));
+    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" );
 
     //Оповещаем всех пользователей об отключении клиента
     send_notify("Client Leave", nullptr, "ClientLeave", session_uuid);
@@ -158,14 +151,12 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     if(v.size() < 2){
         fail("shared_state::execute_command_handler:error", "Не верный формат команды!");
-        //std::cout << message << std::endl;
         return;
     }
 
     long command_index = find_method(v[1]);
     if(command_index < 0){
         fail("shared_state::execute_command_handler:error", arcirk::str_sample("Команда (%1%) не найдена!", v[1]));
-       // std::cout << message << std::endl;
         return;
     }
 
@@ -184,7 +175,6 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         using nlohmann_json = nlohmann::json;
         auto params_ = nlohmann_json::parse(json_params);
         for (auto& el : params_.items()) {
-            //std::cout << el.key() << " : " << el.value() << "\n";
             auto value = el.value();
             if(value.is_string()){
                 params_v.emplace_back(value.get<std::string>());
@@ -211,7 +201,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     std::string response;
     server::server_response result_response;
     result_response.command = get_method_name(command_index);
-    result_response.message = return_value.result != "error" ? "OK" : "error";
+    result_response.message = return_value.message.empty() ? return_value.result != "error" ? "OK" : "error" : return_value.message;
     result_response.result = return_value.result; //base64 string
     result_response.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     result_response.receiver = arcirk::uuids::uuid_to_string(session->uuid_session());
@@ -260,9 +250,6 @@ void shared_state::send(const std::string &message, subscriber* skip_session) {
 
 bool shared_state::verify_connection(const std::string &basic_auth) {
 
-    //std::cout << "verify_connection: " << basic_auth << std::endl;
-
-
     if(basic_auth.empty())
         return false;
     else{
@@ -285,7 +272,7 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 }
 bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) const {
 
-    std::cout << "verify_connection ... " << std::endl;
+    log("shared_state::verify_auth_from_hash", "verify_connection ... ");
 
     using namespace boost::filesystem;
     using namespace soci;
@@ -329,38 +316,7 @@ bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) c
     std::string hash = arcirk::get_hash(usr, pwd);
     return verify_auth_from_hash(usr, hash);
 
-//    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
-//        if(sett.ServerWorkingDirectory.empty())
-//        {
-//            fail("shared_state::verify_auth:error", "Ошибки в параметрах сервера!");
-//            return false;
-//        }
-//
-//        path database(sett.ServerWorkingDirectory);
-//        database /= sett.Version;
-//        database /= "data";
-//        database /= "arcirk.sqlite";
-//
-//        if(!exists(database)){
-//            fail("shared_state::verify_auth:error", "Файл базы данных не найден!");
-//            return false;
-//        }
-//
-//        try {
-//            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
-//            session sql(soci::sqlite3, connection_string);
-//            int count = -1;
-//            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
-//            return count > 0;
-//        } catch (std::exception &e) {
-//            fail("shared_state::verify_auth:error", e.what(), false);
-//        }
-//
-//    }
-//    return false;
 }
-
-
 
 arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
 
@@ -450,7 +406,7 @@ bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> p
 
     return true;
 }
-//bool shared_state::call_as_func(const long& method_num, variant_t *ret_value, std::vector<variant_t> params) {
+
 bool shared_state::call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params) {
 
     try {
@@ -490,7 +446,6 @@ std::string shared_state::get_method_name(const long &num) const {
     return methods_meta[num].alias;
 }
 
-//std::string shared_state::set_client_param(const variant_t &param, const variant_t& session_id) {
 arcirk::server::server_command_result shared_state::set_client_param(const variant_t &param, const variant_t& session_id) {
 
     auto uuid_ = uuids::string_to_uuid(std::get<std::string>(session_id));
@@ -505,7 +460,6 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         return result;
     }
 
-   // std::string result_;
     try {
         auto param_ = pre::json::from_json<client::client_param>(base64_to_string(std::get<std::string>(param)));
         if(!param_.user_name.empty())
@@ -521,14 +475,20 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.user_name, param_.hash);
-                if(!result_auth)
+                if(!result_auth){
                     fail("shared_state::set_client_param", "failed authorization");
+                    result.message = "failed authorization";
+                }
                 else{
                     log("shared_state::set_client_param", "successful authorization");
                     session->set_authorized(true);
                 }
 
+            }else{
+                fail("shared_state::set_client_param", "failed authorization");
+                result.message = "failed authorization";
             }
+
 
         }
     } catch (std::exception &e) {
@@ -536,7 +496,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         result.result = "error";
     }
 
-    return result;//arcirk::base64::base64_encode(result);
+    return result;
 }
 
 subscriber*

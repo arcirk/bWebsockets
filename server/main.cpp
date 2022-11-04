@@ -258,18 +258,14 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
     if(parser.option_exists("-key_file")){
         copy_ssl_file(parser.option("-key_file"), conf);
     }
-    conf.UseAuthorization = parser.option_exists("-use_auth");
+    conf.UseAuthorization = parser.option_exists("-use_auth"); //требуется авторизация на сервере
+    conf.AllowDelayedAuthorization = parser.option_exists("-ada");// разрешить отложенную авторизацию
 }
 
-void save_conf_is_not_exits(server::server_config& conf){
-
+void save_conf(server::server_config& conf){
     using namespace boost::filesystem;
-
     path conf_file = program_data() /+ "server_conf.json";
-    //if(!exists(conf_file)){
     write_conf(conf, m_root_conf);
-    //}
-
 }
 
 int main(int argc, char* argv[])
@@ -309,9 +305,7 @@ int main(int argc, char* argv[])
 
     conf.Version = version;
 
-    //записываем файл конфигурации если это первый запуск
-    //в последующем изменения делаются в консоли администратора, параметры командной строки для изменения настроек используются только при отсутствии файла конфигурации
-    save_conf_is_not_exits(conf);
+    save_conf(conf);
 
     auto const address = net::ip::make_address(conf.ServerHost);
     auto const port = static_cast<unsigned short>(conf.ServerPort);

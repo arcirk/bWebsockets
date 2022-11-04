@@ -149,7 +149,8 @@ void websocket_client::on_message(const std::string &message) {
                     boost::uuids::uuid uuid{};
                     if(arcirk::uuids::is_valid_uuid(client_param_.session_uuid, uuid))
                         state_->set_uuid_session(uuid);
-
+                    if(resp.message == "failed authorization")
+                        on_error(resp.command, "failed authorization", 0);
                     log("websocket_client::on_message", resp.command + ": session uuid " +  client_param_.session_uuid + ": user uuid " + client_param_.user_uuid);
                     return;
                 }

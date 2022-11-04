@@ -37,6 +37,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, command)
         (std::string, uuid_form)
         (std::string, result)
+        (std::string, message)
 )
 
 namespace arcirk::client{

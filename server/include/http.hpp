@@ -220,7 +220,7 @@ handle_request(
 
 // Report a failure
 static void
-fail(beast::error_code ec, char const* what)
+fail(beast::error_code ec, char const* what, bool conv = true)
 {
     // ssl::error::stream_truncated, also known as an SSL "short read",
     // indicates the peer closed the connection without performing the
@@ -242,7 +242,28 @@ fail(beast::error_code ec, char const* what)
     if(ec == net::ssl::error::stream_truncated)
         return;
 
-    std::cerr << what << " code: " << ec.value() << " : " << ec.message() << "\n";
+    std::tm tm = arcirk::current_date();
+    char cur_date[100];
+    std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
+    int code = ec.value();
+    std::string szCode = code != 0 ? " " + std::to_string(code) : "";
+    std::string msg = code != 0 ? "::" + ec.message() : "";
+    std::string what_ = conv ? arcirk::local_8bit(what) : what;
+//    if(msg.find('\n', msg.length()) != std::string::npos)
+//        msg = msg.substr(0, msg.length() - 1);
+    std::cerr << std::string(cur_date) << " Error" << szCode << ": " << what_ << msg << std::endl;
+}
+
+static void info(const std::string& what, const std::string& message, bool conv = true){
+    std::tm tm = arcirk::current_date();
+    char cur_date[100];
+    std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
+    if(conv)
+        std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
+    else
+        std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
 }
 
 #endif

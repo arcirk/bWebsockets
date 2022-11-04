@@ -174,15 +174,18 @@ public:
             std::string auth = req[http::field::authorization].to_string();
             http_authorization = state_->verify_connection(auth);
             if(!http_authorization){
-                std::cerr << "failed http authorization" << std::endl;
+                fail(ec, "failed http authorization");
+//                if(!state_->allow_delayed_authorization()){
+//                    return handle_request(*doc_root_, parser_->release(), queue_, true);
+//                }
+
             }else
-                std::cout << "Authorization passed successfully" << std::endl;
+                info("on_read", "Authorization passed successfully");
         }
 
         // See if it is a WebSocket Upgrade
         if(websocket::is_upgrade(req))
         {
-            //auto req = parser_->release();
 
             // Disable the timeout.
             // The websocket::stream uses its own timeout settings.
@@ -194,7 +197,7 @@ public:
                     derived().release_stream(),
                     parser_->release(), state_, http_authorization);
         }else{
-            if(state_->use_authorization()){
+            if(state_->use_authorization() && !http_authorization){
                 return handle_request(*doc_root_, parser_->release(), queue_, true);
             }
         }
