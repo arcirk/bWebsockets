@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:StyleItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="9b92bdca-a0cf-4083-8a10-6069bad726fc">
+  <name>ЦветПоясняющейНадписи</name>
+  <synonym>
+    <key>ru</key>
+    <value>Цвет поясняющей надписи</value>
+  </synonym>
+  <value xsi:type="core:ColorValue">
+    <value xsi:type="core:ColorDef">
+      <red>128</red>
+      <green>128</green>
+      <blue>128</blue>
+    </value>
+  </value>
+</mdclass:StyleItem>

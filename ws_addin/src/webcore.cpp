@@ -57,8 +57,6 @@ WebCore::WebCore(){
     client_param.system_user = getlogin();
 #endif
 
-    //_is_source_event_uuid_form = false;
-
     m_client = std::make_shared<websocket_client>(ctx, client_param);
 
     m_client->connect(client::client_events::wsMessage, (callback_message)std::bind(&WebCore::on_message, this, std::placeholders::_1));
@@ -67,6 +65,7 @@ WebCore::WebCore(){
     m_client->connect(client::client_events::wsConnect, (callback_connect)std::bind(&WebCore::on_connect, this));
     m_client->connect(client::client_events::wsClose, (callback_close)std::bind(&WebCore::on_stop, this));
 
+    auto_reconnect = false;
 
     AddProperty(L"Version", L"Версия", [&]() {
         auto s = std::string(Version);
@@ -78,6 +77,12 @@ WebCore::WebCore(){
         return std::make_shared<variant_t>(std::move(m_url));
     });
 
+    AddProperty(L"AutoReconnect", L"ВосстановитьСоединениеПриРазрыве", [&]() {
+        const bool auto_reconnect_ = auto_reconnect;
+        return std::make_shared<variant_t>(std::move(auto_reconnect_));
+    }, [&](const variant_t& v){
+        auto_reconnect = std::get<bool>(v);
+    });
 //    AddProperty(L"DisablePublicNotify", L"ОтключитьПубличныеОповещения", [&]() {
 //        const bool m_no_notify = no_notify;
 //        return std::make_shared<variant_t>(std::move(m_no_notify));
@@ -176,7 +181,7 @@ void WebCore::open(const variant_t &url) {
         error(arcirk::to_utf("WebCore::open"), arcirk::to_utf("Клиент уже запущен!"));
         return;
     }
-
+    m_client->set_auto_reconnect(auto_reconnect);
     m_client->update_client_param(client_param);
     url_ = std::get<std::string>(url);
     m_client->open(arcirk::Uri::Parse(url_));
@@ -261,24 +266,4 @@ void WebCore::error(const std::string& src, const std::string &msg) {
     AddError(ADDIN_E_FAIL, src, msg, false);
 }
 
-void WebCore::start_reconnect() {
 
-    using namespace boost::asio;
-
-    if(m_client){
-        if(m_client->started())
-            return;
-    }
-
-    io_service io;
-
-    steady_timer connection_timer{io, std::chrono::seconds{60}};
-    connection_timer.async_wait([m_client, &connection_timer](const boost::system::error_code &ec)
-    {
-        std::cout << "3 sec\n";
-
-    });
-
-
-    io.run();
-}

@@ -11,6 +11,9 @@ websocket_client::websocket_client(ssl::context& ctx, client::client_param &clie
     state_ = nullptr;
     client_param_ = client_param;
     _disable_notify_on_close = false;
+    auto_reconnect_ = false;
+    timer_is_run = false;
+    closed_by_user = false;
 }
 
 void websocket_client::connect(const client::client_events &event, const client::callbacks &f) {
@@ -27,17 +30,24 @@ void websocket_client::connect(const client::client_events &event, const client:
     }
 }
 
+void websocket_client::set_auto_reconnect(bool value) {
+    auto_reconnect_ = value;
+}
+
 void websocket_client::open(const Uri &url) {
 
     ssl::context ctx{ssl::context::tlsv12_client};
-   // bool _ssl = url.Protocol == "wss";
+   //bool _ssl = url.Protocol == "wss";
     set_certificates(ctx);
+
     boost::thread(boost::bind(&websocket_client::start, this, url)).detach();
 
 }
 
 void websocket_client::start(arcirk::Uri &url) {
 
+    closed_by_user = false; //не включать таймер если сокет закрыт пользователем
+    url_ = url.Url;
     boost::asio::io_context ioc;
     bool _ssl = url.Protocol == "wss";
     set_certificates(ctx_);
@@ -58,6 +68,7 @@ void websocket_client::start(arcirk::Uri &url) {
 //        }
 
     }
+
     state_->connect(client::client_events::wsMessage, (callback_message)std::bind(&websocket_client::on_message, this, std::placeholders::_1));
     state_->connect(client::client_events::wsStatusChanged, (callback_status)std::bind(&websocket_client::on_status_changed, this, std::placeholders::_1));
     state_->connect(client::client_events::wsError, (callback_error)std::bind(&websocket_client::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -71,8 +82,10 @@ void websocket_client::start(arcirk::Uri &url) {
 
     log("websocket_client::start", "exit thread" );
 
-    if(!_disable_notify_on_close)
+    if(!_disable_notify_on_close){
         on_status_changed(false);
+    }
+
 }
 
 void websocket_client::set_certificates(ssl::context& ctx) {
@@ -167,6 +180,9 @@ void websocket_client::on_message(const std::string &message) {
 void websocket_client::on_status_changed(bool status) {
     if(m_data.on_status_changed)
         m_data.on_status_changed(status);
+    if(auto_reconnect_ && !timer_is_run && !status && !closed_by_user){
+        boost::thread(boost::bind(&websocket_client::start_reconnect, this, &timer_is_run)).detach();
+    }
 }
 
 void websocket_client::close(bool disable_notify) {
@@ -174,6 +190,7 @@ void websocket_client::close(bool disable_notify) {
     if(!state_)
         return;
     _disable_notify_on_close = disable_notify;
+    closed_by_user = true;
     state_->close(disable_notify);
 }
 
@@ -243,4 +260,40 @@ void websocket_client::update_client_param(client::client_param& client_param) {
     if(!client_param.password.empty())
         client_param_.password = client_param.password;
 
+}
+
+//const boost::system::error_code& ec,
+void
+websocket_client::check_connection(
+                                   boost::asio::steady_timer* tmr)
+{
+    if(started()){
+        tmr->expires_at((steady_timer::time_point::max)());
+        tmr->cancel();
+        log("websocket_client::check_connection", "stop check connection");
+    }else{
+        if (tmr->expiry() <= steady_timer::clock_type::now())
+        {
+            log("websocket_client::check_connection", "timer start");
+            tmr->expires_after(std::chrono::seconds(60));
+            tmr->async_wait(boost::bind(&websocket_client::check_connection, this, tmr));
+            open(arcirk::Uri::Parse(url_));
+        }
+    }
+
+}
+
+void websocket_client::start_reconnect(bool* is_run) {
+
+    if(*is_run)
+        return;
+    *is_run = true;
+    log("websocket_client::start_reconnect", "timer start");
+    net::io_context ioc_parent;
+    net::steady_timer connection_timer(ioc_parent);
+    connection_timer.expires_after(std::chrono::seconds(60));
+    connection_timer.async_wait(boost::bind(&websocket_client::check_connection, this, &connection_timer));
+    ioc_parent.run();
+    log("websocket_client::start_reconnect", "timer stop");
+    *is_run = false;
 }

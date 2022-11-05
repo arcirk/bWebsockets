@@ -186,7 +186,7 @@ namespace arcirk {
     struct Uri
     {
     public:
-        std::string QueryString, Path, Protocol, Host, Port, BasicAuth;
+        std::string QueryString, Path, Protocol, Host, Port, BasicAuth, Url;
 
         static Uri Parse(const std::string &uri)
         {
@@ -197,6 +197,8 @@ namespace arcirk {
 
             if (uri.length() == 0)
                 return result;
+
+            result.Url = uri;
 
             iterator_t uriEnd = uri.end();
 

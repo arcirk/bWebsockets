@@ -133,7 +133,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, ServerName)
         (std::string, ServerHttpRoot)
         (std::string, ServerWorkingDirectory)
-        (std::string, AutoConnect)
+        (bool, AutoConnect)
         (bool, UseLocalWebDavDirectory)
         (std::string, LocalWebDavDirectory)
         (std::string, WebDavHost)

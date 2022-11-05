@@ -10,6 +10,7 @@
 #include "shared_state.hpp"
 //#include "callbacks.hpp"
 #include <boost/beast/ssl.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 //#include <pre/json/from_json.hpp>
 //#include <pre/json/to_json.hpp>
@@ -18,6 +19,9 @@ namespace ssl = boost::asio::ssl;
 using namespace arcirk;
 
 class websocket_client{
+
+    //net::steady_timer connection_timer;
+    //net::io_context& ioc_parent_;
 
 public:
     explicit
@@ -50,6 +54,7 @@ public:
     }
 
     void update_client_param(client::client_param& client_param);
+    void set_auto_reconnect(bool value);
 
 private:
     client::client_data m_data;
@@ -59,6 +64,10 @@ private:
     client::client_param client_param_;
     boost::uuids::uuid session_uuid_{};
     bool _disable_notify_on_close;
+    std::string url_;
+    bool auto_reconnect_;
+    bool timer_is_run;
+    bool closed_by_user;
 
     void set_certificates(ssl::context& ctx);
 
@@ -71,6 +80,12 @@ private:
     void start(arcirk::Uri& url);
 
     [[nodiscard]] std::string base64_to_string(const std::string& base64str) const;
+
+    void start_reconnect(bool* is_run);
+    //const boost::system::error_code& ec,
+    void check_connection(
+                          boost::asio::steady_timer* t);
+
 };
 
 #endif

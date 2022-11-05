@@ -43,6 +43,7 @@
   <subsystems>Subsystem.Администрирование</subsystems>
   <subsystems>Subsystem.Клиент</subsystems>
   <subsystems>Subsystem.Сервер</subsystems>
+  <styleItems>StyleItem.ЦветПоясняющейНадписи</styleItems>
   <sessionParameters>SessionParameter.АвторизованныйПользователь</sessionParameters>
   <sessionParameters>SessionParameter.ТекущийПользователь</sessionParameters>
   <roles>Role.ПолныеПрава</roles>

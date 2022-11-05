@@ -151,7 +151,7 @@ main(int argc, char* argv[]){
     const std::string &_url = input.getCmdOption("-url");
     const std::string &_usr = input.getCmdOption("-usr");
     const std::string &_pwd = input.getCmdOption("-pwd");
-
+    const std::string &_ar = input.getCmdOption("-ar");
 
     callback_connect _connect = std::bind(&on_connect);
     callback_error _err = std::bind(&on_error, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
@@ -182,6 +182,16 @@ main(int argc, char* argv[]){
     if(!_pwd.empty())
         client_param.password = _pwd;
 
+    if(!_ar.empty())
+    {
+        try {
+            app_conf.AutoConnect = std::stoi(_ar.c_str());
+        } catch (std::exception &ex) {
+            std::cerr << arcirk::local_8bit("Ошибка преобразования параметра '-ar'.") << std::endl;
+        }
+    }
+
+
     m_client = std::make_shared<websocket_client>(ctx, client_param);
 
     std::string url = _url;
@@ -210,6 +220,8 @@ main(int argc, char* argv[]){
     m_client->set_certificate_file("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
 
     std::string line;
+
+    m_client->set_auto_reconnect(app_conf.AutoConnect);
 
     while (getline(std::cin, line)) {
         if (line.empty()) {

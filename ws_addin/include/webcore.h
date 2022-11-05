@@ -11,7 +11,6 @@
 #include <arcirk.hpp>
 #include <client.hpp>
 #include <boost/beast/ssl.hpp>
-#include <boost/asio/steady_timer.hpp>
 
 class WebCore final : public Component {
 
@@ -33,6 +32,7 @@ private:
     client::client_param client_param;
     server::server_config app_conf;
     std::string url_;
+    bool auto_reconnect;
 
 //    std::string _client_param;
 
@@ -97,8 +97,8 @@ private:
 
     void set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName);
 
-    void start_reconnect();
-
+//    void start_reconnect();
+//    void WebCore::check_connection();
 };
 
 #endif //WS_SOLUTION_WEBCORE_H
