@@ -3,11 +3,15 @@
 
 #include "includes.hpp"
 
+#define ARCIRK_VERSION "1.1.0"
+#define ARCIRK_SERVER_CONF "server_conf.json"
+
 typedef std::function<void(const std::string&)> callback_message;
 typedef std::function<void(bool)> callback_status;
 typedef std::function<void()> callback_connect;
 typedef std::function<void(const std::string&, const std::string&, int)> callback_error;
 typedef std::function<void()> callback_close;
+
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::client), client_param,
@@ -107,15 +111,20 @@ namespace arcirk::server{
         ServerVersion,
         ServerOnlineClientsList,
         SetClientParam,
-        TS_INVALID=-1,
+        ServerConfiguration,
+        UserInfo,
+        InsertOrUpdateUser,
+        CMD_INVALID=-1,
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(server_commands, {
-        {TS_INVALID, nullptr}    ,
+        {CMD_INVALID, nullptr}    ,
         {ServerVersion, "ServerVersion"}  ,
         {ServerOnlineClientsList, "ServerOnlineClientsList"}    ,
         {SetClientParam, "SetClientParam"}    ,
-
+        {ServerConfiguration, "ServerConfiguration"}    ,
+        {UserInfo, "UserInfo"}    ,
+        {InsertOrUpdateUser, "InsertOrUpdateUser"}    ,
     })
 
     static inline std::string synonym(server_commands value){

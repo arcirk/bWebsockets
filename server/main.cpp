@@ -13,15 +13,7 @@
 #include "include/listener.hpp"
 
 
-//#include <soci/soci.h>
-//#include <soci/sqlite3/soci-sqlite3.h>
-
-//#include <openssl/rsa.h> // Алгоритм RSA
-//#include <openssl/pem.h> // Для работы с файлами ключей
-
 using namespace arcirk;
-
-const std::string version = "1.1.0";
 
 const std::string index_html_text = "<!DOCTYPE html>\n"
                                     "<html>\n"
@@ -36,31 +28,22 @@ const std::string index_html_text = "<!DOCTYPE html>\n"
 
 boost::filesystem::path m_root_conf;
 
-//boost::filesystem::path program_data(){
-//    using namespace boost::filesystem;
-//
-//    std::string arcirk_dir = "arcirk";
-//#ifndef _WINDOWS
-//    arcirk_dir = "." + arcirk_dir;
-//#endif
-//
-//    path app_conf(arcirk::standard_paths::this_server_conf_dir(arcirk_dir));
-//
-//    return app_conf;
-//}
-
 void verify_directories(const std::string& working_directory_dir = ""){
 
     using namespace boost::filesystem;
 
     if(!working_directory_dir.empty()){
-        path app_conf(working_directory_dir);
-        app_conf /= version;
-        m_root_conf = app_conf;
+        //path app_conf(working_directory_dir);
+        //app_conf /= ARCIRK_VERSION;
+        //m_root_conf = app_conf;
+        m_root_conf = path(working_directory_dir);
+        m_root_conf /= ARCIRK_VERSION;
     }else{
-        path app_conf(program_data());
-        app_conf /= version;
-        m_root_conf = app_conf;
+//        path app_conf(program_data());
+//        app_conf /= ARCIRK_VERSION;
+//        m_root_conf = app_conf;
+        m_root_conf = path(program_data());
+        m_root_conf /= ARCIRK_VERSION;
     }
 
     bool is_conf = arcirk::standard_paths::verify_directory(m_root_conf);
@@ -103,39 +86,15 @@ void copy_ssl_file(const std::string& file_patch, server::server_config& conf){
     path current(file_patch);
 
     if(!exists(current)){
-//        if(!is_directory(current))
-//        {
-            copy_file(
-                    current,
-                    ssl_dir / current.filename()
-            );
-            if(current.extension() == "key")
-                conf.SSL_key_file = current.filename().string();
-            else
-                conf.SSL_crt_file = current.filename().string();
-//        }
+        copy_file(
+                current,
+                ssl_dir / current.filename()
+        );
+        if(current.extension() == "key")
+            conf.SSL_key_file = current.filename().string();
+        else
+            conf.SSL_crt_file = current.filename().string();
     }
-
-//    if(arcirk::standard_paths::verify_directory(ssl_dir)){
-//        path source(dir);
-//        if(exists(dir) && is_directory(dir)){
-//            for(directory_iterator file(source); file != directory_iterator(); ++file){
-//                try {
-//                    path current(file->path());
-//                    if(!is_directory(current))
-//                    {
-//                        copy_file(
-//                                current,
-//                                ssl_dir / current.filename()
-//                        );
-//                    }
-//                }catch (filesystem_error const &error) {
-//                    std::cerr << arcirk::local_8bit(error.what()) << std::endl;
-//                }
-//            }
-//
-//        }
-//    }
 
 }
 
@@ -182,19 +141,20 @@ void verify_database(){
     using namespace soci;
 
     //таблица пользователей
-    const std::string table_ddl = "CREATE TABLE IF NOT EXISTS Users (\n"
-                                  "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                  "    first  TEXT,\n"
-                                  "    second TEXT,\n"
-                                  "    ref         TEXT (36) UNIQUE\n"
-                                  "                          NOT NULL,\n"
-                                  "    hash        TEXT      UNIQUE\n"
-                                  "                          NOT NULL,\n"
-                                  "    role        TEXT,\n"
-                                  "    performance TEXT,\n"
-                                  "    parent      TEXT (36),\n"
-                                  "    cache       TEXT\n"
-                                  ");";
+    const std::string table_ddl = "CREATE TABLE  IF NOT EXISTS Users (\n"
+                               "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                               "    [first]     TEXT      DEFAULT \"\",\n"
+                               "    second      TEXT      DEFAULT \"\",\n"
+                               "    ref         TEXT (36) UNIQUE\n"
+                               "                          NOT NULL,\n"
+                               "    hash        TEXT      UNIQUE\n"
+                               "                          NOT NULL,\n"
+                               "    role        TEXT      DEFAULT user\n"
+                               "                          NOT NULL,\n"
+                               "    performance TEXT      DEFAULT \"\",\n"
+                               "    parent      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                               "    cache       TEXT      DEFAULT \"\"\n"
+                               ");";
 
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
 
@@ -206,14 +166,12 @@ void verify_database(){
         std::cerr << e.what() << std::endl;
     }
 
-
-    user_info u;
+    database::user_info u;
     u.ref = to_string(uuids::random_uuid());
     u.first = "admin";
     u.hash = arcirk::get_hash("admin", "admin");
     u.parent = arcirk::uuids::nil_string_uuid();
-    u.role = "admin";
-
+    u.role = database::synonym(database::dbAdministrator);
 
     try {
         //Хотя бы одна учетная запись с ролью 'admin' должна быть
@@ -263,9 +221,7 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
 }
 
 void save_conf(server::server_config& conf){
-    using namespace boost::filesystem;
-    path conf_file = program_data() /+ "server_conf.json";
-    write_conf(conf, m_root_conf);
+    write_conf(conf, m_root_conf, ARCIRK_SERVER_CONF);
 }
 
 int main(int argc, char* argv[])
@@ -277,12 +233,12 @@ int main(int argc, char* argv[])
     command_line_parser::cmd_parser input(argc, argv);
 
     if(input.option_exists("-v") || input.option_exists("-version")){
-        std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << version << std::endl;
+        std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << ARCIRK_VERSION << std::endl;
         return EXIT_SUCCESS;
     }
     auto conf = server::server_config();
     //инициализируем настройки
-    read_conf(conf);
+    read_conf(conf, m_root_conf, ARCIRK_SERVER_CONF);
     //если рабочий каталог не задан используем каталог по умолчанию
     if(conf.ServerWorkingDirectory.empty())
         conf.ServerWorkingDirectory = program_data().string();
@@ -303,7 +259,7 @@ int main(int argc, char* argv[])
         conf.ServerHttpRoot = html.string();
     }
 
-    conf.Version = version;
+    conf.Version = ARCIRK_VERSION;
 
     save_conf(conf);
 

@@ -40,6 +40,21 @@ public:
         return _app_name;
     }
 
+    [[nodiscard]] virtual std::string role() const{
+        return _role;
+    }
+
+    virtual void set_role(const std::string& value){
+        _role = value;
+    }
+
+    [[nodiscard]] virtual std::string full_name() const{
+        return _full_name;
+    }
+
+    virtual void set_full_name(const std::string& value){
+        _full_name = value;
+    }
     virtual void set_app_name(const std::string& value){
        _app_name = value;
     }
@@ -79,6 +94,8 @@ protected:
     bool authorized_ = false;
     std::tm start_date_{};
     std::string _app_name = UnknownApplication;
+    std::string _role = "user";
+    std::string _full_name;
 };
 
 template<class Derived>

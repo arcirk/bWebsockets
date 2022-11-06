@@ -46,7 +46,6 @@ typedef std::variant<
 > variant_t;
 
 using namespace arcirk;
-using namespace public_struct;
 
 namespace arcirk{
     enum DatabaseType{
@@ -66,16 +65,19 @@ namespace arcirk{
 
         return app_conf;
     }
-    static inline void read_conf(server::server_config & result){
 
-        //файл конфигурации всегда лежит либо в домашней папке на линуксе либо в programdata на windows
+    static inline boost::filesystem::path app_directory() {
+
+        return boost::filesystem::path(program_data()) /+ ARCIRK_VERSION;
+
+    }
+
+    static inline void read_conf(server::server_config & result, const boost::filesystem::path& root_conf, const std::string& file_name){
+
         using namespace boost::filesystem;
 
-        if(!exists(program_data()))
-            return;
-
         try {
-            path conf = program_data() /+ "server_conf.json";
+            path conf = root_conf /+ file_name.c_str();
 
             if(exists(conf)){
                 std::ifstream file(conf.string(), std::ios_base::in);
@@ -90,7 +92,7 @@ namespace arcirk{
 
     }
 
-    static inline void write_conf(server::server_config & conf, const boost::filesystem::path& root_conf) {
+    static inline void write_conf(server::server_config & conf, const boost::filesystem::path& root_conf, const std::string& file_name) {
         using namespace boost::filesystem;
 
         if (!exists(arcirk::local_8bit(root_conf.string())))
@@ -98,7 +100,7 @@ namespace arcirk{
         try {
             std::string result = to_string(pre::json::to_json(conf));
             std::ofstream out;
-            path conf_file = program_data() / +"server_conf.json";
+            path conf_file = root_conf /+ file_name.c_str();
             out.open(arcirk::local_8bit(conf_file.string()));
             if (out.is_open()) {
                 out << result;
@@ -144,6 +146,12 @@ public:
     arcirk::server::server_command_result get_clients_list(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result server_version(const variant_t& session_id);
     arcirk::server::server_command_result set_client_param(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result server_configuration(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result user_information(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result insert_or_update_user(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result upgrade_user(const variant_t& param, const variant_t& session_id);
+
+    static auto parse_json(const std::string& json_text, bool is_base64 = false);
 
     template<typename T, typename C, typename ... Ts>
     void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
@@ -157,11 +165,18 @@ public:
     long find_method(const std::string& method_name);
     [[nodiscard]] std::string get_method_name(const long& num) const;
 
-    [[nodiscard]] std::string base64_to_string(const std::string& base64str) const;
+    [[nodiscard]] static std::string base64_to_string(const std::string& base64str) ;
 
 private:
-    subscriber* get_session(boost::uuids::uuid &uuid);
-    std::vector<subscriber *> get_sessions(boost::uuids::uuid &user_uuid);
+    subscriber* get_session(const boost::uuids::uuid &uuid);
+    std::vector<subscriber *> get_sessions(const boost::uuids::uuid &user_uuid);
+    [[nodiscard]] arcirk::database::user_info get_user_info(const boost::uuids::uuid &user_uuid) const;
+    [[nodiscard]] arcirk::database::user_info get_user_info(const std::string &hash) const;
+    static void set_session_info(subscriber* session, const arcirk::database::user_info& info);
+
+    bool is_operation_available(const boost::uuids::uuid &uuid, arcirk::database::roles level);
+
+    [[nodiscard]] boost::filesystem::path sqlite_database_path() const;
 
     class MethodMeta;
 
@@ -215,7 +230,6 @@ public:
     long params_count;
     bool returns_value;
     std::map<long, variant_t> default_args;
-    //std::function<variant_t(std::vector<variant_t> &params)> call;
     std::function<arcirk::server::server_command_result(std::vector<variant_t> &params)> call;
 };
 

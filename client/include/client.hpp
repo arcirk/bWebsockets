@@ -56,6 +56,8 @@ public:
     void update_client_param(client::client_param& client_param);
     void set_auto_reconnect(bool value);
 
+    std::string get_table_default_struct(arcirk::database::tables table);
+
 private:
     client::client_data m_data;
     ssl::context& ctx_;

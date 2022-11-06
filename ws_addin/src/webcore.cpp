@@ -113,13 +113,40 @@ WebCore::WebCore(){
     AddMethod(L"Close", L"Закрыть", this, &WebCore::close);
     AddMethod(L"Started", L"Запущен", this, &WebCore::started);
     AddMethod(L"GetOnlineUsers", L"АктивныеПользователи", this, &WebCore::get_online_users);
-//    AddMethod(L"CommandToClient", L"КомандаКлиенту", this, &WebCore::command_to_client);
-//    AddMethod(L"CommandToServer", L"КомандаСерверу", this, &WebCore::command_to_server);
+    AddMethod(L"CommandToClient", L"КомандаКлиенту", this, &WebCore::command_to_client);
+    AddMethod(L"CommandToServer", L"КомандаСерверу", this, &WebCore::command_to_server);
     AddMethod(L"Sha1Hash", L"Sha1Hash", this, &WebCore::sha1_hash);
 //    AddMethod(L"SetAppName", L"УстановитьИмяПриложения", this, &WebCore::set_app_name);
     AddMethod(L"SessionUuid", L"ИдентификаторСессии", this, &WebCore::session_uuid);
 //    AddMethod(L"SetJobData", L"УстановитьПараметрыРабочегоМеста", this, &WebCore::set_job_data);
     AddMethod(L"SetParam", L"УстановитьПараметры", this, &WebCore::set_client_param);
+    AddMethod(L"GetTableRowStructure", L"ПолучитьСтруктуруЗаписи", this, &WebCore::get_table_row_structure);
+    AddMethod(L"GetServerCommands", L"ПолучитьСтруктуруКомандСервера", this, &WebCore::get_server_commands);
+
+}
+
+std::string WebCore::get_server_commands() {
+
+    using json_nl = nlohmann::json;
+    using namespace arcirk::server;
+    json_nl commands = {
+            {synonym(server_commands::ServerVersion), synonym(server_commands::ServerVersion)},
+            {synonym(server_commands::ServerOnlineClientsList), synonym(server_commands::ServerVersion)},
+            {synonym(server_commands::SetClientParam), synonym(server_commands::ServerVersion)},
+            {synonym(server_commands::ServerConfiguration), synonym(server_commands::ServerConfiguration)},
+            {synonym(server_commands::UserInfo), synonym(server_commands::UserInfo)},
+            {synonym(server_commands::InsertOrUpdateUser), synonym(server_commands::InsertOrUpdateUser)},
+    };
+
+    return commands.dump();
+}
+
+void WebCore::command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param,
+                                const variant_t &uuid_form) {
+
+}
+
+void WebCore::command_to_server(const variant_t &command, const variant_t &param, const variant_t &uuid_form) {
 
 }
 
@@ -142,11 +169,25 @@ void WebCore::set_client_param(const variant_t &userName, const variant_t &userH
         }
     }
 
-
 }
 
 WebCore::~WebCore() {
     m_client->close(true);
+}
+
+std::string WebCore::get_table_row_structure(const variant_t &table_name) {
+
+    using json_nl = nlohmann::json;
+    std::string table = std::get<std::string>(table_name);
+    json_nl enm_json = table;
+    try {
+        auto enm_val = enm_json.get<arcirk::database::tables>();
+        return m_client->get_table_default_struct(enm_val);
+    } catch (std::exception &ex) {
+        error("WebCore::get_table_row_structure", ex.what());
+    }
+
+    return {};
 }
 
 void WebCore::emit(const std::string& command, const std::string &resp) {
@@ -162,7 +203,6 @@ void WebCore::emit(const std::string& command, const std::string &resp) {
 
     this->ExternalEvent(source_event, command, resp);
 }
-
 
 void WebCore::close(const variant_t &exit_base) {
     if (m_client)
@@ -194,7 +234,6 @@ bool WebCore::started() {
     else
         return false;
 }
-
 
 std::string WebCore::session_uuid() {
     if(!m_client)

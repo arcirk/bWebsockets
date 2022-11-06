@@ -27,6 +27,9 @@ public:
     void close(const variant_t& exit_base = false);
     void open(const variant_t &url);
 
+    std::string get_table_row_structure(const variant_t& table_name);
+    std::string get_server_commands();
+
 private:
     std::shared_ptr<websocket_client> m_client;
     client::client_param client_param;
@@ -66,9 +69,9 @@ private:
 //
 //    void get_online_users(const variant_t &appFilter, const variant_t& uuid_form);
 //
-//    void command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param, const variant_t& uuid_form);
-//
-//    void command_to_server(const variant_t &command, const variant_t &param, const variant_t& uuid_form);
+    void command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param, const variant_t& uuid_form);
+
+    void command_to_server(const variant_t &command, const variant_t &param, const variant_t& uuid_form);
 //
 //    void connect_to_recipient(const variant_t &recipient);
 //

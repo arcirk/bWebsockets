@@ -12,10 +12,14 @@ shared_state::shared_state(){
     using namespace arcirk::server;
 
     sett = server::server_config();
-    read_conf(sett);
+    read_conf(sett, app_directory(), ARCIRK_SERVER_CONF);
     add_method(arcirk::server::synonym(server::server_commands::ServerVersion), this, &shared_state::server_version);
     add_method(arcirk::server::synonym(server::server_commands::ServerOnlineClientsList), this, &shared_state::get_clients_list);
     add_method(arcirk::server::synonym(server::server_commands::SetClientParam), this, &shared_state::set_client_param);
+    add_method(arcirk::server::synonym(server::server_commands::ServerConfiguration), this, &shared_state::server_configuration);
+    add_method(arcirk::server::synonym(server::server_commands::UserInfo), this, &shared_state::user_information);
+    add_method(arcirk::server::synonym(server::server_commands::InsertOrUpdateUser), this, &shared_state::insert_or_update_user);
+
 }
 
 void shared_state::join(subscriber *session) {
@@ -195,7 +199,14 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     log("shared_state::execute_command_handler", get_method_name(command_index));
 
     arcirk::server::server_command_result return_value;
-    call_as_func(command_index, &return_value, params_v);
+    try {
+        call_as_func(command_index, &return_value, params_v);
+    } catch (std::exception &ex) {
+        return_value.result = "error";
+        return_value.uuid_form = arcirk::uuids::nil_string_uuid();
+        return_value.message = arcirk::base64::base64_encode(ex.what());
+        fail("shared_state::execute_command_handler", ex.what());
+    }
 
     using namespace arcirk::server;
     std::string response;
@@ -318,65 +329,85 @@ bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) c
 
 }
 
-arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
+auto shared_state::parse_json(const std::string &json_text, bool is_base64) {
 
     using n_json = nlohmann::json;
-
-    std::string base64 = std::get<std::string>(param);
     std::string json_param;
 
+    if(json_text.empty())
+        throw std::exception("Не верный формат json!");
+
+    if(is_base64)
+        json_param = arcirk::base64::base64_decode(json_text);
+    else
+        json_param = json_text;
+
+    auto param_ = n_json::parse(json_param, nullptr, false);
+    if(param_.is_discarded()){
+        throw std::exception("Не верный формат json!");
+    }
+
+    return param_;
+
+}
+
+arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
+
+    using namespace arcirk::database;
     using namespace arcirk::server;
+    using n_json = nlohmann::json;
+
+    boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
     server::server_command_result result;
     result.command = arcirk::server::synonym(server::server_commands::ServerOnlineClientsList);
 
     try {
-        json_param = arcirk::base64::base64_decode(base64);
-    } catch (std::exception &e) {
-        fail("hared_state::get_clients_list", e.what(), false);
+        auto param_ = parse_json(std::get<std::string>(param), true);
+        bool is_table = param_.value("table", false);
+
+        auto table_object = n_json::object();
+
+        if(is_table) {
+            auto j = n_json(R"({"session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role"})");
+            table_object["columns"] = j;
+        }
+
+        auto rows = n_json::array();
+
+        for (auto itr = sessions_.cbegin(); itr != sessions_.cend() ; ++itr) {
+            char cur_date[100];
+            auto tm = itr->second->start_date();
+            std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
+            std::string dt = arcirk::to_utf(cur_date);
+            n_json row = {
+                    {"session_uuid", arcirk::uuids::uuid_to_string(itr->second->uuid_session())},
+                    {"user_name", itr->second->user_name()},
+                    {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
+                    {"start_date", dt},
+                    {"app_name", itr->second->app_name()},
+                    {"role", itr->second->role()}
+            };
+            rows += row;
+        }
+        table_object["rows"] = rows;
+
+        std::string table = arcirk::base64::base64_encode(table_object.dump());
+        std::string  uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+        result.uuid_form = uuid_form;
+        result.result = table;
+
+    } catch (std::exception &ex) {
         result.result = "error";
-        return result;
-    }
-    auto param_ = n_json::parse(json_param, nullptr, false);
-    if(param_.is_discarded()){
-        fail("shared_state::get_clients_list", "Не верные параметры!");
-        result.result = "error";
-        return result;
+        result.uuid_form = arcirk::uuids::nil_string_uuid();
+        result.message = arcirk::base64::base64_encode(ex.what());
     }
 
-    bool is_table = param_.value("table", false);
-
-    auto table_object = n_json::object();
-
-    if(is_table) {
-        auto j = n_json(R"({"session_uuid", "user_name", "user_uuid"})");
-        table_object["columns"] = j;
-    }
-
-    auto rows = n_json::array();
-
-    for (auto itr = sessions_.cbegin(); itr != sessions_.cend() ; ++itr) {
-        char cur_date[100];
-        auto tm = itr->second->start_date();
-        std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
-        std::string dt = arcirk::to_utf(cur_date);
-        n_json row = {
-            {"session_uuid", arcirk::uuids::uuid_to_string(itr->second->uuid_session())},
-            {"user_name", itr->second->user_name()},
-            {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
-            {"start_date", dt},
-            {"app_name", itr->second->app_name()}
-        };
-        rows += row;
-    }
-    table_object["rows"] = rows;
-
-    std::string table = arcirk::base64::base64_encode(table_object.dump());
-    std::string  uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
-
-    result.uuid_form = uuid_form;
-    result.result = table;
-    return result; //arcirk::base64::base64_encode(to_string(pre::json::to_json(result)));
-
+    return result;
 }
 
 arcirk::server::server_command_result shared_state::server_version(const variant_t& session_id){
@@ -482,6 +513,9 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
                 else{
                     log("shared_state::set_client_param", "successful authorization");
                     session->set_authorized(true);
+                    auto info = get_user_info(param_.hash);
+                    //если используется авторизация устанавливаем параметры из базы данных
+                    set_session_info(session, info);
                 }
 
             }else{
@@ -500,7 +534,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
 }
 
 subscriber*
-shared_state::get_session(boost::uuids::uuid &uuid) {
+shared_state::get_session(const boost::uuids::uuid &uuid) {
     auto iter = sessions_.find(uuid);
     if (iter != sessions_.end() ){
         return iter->second;
@@ -510,7 +544,7 @@ shared_state::get_session(boost::uuids::uuid &uuid) {
 
 //получение всех сессий пользователя
 std::vector<subscriber *>
-shared_state::get_sessions(boost::uuids::uuid &user_uuid) {
+shared_state::get_sessions(const boost::uuids::uuid &user_uuid) {
     auto iter = user_sessions.find(user_uuid);
     if (iter != user_sessions.end() ){
         return iter->second;
@@ -518,7 +552,7 @@ shared_state::get_sessions(boost::uuids::uuid &user_uuid) {
     return {};
 }
 
-std::string shared_state::base64_to_string(const std::string &base64str) const {
+std::string shared_state::base64_to_string(const std::string &base64str) {
     try {
         return arcirk::base64::base64_decode(base64str);
     } catch (std::exception &e) {
@@ -528,4 +562,263 @@ std::string shared_state::base64_to_string(const std::string &base64str) const {
 
 bool shared_state::allow_delayed_authorization() const {
     return sett.AllowDelayedAuthorization;
+}
+
+boost::filesystem::path shared_state::sqlite_database_path() const {
+    using namespace boost::filesystem;
+    path db_path(sett.ServerWorkingDirectory);
+    db_path /= sett.Version;
+    db_path /= "data";
+    db_path /= "arcirk.sqlite";
+
+    if(!exists(db_path)){
+        throw std::exception("Файл базы данных не найден!");
+    }
+
+    return db_path;
+}
+
+arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid &user_uuid) const{
+
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    auto result = arcirk::database::user_info();
+
+    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+        if(sett.ServerWorkingDirectory.empty())
+        {
+            //fail("shared_state::get_user_info:error", "Ошибки в параметрах сервера!");
+            throw std::exception("Ошибки в параметрах сервера!");
+        }
+
+        try {
+            path db_path = sqlite_database_path();
+
+            std::string ref = arcirk::uuids::uuid_to_string(user_uuid);
+
+            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+            session sql(soci::sqlite3, connection_string);
+            soci::rowset<arcirk::database::user_info> rs = (sql.prepare << "select * from Users where ref = " <<  "'" << ref << "'");
+            int count = -1;
+            for (auto it = rs.begin(); it != rs.end(); it++) {
+                result = *it;
+                count++;
+                break;
+            }
+            if(count < 0)
+                throw std::exception("Пользователь не найден!");
+        } catch (std::exception &e) {
+            fail("shared_state::verify_auth:error", e.what(), false);
+        }
+
+    }
+    return result;
+}
+
+arcirk::database::user_info shared_state::get_user_info(const std::string &hash) const{
+
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    auto result = arcirk::database::user_info();
+
+    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+        if(sett.ServerWorkingDirectory.empty())
+        {
+            //fail("shared_state::get_user_info:error", "Ошибки в параметрах сервера!");
+            throw std::exception("Ошибки в параметрах сервера!");
+        }
+
+        path database(sett.ServerWorkingDirectory);
+        database /= sett.Version;
+        database /= "data";
+        database /= "arcirk.sqlite";
+
+        if(!exists(database)){
+            //fail("shared_state::get_user_info:error", "Файл базы данных не найден!");
+            throw std::exception("Файл базы данных не найден!");
+        }
+
+        if(hash.empty())
+            throw std::exception("Хеш пользователя не указан!");
+
+        try {
+            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+            session sql(soci::sqlite3, connection_string);
+            soci::rowset<arcirk::database::user_info> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+            int count = -1;
+            for (auto it = rs.begin(); it != rs.end(); it++) {
+                result = *it;
+                count++;
+                break;
+            }
+            if(count < 0)
+                throw std::exception("Пользователь не найден!");
+        } catch (std::exception &e) {
+            fail("shared_state::verify_auth:error", e.what(), false);
+        }
+
+    }
+    return result;
+}
+
+void shared_state::set_session_info(subscriber* session, const arcirk::database::user_info &info) {
+    if(!session)
+        return;
+    session->set_role(info.role);
+    session->set_user_name(info.first);
+    session->set_full_name(info.second);
+    session->set_user_uuid(arcirk::uuids::string_to_uuid(info.ref));
+}
+
+arcirk::server::server_command_result shared_state::server_configuration(const variant_t& param, const variant_t &session_id) {
+    using namespace arcirk::database;
+    using n_json = nlohmann::json;
+
+    boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    std::string conf_json = to_string(pre::json::to_json(sett));
+    server::server_command_result result;
+    result.result = arcirk::base64::base64_encode(conf_json);
+    result.command = server::synonym(server::server_commands::ServerConfiguration);
+    result.message = "OK";
+    try {
+        auto param_ = parse_json(std::get<std::string>(param), true);
+        result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    } catch (std::exception &ex) {
+        result.uuid_form = uuids::nil_string_uuid();
+    }
+    return result;
+}
+
+bool shared_state::is_operation_available(const boost::uuids::uuid &uuid, arcirk::database::roles level) {
+
+    auto session = get_session(uuid);
+    if(!session)
+        return false;
+    if(use_authorization() && !session->authorized())
+        return false;
+
+    return session->role() == arcirk::database::synonym(level);
+
+}
+
+arcirk::server::server_command_result shared_state::user_information(const variant_t &param,
+                                                                     const variant_t &session_id) {
+    using namespace arcirk::database;
+    //using n_json = nlohmann::json;
+
+    server::server_command_result result;
+
+    auto param_ = parse_json(std::get<std::string>(param), true);
+
+    std::string session_uuid_str = param_.value("session_uuid", "");
+    std::string user_uuid_str = param_.value("user_uuid", "");
+
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+    if(session_uuid_str.empty() && user_uuid_str.empty()){
+        result.result = "error";
+        result.message = arcirk::base64::base64_encode("Не указан идентификатор пользователя или сессии");
+        return result;
+    }
+
+    auto user_uuid = boost::uuids::nil_uuid();
+
+    if(!user_uuid_str.empty())
+        user_uuid = uuids::string_to_uuid(user_uuid_str);
+    else{
+        auto session_uuid = uuids::string_to_uuid(session_uuid_str);
+        auto session = get_session(session_uuid);
+        if(!session){
+            result.result = "error";
+            result.message = arcirk::base64::base64_encode("Запрашиваемая сессия не найдена");
+            return result;
+        }
+        user_uuid = session->user_uuid();
+    }
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    auto current_session = get_session(uuid);
+
+    if(user_uuid != current_session->user_uuid()){
+        bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+        if (!operation_available)
+            throw std::exception("Не достаточно прав доступа!");
+    }
+
+    auto usr_info = get_user_info(user_uuid);
+    std::string info_json = to_string(pre::json::to_json(usr_info));
+    result.result = arcirk::base64::base64_encode(info_json);
+    result.command = server::synonym(server::server_commands::UserInfo);
+    result.message = "OK";
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::insert_or_update_user(const variant_t &param,
+                                                                          const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace boost::filesystem;
+    using namespace soci;
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto usr_info = pre::json::from_json<user_info>(param_json);
+
+    if(!usr_info.ref.empty() && !usr_info.hash.empty() && !usr_info.role.empty() && !usr_info.first.empty()){
+        path db_path = sqlite_database_path();
+        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+        session sql(soci::sqlite3, connection_string);
+        int count = -1;
+        sql << "select count(*) from Users where ref = " <<  "'" << usr_info.ref << "'" , into(count);
+        if(count <= 0){
+            sql << "INSERT INTO Users("
+                   "ref, "
+                   "first, "
+                   "second, "
+                   "hash, "
+                   "role) VALUES(?, ?, ?, ?, ?)",
+                   soci::use(usr_info.ref),
+                   soci::use(usr_info.first),
+                   soci::use(usr_info.second),
+                   soci::use(usr_info.hash),
+                   soci::use(usr_info.role);
+        }else{
+            sql << "UPDATE Users"
+                   "   SET [first] = ?,"
+                   "       second = ?,"
+                   "       hash = ?,"
+                   "       role = ?,"
+                   "       performance = ?,"
+                   "       parent = ?,"
+                   "       cache = ?,"
+                   " WHERE ref = ?;",
+                    soci::use(usr_info.first),
+                    soci::use(usr_info.second),
+                    soci::use(usr_info.hash),
+                    soci::use(usr_info.role),
+                    soci::use(usr_info.performance),
+                    soci::use(usr_info.parent),
+                    soci::use(usr_info.cache),
+                    soci::use(usr_info.ref);
+        }
+
+    }else
+        throw std::exception("Не указаны все значения обязательны полей (ref,first,hash,role)");
+
+    server::server_command_result result;
+    result.result = "success";
+    result.command = server::synonym(server::server_commands::InsertOrUpdateUser);
+    result.message = "OK";
+
+    return result;
 }

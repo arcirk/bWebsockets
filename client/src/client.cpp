@@ -297,3 +297,25 @@ void websocket_client::start_reconnect(bool* is_run) {
     log("websocket_client::start_reconnect", "timer stop");
     *is_run = false;
 }
+
+std::string websocket_client::get_table_default_struct(arcirk::database::tables table) {
+
+    using namespace arcirk::database;
+    switch (table) {
+        case tbUsers:{
+            auto usr_info = user_info();
+            usr_info.ref = arcirk::uuids::nil_string_uuid();
+            usr_info.parent = arcirk::uuids::nil_string_uuid();
+            std::string usr_info_json = to_string(pre::json::to_json(usr_info));
+            return usr_info_json;
+        }
+        case tbMessages:{
+            break;
+        }
+        case tables_INVALID:{
+            break;
+        }
+    }
+
+    return {};
+}
