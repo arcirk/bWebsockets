@@ -149,7 +149,7 @@ public:
     arcirk::server::server_command_result server_configuration(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result user_information(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result insert_or_update_user(const variant_t& param, const variant_t& session_id);
-    arcirk::server::server_command_result upgrade_user(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result command_to_client(const variant_t& param, const variant_t& session_id, const variant_t& session_id_receiver);
 
     static auto parse_json(const std::string& json_text, bool is_base64 = false);
 

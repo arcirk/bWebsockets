@@ -228,7 +228,25 @@ void websocket_client::send_command(const std::string &command, const std::strin
         return;
     state_->command_to_server(command, param);
 }
+void websocket_client::send_command_to_client(const std::string &receiver, const std::string &command,
+                                              const std::string &param) {
+    if(!state_)
+        return;
 
+    if(command.empty()){
+        fail("websocket_client::send_command_to_client", "Не корректная команда!");
+        return;
+    }
+
+    boost::uuids::uuid uuid;
+    if(!uuids::is_valid_uuid(receiver, uuid)){
+        fail("websocket_client::send_command_to_client", "Не корректный идентификатор получателя!");
+        return;
+    }else{
+        state_->command_to_client(receiver, command, param);
+    }
+
+}
 bool websocket_client::started() {
 
     if(!state_)

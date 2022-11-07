@@ -114,6 +114,7 @@ namespace arcirk::server{
         ServerConfiguration,
         UserInfo,
         InsertOrUpdateUser,
+        CommandToClient,
         CMD_INVALID=-1,
     };
 
@@ -125,6 +126,7 @@ namespace arcirk::server{
         {ServerConfiguration, "ServerConfiguration"}    ,
         {UserInfo, "UserInfo"}    ,
         {InsertOrUpdateUser, "InsertOrUpdateUser"}    ,
+        {CommandToClient, "CommandToClient"}    ,
     })
 
     static inline std::string synonym(server_commands value){

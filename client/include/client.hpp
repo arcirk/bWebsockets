@@ -34,6 +34,7 @@ public:
     void send_message(const std::string& message);
     void send_message(const std::string& message, const std::string& receiver, const std::string& param = "");
     void send_command(const std::string& command, const std::string& param = "");
+    void send_command_to_client(const std::string& receiver, const std::string& command, const std::string& param = "");
 
     bool started();
 

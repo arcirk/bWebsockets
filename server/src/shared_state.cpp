@@ -164,15 +164,21 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         return;
     }
 
+    int param_index = v.size() - 1;
+
     std::string json_params;
     if(v.size() > 2){
         try {
-            json_params = arcirk::base64::base64_decode(v[2]);
+            json_params = arcirk::base64::base64_decode(v[param_index]);
         } catch (std::exception &e) {
             fail("shared_state::execute_command_handler:parse_params:error", e.what(), false);
             return;
         }
     }
+
+    std::string session_id_receiver; //указан получатель
+    if(param_index == 3)
+        session_id_receiver = v[2];
 
     std::vector<variant_t> params_v;
     if(!json_params.empty()){
@@ -191,6 +197,8 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     }
 
     params_v.emplace_back(arcirk::uuids::uuid_to_string(session->uuid_session()));
+    if(!session_id_receiver.empty())
+        params_v.emplace_back(session_id_receiver); //идентификатор получателя
 
     long p_count = param_count(command_index);
     if(p_count != params_v.size())
@@ -208,15 +216,22 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         fail("shared_state::execute_command_handler", ex.what());
     }
 
+    bool is_command_to_client = get_method_name(command_index) == arcirk::server::synonym(arcirk::server::server_commands::CommandToClient);
+
     using namespace arcirk::server;
     std::string response;
     server::server_response result_response;
     result_response.command = get_method_name(command_index);
     result_response.message = return_value.message.empty() ? return_value.result != "error" ? "OK" : "error" : return_value.message;
-    result_response.result = return_value.result; //base64 string
+    result_response.result = is_command_to_client ? "" : return_value.result; //base64 string
     result_response.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
-    result_response.receiver = arcirk::uuids::uuid_to_string(session->uuid_session());
-    result_response.uuid_form = return_value.uuid_form;
+    if(!is_command_to_client){
+        result_response.receiver = arcirk::uuids::uuid_to_string(session->uuid_session());
+        result_response.uuid_form = return_value.uuid_form;
+        result_response.param = return_value.result;
+    }else
+        result_response.receiver = session_id_receiver;
+
     result_response.app_name = session->app_name();
 
     response = to_string(pre::json::to_json(result_response));
@@ -226,7 +241,13 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     }
 
     auto const ss = boost::make_shared<std::string const>(response);
-    session->send(ss);
+    if(!is_command_to_client){
+        session->send(ss);
+    }else{
+        auto session_receiver = get_session(arcirk::uuids::string_to_uuid(session_id_receiver));
+        if(session_receiver)
+            session_receiver->send(ss);
+    }
 
 }
 
@@ -349,6 +370,24 @@ auto shared_state::parse_json(const std::string &json_text, bool is_base64) {
 
     return param_;
 
+}
+
+arcirk::server::server_command_result shared_state::command_to_client(const variant_t &param,
+                                                                      const variant_t &session_id,
+                                                                      const variant_t &session_id_receiver) {
+
+    auto session_receiver = get_session(arcirk::uuids::string_to_uuid(std::get<std::string>(session_id_receiver)));
+    if(!session_receiver)
+        throw std::exception("Сессия получателя не найдена!");
+
+    //ToDo: Парсинг параметров если необходимо
+
+    //
+    server::server_command_result result;
+    result.command = arcirk::server::synonym(server::server_commands::CommandToClient);
+    result.result = std::get<std::string>(param);
+
+    return result;
 }
 
 arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){

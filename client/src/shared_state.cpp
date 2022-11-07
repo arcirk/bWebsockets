@@ -95,3 +95,26 @@ void shared_state::command_to_server(const std::string &command, const std::stri
 boost::uuids::uuid shared_state::session_uuid() const {
     return session_uuid_;
 }
+
+void shared_state::command_to_client(const std::string &receiver, const std::string &command,
+                                     const std::string &param) {
+    if(command.empty() || receiver.empty())
+        return;
+
+    std::string cmd = "cmd " + arcirk::server::synonym(arcirk::server::server_commands::CommandToClient) + receiver;
+
+    if(!param.empty()){
+        using json_nl = nlohmann::json;
+        std::string private_param = arcirk::base64::base64_encode(param);
+        json_nl param_ = {
+                {"parameters", private_param},
+                {"recipient", receiver},
+                {"command", command}
+        };
+        cmd.append(" ");
+        cmd.append(arcirk::base64::base64_encode(param_.dump()));
+    }
+
+    auto const ss = boost::make_shared<std::string const>(std::move(cmd));
+    send(ss);
+}

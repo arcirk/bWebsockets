@@ -33,6 +33,7 @@ public:
     [[nodiscard]] std::string basic_auth_string() const;
 
     void command_to_server(const std::string& command, const std::string& param = "");
+    void command_to_client(const std::string& receiver, const std::string& command, const std::string& param = "");
 
     [[nodiscard]] boost::uuids::uuid session_uuid() const;
 

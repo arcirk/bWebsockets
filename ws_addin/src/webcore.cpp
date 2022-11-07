@@ -144,10 +144,30 @@ std::string WebCore::get_server_commands() {
 void WebCore::command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param,
                                 const variant_t &uuid_form) {
 
+    if(!m_client->started())
+        return;
+    using json_nl = nlohmann::json;
+    std::string command_ = std::get<std::string>(command);
+    std::string uuid_form_ = std::get<std::string>(uuid_form);
+    json_nl param_ = std::get<std::string>(param);
+    param_.push_back({
+                        {"uuid_form", uuid_form_}
+                     });
+    m_client->send_command(command_, param_);
 }
 
 void WebCore::command_to_server(const variant_t &command, const variant_t &param, const variant_t &uuid_form) {
 
+    if(!m_client->started())
+        return;
+    using json_nl = nlohmann::json;
+    std::string command_ = std::get<std::string>(command);
+    std::string uuid_form_ = std::get<std::string>(uuid_form);
+    json_nl param_ = std::get<std::string>(param);
+    param_.push_back({
+        {"uuid_form", uuid_form_}
+    });
+    m_client->send_command(command_, param_);
 }
 
 void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
