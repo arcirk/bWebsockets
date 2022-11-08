@@ -69,7 +69,7 @@ private:
 //
 //    void get_online_users(const variant_t &appFilter, const variant_t& uuid_form);
 //
-    void command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param, const variant_t& uuid_form);
+    void command_to_client(const variant_t &receiver, const variant_t &command, const variant_t &param);
 
     void command_to_server(const variant_t &command, const variant_t &param, const variant_t& uuid_form);
 //

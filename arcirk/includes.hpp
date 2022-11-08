@@ -2,6 +2,7 @@
 #define ARCIRK_INCLUDES_HPP
 
 #include <iostream>
+#include <exception>
 #include <functional>
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/adapted/struct/define_struct.hpp>
@@ -14,7 +15,19 @@
 #include <pre/json/to_json.hpp>
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
+#include <string_view>
+#include <execution>
 
 #define UNDEFINED std::monostate()
+
+namespace arcirk{
+    template<typename T>
+    static inline std::string enum_synonym(T value){
+        using n_json = nlohmann::json;
+        return n_json(value).get<std::string>();
+    };
+}
+
+
 
 #endif

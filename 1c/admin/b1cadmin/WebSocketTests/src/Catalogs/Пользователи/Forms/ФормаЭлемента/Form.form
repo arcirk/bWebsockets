@@ -1021,6 +1021,10 @@
     <event>OnOpen</event>
     <name>ПриОткрытии</name>
   </handlers>
+  <handlers>
+    <event>BeforeClose</event>
+    <name>ПередЗакрытием</name>
+  </handlers>
   <windowOpeningMode>LockOwnerWindow</windowOpeningMode>
   <autoTitle>true</autoTitle>
   <autoUrl>true</autoUrl>
@@ -1303,10 +1307,6 @@
     <handlers>
       <event>BeforeWriteAtServer</event>
       <name>ПередЗаписьюНаСервере</name>
-    </handlers>
-    <handlers>
-      <event>AfterWrite</event>
-      <name>ПослеЗаписи</name>
     </handlers>
     <handlers>
       <event>OnReadAtServer</event>

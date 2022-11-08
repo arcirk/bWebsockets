@@ -74,7 +74,7 @@ void write_conf(server::server_config & conf){
 
 void on_connect(){
     try {
-        std::string cm = arcirk::client::synonym(arcirk::client::client_events::wsConnect);
+        std::string cm = enum_synonym(arcirk::client::client_events::wsConnect);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

@@ -171,7 +171,7 @@ void verify_database(){
     u.first = "admin";
     u.hash = arcirk::get_hash("admin", "admin");
     u.parent = arcirk::uuids::nil_string_uuid();
-    u.role = database::synonym(database::dbAdministrator);
+    u.role = enum_synonym(database::dbAdministrator);
 
     try {
         //Хотя бы одна учетная запись с ролью 'admin' должна быть

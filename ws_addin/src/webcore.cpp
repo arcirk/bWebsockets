@@ -130,30 +130,22 @@ std::string WebCore::get_server_commands() {
     using json_nl = nlohmann::json;
     using namespace arcirk::server;
     json_nl commands = {
-            {synonym(server_commands::ServerVersion), synonym(server_commands::ServerVersion)},
-            {synonym(server_commands::ServerOnlineClientsList), synonym(server_commands::ServerVersion)},
-            {synonym(server_commands::SetClientParam), synonym(server_commands::ServerVersion)},
-            {synonym(server_commands::ServerConfiguration), synonym(server_commands::ServerConfiguration)},
-            {synonym(server_commands::UserInfo), synonym(server_commands::UserInfo)},
-            {synonym(server_commands::InsertOrUpdateUser), synonym(server_commands::InsertOrUpdateUser)},
+            {enum_synonym(server_commands::ServerVersion), enum_synonym(server_commands::ServerVersion)},
+            {enum_synonym(server_commands::ServerOnlineClientsList), enum_synonym(server_commands::ServerVersion)},
+            {enum_synonym(server_commands::SetClientParam), enum_synonym(server_commands::ServerVersion)},
+            {enum_synonym(server_commands::ServerConfiguration), enum_synonym(server_commands::ServerConfiguration)},
+            {enum_synonym(server_commands::UserInfo), enum_synonym(server_commands::UserInfo)},
+            {enum_synonym(server_commands::InsertOrUpdateUser), enum_synonym(server_commands::InsertOrUpdateUser)},
     };
 
     return commands.dump();
 }
 
-void WebCore::command_to_client(const variant_t &recipient, const variant_t &command, const variant_t &param,
-                                const variant_t &uuid_form) {
+void WebCore::command_to_client(const variant_t &receiver, const variant_t &command, const variant_t &param) {
 
     if(!m_client->started())
         return;
-    using json_nl = nlohmann::json;
-    std::string command_ = std::get<std::string>(command);
-    std::string uuid_form_ = std::get<std::string>(uuid_form);
-    json_nl param_ = std::get<std::string>(param);
-    param_.push_back({
-                        {"uuid_form", uuid_form_}
-                     });
-    m_client->send_command(command_, param_);
+    m_client->send_command_to_client(std::get<std::string>(receiver), std::get<std::string>(command), std::get<std::string>(param));
 }
 
 void WebCore::command_to_server(const variant_t &command, const variant_t &param, const variant_t &uuid_form) {
@@ -163,11 +155,14 @@ void WebCore::command_to_server(const variant_t &command, const variant_t &param
     using json_nl = nlohmann::json;
     std::string command_ = std::get<std::string>(command);
     std::string uuid_form_ = std::get<std::string>(uuid_form);
-    json_nl param_ = std::get<std::string>(param);
-    param_.push_back({
-        {"uuid_form", uuid_form_}
-    });
-    m_client->send_command(command_, param_);
+    json_nl param_ = json_nl::parse(std::get<std::string>(param));
+    if(param_.is_discarded())
+        param_ = {};
+
+    param_ += {"uuid_form", uuid_form_};
+//    param_.(param_.end(),
+//        {"uuid_form", uuid_form_});
+    m_client->send_command(command_, param_.dump());
 }
 
 void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
@@ -276,12 +271,12 @@ void WebCore::on_connect(){
     response.message = "ok";
     response.result = "success";
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(arcirk::client::synonym(arcirk::client::client_events::wsConnect), msg);
+    emit(enum_synonym(arcirk::client::client_events::wsConnect), msg);
 }
 
 void WebCore::on_message(const std::string& message){
     using namespace arcirk::client;
-    emit(synonym(client_events::wsMessage), message);
+    emit(enum_synonym(client_events::wsMessage), message);
 }
 
 void WebCore::on_stop(){
@@ -290,7 +285,7 @@ void WebCore::on_stop(){
     response.message = "ok";
     response.result = "success";
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(arcirk::client::synonym(arcirk::client::client_events::wsClose), msg);
+    emit(enum_synonym(arcirk::client::client_events::wsClose), msg);
 }
 void
 WebCore::on_error(const std::string &what, const std::string &err, int code){
@@ -299,7 +294,7 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
     response.message = err;
     response.result = "error";
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(arcirk::client::synonym(arcirk::client::client_events::wsError), msg);
+    emit(enum_synonym(arcirk::client::client_events::wsError), msg);
     //error(what, err);
 }
 
@@ -309,7 +304,7 @@ void WebCore::on_status_changed(bool status){
     response.message = "ok";
     response.result = status ? "true" : "false";
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(arcirk::client::synonym(arcirk::client::client_events::wsStatusChanged), msg);
+    emit(enum_synonym(arcirk::client::client_events::wsStatusChanged), msg);
 }
 
 std::string WebCore::sha1_hash(const variant_t &source) {

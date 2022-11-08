@@ -121,7 +121,7 @@ void websocket_client::on_close() {
 void websocket_client::on_connect() {
 
     std::string param = to_string(pre::json::to_json(client_param_)) ;
-    send_command(server::synonym(server::server_commands::SetClientParam), param);
+    send_command(enum_synonym(server::server_commands::SetClientParam), param);
 
     if(m_data.on_connect)
         m_data.on_connect();
@@ -147,13 +147,13 @@ void websocket_client::on_message(const std::string &message) {
     if(message.empty())
         return;
 
-    bool isSetParam = message.find(server::synonym(server::server_commands::SetClientParam)) != std::string::npos;
+    bool isSetParam = message.find(enum_synonym(server::server_commands::SetClientParam)) != std::string::npos;
 
     if(isSetParam){
         //парсим ответ если это установка параметров
         try {
             auto resp = pre::json::from_json<server::server_response>(message);
-            if(resp.command == server::synonym(server::server_commands::SetClientParam)){
+            if(resp.command == enum_synonym(server::server_commands::SetClientParam)){
                 client::client_param client_param;
                 if(!resp.result.empty()){
                     std::string r = arcirk::base64::base64_decode(resp.result);
@@ -238,7 +238,7 @@ void websocket_client::send_command_to_client(const std::string &receiver, const
         return;
     }
 
-    boost::uuids::uuid uuid;
+    boost::uuids::uuid uuid{};
     if(!uuids::is_valid_uuid(receiver, uuid)){
         fail("websocket_client::send_command_to_client", "Не корректный идентификатор получателя!");
         return;

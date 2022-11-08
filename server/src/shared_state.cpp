@@ -3,6 +3,10 @@
 #include "../include/websocket_session.hpp"
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
+//#include <exception>
+//#include <stdexcept>
+//#include <boost/exception/all.hpp>
+//#include <boost/throw_exception.hpp>
 
 #include <algorithm>
 #include <locale>
@@ -13,12 +17,12 @@ shared_state::shared_state(){
 
     sett = server::server_config();
     read_conf(sett, app_directory(), ARCIRK_SERVER_CONF);
-    add_method(arcirk::server::synonym(server::server_commands::ServerVersion), this, &shared_state::server_version);
-    add_method(arcirk::server::synonym(server::server_commands::ServerOnlineClientsList), this, &shared_state::get_clients_list);
-    add_method(arcirk::server::synonym(server::server_commands::SetClientParam), this, &shared_state::set_client_param);
-    add_method(arcirk::server::synonym(server::server_commands::ServerConfiguration), this, &shared_state::server_configuration);
-    add_method(arcirk::server::synonym(server::server_commands::UserInfo), this, &shared_state::user_information);
-    add_method(arcirk::server::synonym(server::server_commands::InsertOrUpdateUser), this, &shared_state::insert_or_update_user);
+    add_method(enum_synonym(server::server_commands::ServerVersion), this, &shared_state::server_version);
+    add_method(enum_synonym(server::server_commands::ServerOnlineClientsList), this, &shared_state::get_clients_list);
+    add_method(enum_synonym(server::server_commands::SetClientParam), this, &shared_state::set_client_param);
+    add_method(enum_synonym(server::server_commands::ServerConfiguration), this, &shared_state::server_configuration);
+    add_method(enum_synonym(server::server_commands::UserInfo), this, &shared_state::user_information);
+    add_method(enum_synonym(server::server_commands::InsertOrUpdateUser), this, &shared_state::insert_or_update_user);
 
 }
 
@@ -164,7 +168,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         return;
     }
 
-    int param_index = v.size() - 1;
+    int param_index = (int)v.size() - 1;
 
     std::string json_params;
     if(v.size() > 2){
@@ -209,14 +213,22 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     arcirk::server::server_command_result return_value;
     try {
         call_as_func(command_index, &return_value, params_v);
-    } catch (std::exception &ex) {
+    }
+    catch (const server_commands_exception& ex){
+        return_value.result = "error";
+        return_value.uuid_form = ex.uuid_form();
+        return_value.message = ex.what();
+        fail("shared_state::execute_command_handler::" + std::string(ex.command()), ex.what());
+    }
+    catch (const std::exception& ex) {
         return_value.result = "error";
         return_value.uuid_form = arcirk::uuids::nil_string_uuid();
-        return_value.message = arcirk::base64::base64_encode(ex.what());
+        return_value.message = ex.what();
         fail("shared_state::execute_command_handler", ex.what());
     }
 
-    bool is_command_to_client = get_method_name(command_index) == arcirk::server::synonym(arcirk::server::server_commands::CommandToClient);
+
+    bool is_command_to_client = get_method_name(command_index) == enum_synonym(arcirk::server::server_commands::CommandToClient);
 
     using namespace arcirk::server;
     std::string response;
@@ -384,7 +396,7 @@ arcirk::server::server_command_result shared_state::command_to_client(const vari
 
     //
     server::server_command_result result;
-    result.command = arcirk::server::synonym(server::server_commands::CommandToClient);
+    result.command = enum_synonym(server::server_commands::CommandToClient);
     result.result = std::get<std::string>(param);
 
     return result;
@@ -402,7 +414,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         throw std::exception("Не достаточно прав доступа!");
 
     server::server_command_result result;
-    result.command = arcirk::server::synonym(server::server_commands::ServerOnlineClientsList);
+    result.command = enum_synonym(server::server_commands::ServerOnlineClientsList);
 
     try {
         auto param_ = parse_json(std::get<std::string>(param), true);
@@ -452,7 +464,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
 arcirk::server::server_command_result shared_state::server_version(const variant_t& session_id){
     using namespace arcirk::server;
     server::server_command_result result;
-    result.command = arcirk::server::synonym(server::server_commands::ServerVersion);
+    result.command = enum_synonym(server::server_commands::ServerVersion);
     result.result = sett.Version;
     return result;
 }
@@ -479,7 +491,7 @@ bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> p
 
 bool shared_state::call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params) {
 
-    try {
+//    try {
         //auto args = parseParams(params, array_size);
         //variant_t result = methods_meta[method_num].call(args);
         //storeVariable(result, *ret_value);
@@ -487,13 +499,13 @@ bool shared_state::call_as_func(const long& method_num, arcirk::server::server_c
 //#ifdef OUT_PARAMS
 //        storeParams(args, params);
 //#endif
-    } catch (const std::exception &e) {
-        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
-        return false;
-    } catch (...) {
-        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
-        return false;
-    }
+//    } catch (const std::exception &e) {
+//        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
+//        return false;
+//    } catch (...) {
+//        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
+//        return false;
+//    }
 
     return true;
 
@@ -523,7 +535,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
 
     using namespace arcirk::server;
     server::server_command_result result;
-    result.command = arcirk::server::synonym(server::server_commands::SetClientParam);
+    result.command = enum_synonym(server::server_commands::SetClientParam);
 
     if(!session){
         result.result = "error";
@@ -723,7 +735,7 @@ arcirk::server::server_command_result shared_state::server_configuration(const v
     std::string conf_json = to_string(pre::json::to_json(sett));
     server::server_command_result result;
     result.result = arcirk::base64::base64_encode(conf_json);
-    result.command = server::synonym(server::server_commands::ServerConfiguration);
+    result.command = enum_synonym(server::server_commands::ServerConfiguration);
     result.message = "OK";
     try {
         auto param_ = parse_json(std::get<std::string>(param), true);
@@ -742,7 +754,7 @@ bool shared_state::is_operation_available(const boost::uuids::uuid &uuid, arcirk
     if(use_authorization() && !session->authorized())
         return false;
 
-    return session->role() == arcirk::database::synonym(level);
+    return session->role() == enum_synonym(level);
 
 }
 
@@ -793,7 +805,7 @@ arcirk::server::server_command_result shared_state::user_information(const varia
     auto usr_info = get_user_info(user_uuid);
     std::string info_json = to_string(pre::json::to_json(usr_info));
     result.result = arcirk::base64::base64_encode(info_json);
-    result.command = server::synonym(server::server_commands::UserInfo);
+    result.command = enum_synonym(server::server_commands::UserInfo);
     result.message = "OK";
 
     return result;
@@ -804,13 +816,29 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
     using namespace arcirk::database;
     using namespace boost::filesystem;
     using namespace soci;
+
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::InsertOrUpdateUser);
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
         throw std::exception("Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
+    //ToDo: глупо конечно парсить повторно параметры, позже изменю
+    if(param_json.find("uuid_form") != std::string::npos){
+        try {
+            auto p = nlohmann::json::parse(param_json, nullptr, false);
+            if(p.is_discarded()){
+                result.uuid_form = uuids::nil_string_uuid();
+            }else
+                result.uuid_form = p.value("uuid_form", arcirk::uuids::nil_string_uuid());
+        } catch (std::exception &ex) {
+            result.uuid_form = uuids::nil_string_uuid();
+        }
+    }
+
     auto usr_info = pre::json::from_json<user_info>(param_json);
 
     if(!usr_info.ref.empty() && !usr_info.hash.empty() && !usr_info.role.empty() && !usr_info.first.empty()){
@@ -832,15 +860,16 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
                    soci::use(usr_info.hash),
                    soci::use(usr_info.role);
         }else{
-            sql << "UPDATE Users"
-                   "   SET [first] = ?,"
-                   "       second = ?,"
-                   "       hash = ?,"
-                   "       role = ?,"
-                   "       performance = ?,"
-                   "       parent = ?,"
-                   "       cache = ?,"
-                   " WHERE ref = ?;",
+            //try {
+                sql << "UPDATE Users"
+                       "   SET [first] = ?,"
+                       "       second = ?,"
+                       "       hash = ?,"
+                       "       role = ?,"
+                       "       performance = ?,"
+                       "       parent = ?,"
+                       "       cache = ?"
+                       " WHERE ref = ?",
                     soci::use(usr_info.first),
                     soci::use(usr_info.second),
                     soci::use(usr_info.hash),
@@ -849,14 +878,25 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
                     soci::use(usr_info.parent),
                     soci::use(usr_info.cache),
                     soci::use(usr_info.ref);
+//            } catch (std::exception &ex) {
+//                fail("shared_state::insert_or_update_user", ex.what());
+//            }
+
         }
 
-    }else
-        throw std::exception("Не указаны все значения обязательны полей (ref,first,hash,role)");
+    }else{
+        const std::string err_message = "Не указаны все значения обязательных полей (ref, first, hash, role)";
+        result.result = "error";
+//        result.message = err_message;
+//        result.error_description = err_message;
+        throw server_commands_exception(err_message, result.command, result.uuid_form);
+//        fail("shared_state::execute_command_handler", err_message);
+//        BOOST_THROW_EXCEPTION(std::runtime_error(err_message));
+        //throw boost::exception("Не указаны все значения обязательны полей (ref,first,hash,role)");
+        //std::runtime_error(arcirk::local_8bit("Не указаны все значения обязательны полей (ref,first,hash,role)").c_str());
+    }
 
-    server::server_command_result result;
     result.result = "success";
-    result.command = server::synonym(server::server_commands::InsertOrUpdateUser);
     result.message = "OK";
 
     return result;

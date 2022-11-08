@@ -26,10 +26,6 @@ namespace arcirk::database{
             {dbAdministrator, "admin"}  ,
             {dbUser, "user"}  ,
     })
-    static inline std::string synonym(roles value){
-        using n_json = nlohmann::json;
-        return n_json(value).get<std::string>();
-    };
 
     enum text_type{
         dbString,
@@ -43,10 +39,6 @@ namespace arcirk::database{
         {dbHtmlString, "HtmlText"}  ,
         {dbFormattedString, "FormattedString"}  ,
     })
-    static inline std::string synonym(text_type value){
-        using n_json = nlohmann::json;
-        return n_json(value).get<std::string>();
-    }
 
     enum tables{
         tbUsers,
@@ -60,10 +52,6 @@ namespace arcirk::database{
         {tbMessages, "Messages"}  ,
     })
 
-    static inline std::string synonym(tables value){
-        using n_json = nlohmann::json;
-        return n_json(value).get<std::string>();
-    }
 }
 
 #endif

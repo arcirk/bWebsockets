@@ -12,7 +12,6 @@ typedef std::function<void()> callback_connect;
 typedef std::function<void(const std::string&, const std::string&, int)> callback_error;
 typedef std::function<void()> callback_close;
 
-
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::client), client_param,
         (std::string, app_name)
@@ -42,7 +41,30 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, uuid_form)
         (std::string, result)
         (std::string, message)
+        (std::string, error_description)
 )
+
+class server_commands_exception : public std::exception
+{
+private:
+    std::string m_error{}; // handle our own string
+    std::string uuid_form_{};
+    std::string command_{};
+//    std::string result_{};
+//    std::string message_{};
+//    std::string error_description_{};
+public:
+    server_commands_exception(std::string_view error, std::string_view command, std::string_view uuid_form)
+            : m_error{error},
+              uuid_form_{uuid_form},
+              command_{command}
+    {
+    }
+
+    [[nodiscard]] const char* what() const noexcept override { return m_error.c_str(); }
+    [[nodiscard]] const char* uuid_form() const noexcept { return uuid_form_.c_str(); }
+    [[nodiscard]] const char* command() const noexcept { return command_.c_str(); }
+};
 
 namespace arcirk::client{
 
@@ -98,10 +120,6 @@ namespace arcirk::client{
         {wsError, "WebCore::Error"}    ,
 
     })
-    static inline std::string synonym(client_events value){
-        using n_json = nlohmann::json;
-        return n_json(value).get<std::string>();
-    };
 
 }
 
@@ -129,10 +147,6 @@ namespace arcirk::server{
         {CommandToClient, "CommandToClient"}    ,
     })
 
-    static inline std::string synonym(server_commands value){
-        using n_json = nlohmann::json;
-        return n_json(value).get<std::string>();
-    };
 }
 
 BOOST_FUSION_DEFINE_STRUCT(

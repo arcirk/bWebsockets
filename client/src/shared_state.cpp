@@ -101,7 +101,7 @@ void shared_state::command_to_client(const std::string &receiver, const std::str
     if(command.empty() || receiver.empty())
         return;
 
-    std::string cmd = "cmd " + arcirk::server::synonym(arcirk::server::server_commands::CommandToClient) + receiver;
+    std::string cmd = "cmd " + enum_synonym(arcirk::server::server_commands::CommandToClient) + receiver;
 
     if(!param.empty()){
         using json_nl = nlohmann::json;
