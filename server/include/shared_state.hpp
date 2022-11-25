@@ -144,6 +144,7 @@ public:
 
     //команды сервера
     arcirk::server::server_command_result get_clients_list(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_users_list(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result server_version(const variant_t& session_id);
     arcirk::server::server_command_result set_client_param(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result server_configuration(const variant_t& param, const variant_t& session_id);
@@ -157,10 +158,8 @@ public:
     void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
                    std::map<long, variant_t> &&def_args = {});
 
-    bool call_as_proc(const long& method_num, std::vector<variant_t> params);
-
-    //bool call_as_func(const long& method_num, variant_t *ret_value, std::vector<variant_t> params);
-    bool call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params);
+    //bool call_as_proc(const long& method_num, std::vector<variant_t> params);
+    void call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params);
 
     long find_method(const std::string& method_name);
     [[nodiscard]] std::string get_method_name(const long& num) const;
@@ -192,6 +191,8 @@ private:
     static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
     void execute_command_handler(const std::string& message, subscriber *session);
     void forward_message(const std::string& message, subscriber *session);
+    void set_uuid_form(const std::string& json_param, server::server_command_result& res);
+
 
     static void fail(const std::string& what, const std::string& error, bool conv = true){
         std::tm tm = arcirk::current_date();

@@ -66,6 +66,7 @@ WebCore::WebCore(){
     m_client->connect(client::client_events::wsClose, (callback_close)std::bind(&WebCore::on_stop, this));
 
     auto_reconnect = false;
+    allow_delayed_authorization = false;
 
     AddProperty(L"Version", L"Версия", [&]() {
         auto s = std::string(Version);
@@ -82,6 +83,12 @@ WebCore::WebCore(){
         return std::make_shared<variant_t>(std::move(auto_reconnect_));
     }, [&](const variant_t& v){
         auto_reconnect = std::get<bool>(v);
+    });
+    AddProperty(L"AllowDelayedAuthorization", L"РазрешитьОтложеннуюАвторизацию", [&]() {
+        const bool allow_delayed_authorization_ = allow_delayed_authorization;
+        return std::make_shared<variant_t>(std::move(allow_delayed_authorization_));
+    }, [&](const variant_t& v){
+        allow_delayed_authorization = std::get<bool>(v);
     });
 //    AddProperty(L"DisablePublicNotify", L"ОтключитьПубличныеОповещения", [&]() {
 //        const bool m_no_notify = no_notify;

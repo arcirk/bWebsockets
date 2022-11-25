@@ -36,6 +36,7 @@ private:
     server::server_config app_conf;
     std::string url_;
     bool auto_reconnect;
+    bool allow_delayed_authorization;
 
 //    std::string _client_param;
 

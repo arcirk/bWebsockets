@@ -65,6 +65,7 @@
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаАктивныеПользователи</commonForms>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
+  <commonForms>CommonForm.ФормаПользователиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>
   <catalogs>Catalog.Пользователи</catalogs>
 </mdclass:Configuration>

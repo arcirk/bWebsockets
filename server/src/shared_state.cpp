@@ -1,15 +1,14 @@
+
 #include <utility>
 #include "../include/shared_state.hpp"
 #include "../include/websocket_session.hpp"
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
-//#include <exception>
-//#include <stdexcept>
-//#include <boost/exception/all.hpp>
-//#include <boost/throw_exception.hpp>
 
 #include <algorithm>
 #include <locale>
+
+#include <query_builder.hpp>
 
 shared_state::shared_state(){
 
@@ -23,13 +22,15 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ServerConfiguration), this, &shared_state::server_configuration);
     add_method(enum_synonym(server::server_commands::UserInfo), this, &shared_state::user_information);
     add_method(enum_synonym(server::server_commands::InsertOrUpdateUser), this, &shared_state::insert_or_update_user);
+    add_method(enum_synonym(server::server_commands::CommandToClient), this, &shared_state::command_to_client);
+    add_method(enum_synonym(server::server_commands::ServerUsersList), this, &shared_state::get_users_list);
 
 }
 
 void shared_state::join(subscriber *session) {
 
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(session->uuid_session(), session));
-    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) );
+    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + session->address());
 
     //Оповещаем всех пользователей об подключении нового клиента
     if(use_authorization())
@@ -402,6 +403,61 @@ arcirk::server::server_command_result shared_state::command_to_client(const vari
     return result;
 }
 
+arcirk::server::server_command_result shared_state::get_users_list(const variant_t &param,
+                                                                   const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace arcirk::server;
+    using n_json = nlohmann::json;
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::ServerUsersList);
+
+    try {
+        auto param_ = parse_json(std::get<std::string>(param), true);
+        result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+        boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
+        bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+        if (!operation_available)
+            throw server_commands_exception("Не достаточно прав доступа!", result.command, result.uuid_form);
+
+        auto table_object = n_json::object();
+
+        path db_path = sqlite_database_path();
+        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+        session sql(soci::sqlite3, connection_string);
+        soci::rowset<arcirk::database::user_info> rs = (sql.prepare << "select * from Users");
+        //int count = -1;
+        auto rows = n_json::array();
+        for (auto it = rs.begin(); it != rs.end(); it++) {
+            arcirk::database::user_info user_info_ = *it;
+            //count++;
+            user_info_.hash = ""; //хеш не показываем
+            auto row = pre::json::to_json(user_info_);
+            rows += row;
+        }
+        if(param_.value("table", false)) {
+            auto columns = n_json::array();
+            auto row_struct = pre::json::to_json(user_info());
+            for (const auto& element : row_struct.items()) {
+                columns += element.key();
+            }
+            table_object["columns"] = columns;
+        }
+        table_object["rows"] = rows;
+        std::string table = arcirk::base64::base64_encode(table_object.dump());
+        result.result = table;
+
+    } catch (std::exception &ex) {
+        throw server_commands_exception(ex.what(), result.command, result.uuid_form);
+    }
+
+    return result;
+
+}
+
 arcirk::server::server_command_result shared_state::get_clients_list(const variant_t& param, const variant_t& session_id){
 
     using namespace arcirk::database;
@@ -416,9 +472,11 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
     server::server_command_result result;
     result.command = enum_synonym(server::server_commands::ServerOnlineClientsList);
 
+
     try {
         auto param_ = parse_json(std::get<std::string>(param), true);
         bool is_table = param_.value("table", false);
+        result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
 
         auto table_object = n_json::object();
 
@@ -453,9 +511,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         result.result = table;
 
     } catch (std::exception &ex) {
-        result.result = "error";
-        result.uuid_form = arcirk::uuids::nil_string_uuid();
-        result.message = arcirk::base64::base64_encode(ex.what());
+        throw server_commands_exception(ex.what(), result.command, result.uuid_form);
     }
 
     return result;
@@ -469,36 +525,15 @@ arcirk::server::server_command_result shared_state::server_version(const variant
     return result;
 }
 
-bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> params) {
-
-    try {
-        //auto args = parseParams(params, array_size);
-        //methods_meta[method_num].call(args);
-        methods_meta[method_num].call(params);
-//#ifdef OUT_PARAMS
-//        storeParams(args, params);
-//#endif
-    } catch (const std::exception &e) {
-        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
-        return false;
-    } catch (...) {
-        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
-        return false;
-    }
-
-    return true;
-}
-
-bool shared_state::call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params) {
-
+//bool shared_state::call_as_proc(const long& method_num, std::vector<variant_t> params) {
+//
 //    try {
-        //auto args = parseParams(params, array_size);
-        //variant_t result = methods_meta[method_num].call(args);
-        //storeVariable(result, *ret_value);
-        *ret_value = methods_meta[method_num].call(params);
-//#ifdef OUT_PARAMS
-//        storeParams(args, params);
-//#endif
+//        //auto args = parseParams(params, array_size);
+//        //methods_meta[method_num].call(args);
+//        methods_meta[method_num].call(params);
+////#ifdef OUT_PARAMS
+////        storeParams(args, params);
+////#endif
 //    } catch (const std::exception &e) {
 //        //AddError(ADDIN_E_FAIL, extensionName(), e.what(), true);
 //        return false;
@@ -506,8 +541,13 @@ bool shared_state::call_as_func(const long& method_num, arcirk::server::server_c
 //        //AddError(ADDIN_E_FAIL, extensionName(), UNKNOWN_EXCP, true);
 //        return false;
 //    }
+//
+//    return true;
+//}
 
-    return true;
+void shared_state::call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params) {
+
+    *ret_value = methods_meta[method_num].call(params);
 
 }
 
@@ -639,7 +679,6 @@ arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid
     if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
         if(sett.ServerWorkingDirectory.empty())
         {
-            //fail("shared_state::get_user_info:error", "Ошибки в параметрах сервера!");
             throw std::exception("Ошибки в параметрах сервера!");
         }
 
@@ -707,7 +746,7 @@ arcirk::database::user_info shared_state::get_user_info(const std::string &hash)
             if(count < 0)
                 throw std::exception("Пользователь не найден!");
         } catch (std::exception &e) {
-            fail("shared_state::verify_auth:error", e.what(), false);
+            fail("shared_state::get_user_info:error", e.what(), false);
         }
 
     }
@@ -811,6 +850,22 @@ arcirk::server::server_command_result shared_state::user_information(const varia
     return result;
 }
 
+void shared_state::set_uuid_form(const std::string &json_param, server::server_command_result &res) {
+    //ToDo: глупо конечно парсить повторно параметры, позже изменю
+    if(json_param.find("uuid_form") != std::string::npos){
+        try {
+            auto p = nlohmann::json::parse(json_param, nullptr, false);
+            if(p.is_discarded()){
+                res.uuid_form = uuids::nil_string_uuid();
+            }else
+                res.uuid_form = p.value("uuid_form", arcirk::uuids::nil_string_uuid());
+        } catch (std::exception &ex) {
+            res.uuid_form = uuids::nil_string_uuid();
+        }
+    }
+
+}
+
 arcirk::server::server_command_result shared_state::insert_or_update_user(const variant_t &param,
                                                                           const variant_t &session_id) {
     using namespace arcirk::database;
@@ -826,74 +881,67 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
         throw std::exception("Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
-    //ToDo: глупо конечно парсить повторно параметры, позже изменю
-    if(param_json.find("uuid_form") != std::string::npos){
-        try {
-            auto p = nlohmann::json::parse(param_json, nullptr, false);
-            if(p.is_discarded()){
-                result.uuid_form = uuids::nil_string_uuid();
-            }else
-                result.uuid_form = p.value("uuid_form", arcirk::uuids::nil_string_uuid());
-        } catch (std::exception &ex) {
-            result.uuid_form = uuids::nil_string_uuid();
-        }
-    }
+
+    set_uuid_form(param_json, result);
 
     auto usr_info = pre::json::from_json<user_info>(param_json);
 
-    if(!usr_info.ref.empty() && !usr_info.hash.empty() && !usr_info.role.empty() && !usr_info.first.empty()){
+    if(!usr_info.ref.empty() && !usr_info.role.empty() && !usr_info.first.empty()){
         path db_path = sqlite_database_path();
         std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
         session sql(soci::sqlite3, connection_string);
+        auto query = std::make_shared<builder::query_builder>();
         int count = -1;
-        sql << "select count(*) from Users where ref = " <<  "'" << usr_info.ref << "'" , into(count);
-        if(count <= 0){
-            sql << "INSERT INTO Users("
-                   "ref, "
-                   "first, "
-                   "second, "
-                   "hash, "
-                   "role) VALUES(?, ?, ?, ?, ?)",
-                   soci::use(usr_info.ref),
-                   soci::use(usr_info.first),
-                   soci::use(usr_info.second),
-                   soci::use(usr_info.hash),
-                   soci::use(usr_info.role);
-        }else{
-            //try {
-                sql << "UPDATE Users"
-                       "   SET [first] = ?,"
-                       "       second = ?,"
-                       "       hash = ?,"
-                       "       role = ?,"
-                       "       performance = ?,"
-                       "       parent = ?,"
-                       "       cache = ?"
-                       " WHERE ref = ?",
-                    soci::use(usr_info.first),
-                    soci::use(usr_info.second),
-                    soci::use(usr_info.hash),
-                    soci::use(usr_info.role),
-                    soci::use(usr_info.performance),
-                    soci::use(usr_info.parent),
-                    soci::use(usr_info.cache),
-                    soci::use(usr_info.ref);
-//            } catch (std::exception &ex) {
-//                fail("shared_state::insert_or_update_user", ex.what());
-//            }
+        sql << query->select({"count(*)"}).from("Users").where({{"ref", usr_info.ref}}, true).prepare(), into(count);
+        //sql << "select count(*) from Users where ref = " <<  "'" << usr_info.ref << "'" , into(count);
+        auto info = nlohmann::json::parse(param_json);
+        if(info.find("_id") != info.end())
+            info.erase("_id");
+        if(info.find("uuid_form") != info.end())
+            info.erase("uuid_form");
 
+
+        if(count <= 0){
+            query->use(info);
+            query->insert("Users", true).execute(sql);
+//
+//            sql << "INSERT INTO Users("
+//                   "ref, "
+//                   "first, "
+//                   "second, "
+//                   "hash, "
+//                   "role) VALUES(?, ?, ?, ?, ?)",
+//                   soci::use(usr_info.ref),
+//                   soci::use(usr_info.first),
+//                   soci::use(usr_info.second),
+//                   soci::use(usr_info.hash),
+//                   soci::use(usr_info.role);
+        }else{
+            info.erase("ref");
+            query->use(info);
+            query->update("Users", true).where({{"ref", usr_info.ref}}, true).execute(sql);
+//            sql << "UPDATE Users"
+//                   "   SET [first] = ?,"
+//                   "       second = ?,"
+//                   "       hash = ?,"
+//                   "       role = ?,"
+//                   "       performance = ?,"
+//                   "       parent = ?,"
+//                   "       cache = ?"
+//                   " WHERE ref = ?",
+//                soci::use(usr_info.first),
+//                soci::use(usr_info.second),
+//                soci::use(usr_info.hash),
+//                soci::use(usr_info.role),
+//                soci::use(usr_info.performance),
+//                soci::use(usr_info.parent),
+//                soci::use(usr_info.cache),
+//                soci::use(usr_info.ref);
         }
 
     }else{
-        const std::string err_message = "Не указаны все значения обязательных полей (ref, first, hash, role)";
-        result.result = "error";
-//        result.message = err_message;
-//        result.error_description = err_message;
+        const std::string err_message = "Не указаны все значения обязательных полей (ref, first, role)";
         throw server_commands_exception(err_message, result.command, result.uuid_form);
-//        fail("shared_state::execute_command_handler", err_message);
-//        BOOST_THROW_EXCEPTION(std::runtime_error(err_message));
-        //throw boost::exception("Не указаны все значения обязательны полей (ref,first,hash,role)");
-        //std::runtime_error(arcirk::local_8bit("Не указаны все значения обязательны полей (ref,first,hash,role)").c_str());
     }
 
     result.result = "success";

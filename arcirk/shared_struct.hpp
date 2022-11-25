@@ -12,6 +12,7 @@ typedef std::function<void()> callback_connect;
 typedef std::function<void(const std::string&, const std::string&, int)> callback_error;
 typedef std::function<void()> callback_close;
 
+
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::client), client_param,
         (std::string, app_name)
@@ -126,13 +127,14 @@ namespace arcirk::client{
 namespace arcirk::server{
 
     enum server_commands{
-        ServerVersion,
-        ServerOnlineClientsList,
-        SetClientParam,
-        ServerConfiguration,
-        UserInfo,
-        InsertOrUpdateUser,
-        CommandToClient,
+        ServerVersion, //Версия сервера
+        ServerOnlineClientsList, //Список активных пользователей
+        SetClientParam, //Параметры клиента
+        ServerConfiguration, //Конфигурация сервера
+        UserInfo, //Информация о пользователе (база данных)
+        InsertOrUpdateUser, //Обновить или добавить пользователя (база данных)
+        CommandToClient, //Команда клиенту (подписчику)
+        ServerUsersList, //Список пользователей (база данных)
         CMD_INVALID=-1,
     };
 
@@ -145,6 +147,7 @@ namespace arcirk::server{
         {UserInfo, "UserInfo"}    ,
         {InsertOrUpdateUser, "InsertOrUpdateUser"}    ,
         {CommandToClient, "CommandToClient"}    ,
+        {ServerUsersList, "ServerUsersList"}    ,
     })
 
 }

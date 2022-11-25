@@ -3,6 +3,13 @@
 
 #include "includes.hpp"
 
+//BOOST_FUSION_DEFINE_STRUCT(
+//        (arcirk::database::query_builder), query_value,
+//        (std::string, key)
+//        (arcirk::database::sql_type_of_comparison, comparison)
+//        (arcirk::bVariant value)
+//)
+
 BOOST_FUSION_DEFINE_STRUCT(
 (arcirk::database), user_info,
 (int, _id)
@@ -16,11 +23,13 @@ BOOST_FUSION_DEFINE_STRUCT(
 (std::string, cache));
 
 namespace arcirk::database{
+
     enum roles{
         dbAdministrator,
         dbUser,
         roles_INVALID=-1,
     };
+
     NLOHMANN_JSON_SERIALIZE_ENUM(roles, {
             {roles_INVALID, nullptr}    ,
             {dbAdministrator, "admin"}  ,
@@ -33,6 +42,7 @@ namespace arcirk::database{
         dbFormattedString,
         text_type_INVALID=-1,
     };
+
     NLOHMANN_JSON_SERIALIZE_ENUM(text_type, {
         {text_type_INVALID, nullptr}    ,
         {dbString, "Text"}  ,
@@ -53,5 +63,7 @@ namespace arcirk::database{
     })
 
 }
+
+
 
 #endif

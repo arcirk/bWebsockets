@@ -87,6 +87,10 @@ public:
         return static_cast<Derived&>(*this);
     }
 
+    virtual std::string address() const{
+        return _address;
+    }
+
 protected:
     std::string _user_name = UnknownUser;
     boost::uuids::uuid _user_uuid{};
@@ -96,6 +100,9 @@ protected:
     std::string _app_name = UnknownApplication;
     std::string _role = "user";
     std::string _full_name;
+    std::string _address;
+
+
 };
 
 template<class Derived>
@@ -350,6 +357,9 @@ public:
     {
         authorized_ = is_http_authorization;
         last_error = 0;
+        boost::beast::error_code ec;
+        auto remote = ws_.next_layer().socket().remote_endpoint(ec);
+        _address = remote.address().to_string();
     }
 
     ~plain_websocket_session(){
@@ -428,6 +438,9 @@ public:
     {
         authorized_ = is_http_authorization;
         last_error = 0;
+        boost::beast::error_code ec;
+        auto remote = stream.next_layer().socket().remote_endpoint(ec);
+        _address = remote.address().to_string();
     }
 
     ~ssl_websocket_session(){
