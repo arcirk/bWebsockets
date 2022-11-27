@@ -165,10 +165,7 @@ void WebCore::command_to_server(const variant_t &command, const variant_t &param
     json_nl param_ = json_nl::parse(std::get<std::string>(param));
     if(param_.is_discarded())
         param_ = {};
-
     param_ += {"uuid_form", uuid_form_};
-//    param_.(param_.end(),
-//        {"uuid_form", uuid_form_});
     m_client->send_command(command_, param_.dump());
 }
 

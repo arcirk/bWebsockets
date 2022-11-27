@@ -24,6 +24,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::InsertOrUpdateUser), this, &shared_state::insert_or_update_user);
     add_method(enum_synonym(server::server_commands::CommandToClient), this, &shared_state::command_to_client);
     add_method(enum_synonym(server::server_commands::ServerUsersList), this, &shared_state::get_users_list);
+    add_method(enum_synonym(server::server_commands::ExecuteSqlQuery), this, &shared_state::execute_sql_query);
 
 }
 
@@ -850,19 +851,24 @@ arcirk::server::server_command_result shared_state::user_information(const varia
     return result;
 }
 
-void shared_state::set_uuid_form(const std::string &json_param, server::server_command_result &res) {
-    //ToDo: глупо конечно парсить повторно параметры, позже изменю
-    if(json_param.find("uuid_form") != std::string::npos){
-        try {
-            auto p = nlohmann::json::parse(json_param, nullptr, false);
-            if(p.is_discarded()){
-                res.uuid_form = uuids::nil_string_uuid();
-            }else
-                res.uuid_form = p.value("uuid_form", arcirk::uuids::nil_string_uuid());
-        } catch (std::exception &ex) {
-            res.uuid_form = uuids::nil_string_uuid();
-        }
-    }
+arcirk::server::server_command_result shared_state::execute_sql_query(const variant_t &param,
+                                                                      const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::ExecuteSqlQuery);
+
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string query_text = param_.value("query_text", "");
 
 }
 
@@ -882,66 +888,39 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
 
-    set_uuid_form(param_json, result);
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    auto values = param_.value("record", nlohmann::json{});
 
-    auto usr_info = pre::json::from_json<user_info>(param_json);
+    if(values.empty() || !values.is_object()){
+        throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
+    }
 
-    if(!usr_info.ref.empty() && !usr_info.role.empty() && !usr_info.first.empty()){
-        path db_path = sqlite_database_path();
-        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
-        session sql(soci::sqlite3, connection_string);
-        auto query = std::make_shared<builder::query_builder>();
-        int count = -1;
-        sql << query->select({"count(*)"}).from("Users").where({{"ref", usr_info.ref}}, true).prepare(), into(count);
-        //sql << "select count(*) from Users where ref = " <<  "'" << usr_info.ref << "'" , into(count);
-        auto info = nlohmann::json::parse(param_json);
-        if(info.find("_id") != info.end())
-            info.erase("_id");
-        if(info.find("uuid_form") != info.end())
-            info.erase("uuid_form");
+    std::string ref, role, first;
+    ref = values.value("ref", "");
+    role = values.value("role", "");
+    first = values.value("first", "");
 
-
-        if(count <= 0){
-            query->use(info);
-            query->insert("Users", true).execute(sql);
-//
-//            sql << "INSERT INTO Users("
-//                   "ref, "
-//                   "first, "
-//                   "second, "
-//                   "hash, "
-//                   "role) VALUES(?, ?, ?, ?, ?)",
-//                   soci::use(usr_info.ref),
-//                   soci::use(usr_info.first),
-//                   soci::use(usr_info.second),
-//                   soci::use(usr_info.hash),
-//                   soci::use(usr_info.role);
-        }else{
-            info.erase("ref");
-            query->use(info);
-            query->update("Users", true).where({{"ref", usr_info.ref}}, true).execute(sql);
-//            sql << "UPDATE Users"
-//                   "   SET [first] = ?,"
-//                   "       second = ?,"
-//                   "       hash = ?,"
-//                   "       role = ?,"
-//                   "       performance = ?,"
-//                   "       parent = ?,"
-//                   "       cache = ?"
-//                   " WHERE ref = ?",
-//                soci::use(usr_info.first),
-//                soci::use(usr_info.second),
-//                soci::use(usr_info.hash),
-//                soci::use(usr_info.role),
-//                soci::use(usr_info.performance),
-//                soci::use(usr_info.parent),
-//                soci::use(usr_info.cache),
-//                soci::use(usr_info.ref);
-        }
-
-    }else{
-        const std::string err_message = "Не указаны все значения обязательных полей (ref, first, role)";
+    if(ref.empty() || role.empty() || first.empty()){
+        const std::string err_message = "Не указаны все значения обязательных полей (ref, first, role)!";
         throw server_commands_exception(err_message, result.command, result.uuid_form);
+    }
+
+    auto p_info = values_from_param<user_info>(values);
+    auto query = std::make_shared<builder::query_builder>();
+
+    path db_path = sqlite_database_path();
+    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+    session sql(soci::sqlite3, connection_string);
+
+    int count = -1;
+    sql << query->select({"count(*)"}).from("Users").where({{"ref", ref}}, true).prepare(), into(count);
+
+    query->use(p_info);
+    if(count <= 0){
+        query->insert("Users", true).execute(sql);
+    }else{
+        query->update("Users", true).where({{"ref", ref}}, true).execute(sql);
     }
 
     result.result = "success";

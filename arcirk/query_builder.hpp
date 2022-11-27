@@ -1,41 +1,16 @@
 #ifndef ARCIRK_QUERY_BUILDER
 #define ARCIRK_QUERY_BUILDER
 
-//#include <iostream>
-//#include <nlohmann/json.hpp>
-//#include <soci/soci.h>
-//#include <soci/sqlite3/soci-sqlite3.h>
-//#include <string>
-//#include <boost/algorithm/string.hpp>
-//#include <boost/format.hpp>
-//#include <memory>
-//#include <execution>
-//#include <boost/uuid/uuid_generators.hpp>
-////
-////#include <boost/asio.hpp>
-////#include <boost/exception/all.hpp>
-////#include <boost/uuid/uuid.hpp>
-////#include <boost/uuid/uuid_generators.hpp>
-//#include <boost/lexical_cast.hpp>
-//#include <boost/uuid/uuid_io.hpp>
-
 #include "database_struct.hpp"
+#include <map>
+#include <functional>
 
 namespace arcirk::database::builder {
 
     using json = nlohmann::json;
     using namespace soci;
 
-    enum sql_type_of_comparison{
-        Equals = 0,
-        No_Equals,
-        More,
-        More_Or_Equal,
-        Less_Or_Equal,
-        Less,
-        On_List,
-        Not_In_List
-    };
+    //typedef std::function<void(const std::string& /*result*/,const std::string& /*uuid_session*/)> callback_query_result;
 
     enum sql_query_type{
         Insert = 0,
@@ -49,15 +24,159 @@ namespace arcirk::database::builder {
         type_ODBC
     };
 
+    enum sql_type_of_comparison{
+        Equals,
+        Not_Equals,
+        More,
+        More_Or_Equal,
+        Less_Or_Equal,
+        Less,
+        On_List,
+        Not_In_List
+    };
+
+    static std::map<sql_type_of_comparison, std::string> sql_compare_template = {
+            std::pair<sql_type_of_comparison, std::string>(Equals, "%1%=%2%"),
+            std::pair<sql_type_of_comparison, std::string>(Not_Equals, "not %1%=%2%"),
+            std::pair<sql_type_of_comparison, std::string>(More, "%1%>%2%"),
+            std::pair<sql_type_of_comparison, std::string>(More_Or_Equal, "%1%>=%2%"),
+            std::pair<sql_type_of_comparison, std::string>(Less_Or_Equal, "%1%<=%2%"),
+            std::pair<sql_type_of_comparison, std::string>(Less, "%1%<%2%"),
+            std::pair<sql_type_of_comparison, std::string>(On_List, "%1% in (%2%)"),
+            std::pair<sql_type_of_comparison, std::string>(Not_In_List, "not %1% in (%2%)")
+    };
+
+    struct sql_compare_value{
+
+        std::string key;
+        sql_type_of_comparison compare;
+        json value;
+
+        sql_compare_value() {
+            compare = Equals;
+        };
+        explicit sql_compare_value(const json& object){
+            key = object.value("key", "");
+            compare = object.value("compare", Equals);
+            value = object.value("value", json{});
+        }
+        explicit sql_compare_value(const std::string& key_, const json& value_, sql_type_of_comparison compare_ = Equals){
+            key = key_;
+            compare = compare_;
+            value = value_;
+        }
+
+        template<class T>
+        T get() {
+            return sql_compare_value::get<T>(value);
+        }
+
+        template<class T>
+        static T get(const nlohmann::json& json_object) {
+            T object;
+            pre::json::detail::dejsonizer dejsonizer(json_object);
+            dejsonizer(object);
+            return object;
+        }
+
+        static std::string array_to_string(const nlohmann::json& json_object, bool quotation_marks = true){
+
+            if(!json_object.is_array())
+                return {};
+
+            std::string result;
+            int i = 0;
+            for (const auto& value : json_object) {
+                if(quotation_marks)
+                    result.append("'");
+                if(value.is_string())
+                    result.append(get<std::string>(value));
+                if(quotation_marks)
+                    result.append("'");
+                i++;
+                if(i != json_object.size())
+                    result.append(",");
+            }
+
+            return result;
+        }
+
+        [[nodiscard]] std::string to_string(bool quotation_marks = true) const{
+            std::string template_value = sql_compare_template[compare];
+            std::string result;
+            if(!value.is_array()){
+                std::string s_val = quotation_marks ? "'%1%'" : "%1%";
+                std::string v;
+                if(value.is_number_integer()){
+                    v = std::to_string(get<int>(value));
+                }else if(value.is_number_float()){
+                    v = std::to_string(get<double>(value));
+                }else if(value.is_string()){
+                    v = get<std::string>(value);
+                }
+                result.append(str_sample(template_value, key, str_sample(s_val, v)));
+            }else{
+                result.append(str_sample(template_value, key, array_to_string(value, quotation_marks)));
+            }
+            return result;
+        }
+
+        [[nodiscard]] json to_object() const{
+            json result = {
+                    {"key", key},
+                    {"compare", compare},
+                    {"value", value}
+            };
+            return result;
+        }
+
+    };
+
+    class sql_where_values{
+    public:
+        sql_where_values() {m_list = {};};
+        void add(const std::string& key, const json& value, sql_type_of_comparison compare = Equals){
+            m_list.push_back(std::make_shared<sql_compare_value>(key, value, compare));
+        }
+        void clear(){
+            m_list.clear();
+        }
+
+        [[nodiscard]] json to_json_object() const{
+            json result = {};
+            if(!m_list.empty()){
+                for (const auto& v: m_list) {
+                    result.push_back(v->to_object());
+                }
+            }
+            return result;
+        }
+
+    private:
+        std::vector<std::shared_ptr<sql_compare_value>> m_list;
+    };
+
     class query_builder{
 
     public:
+
         explicit
         query_builder(){
             databaseType = sql_database_type::type_Sqlite3;
             queryType = Select;
         };
         ~query_builder()= default;
+
+        static bool is_select_query(const std::string& query_text){
+
+            std::string tmp(query_text);
+            trim(tmp);
+            to_lower(tmp);
+            if(tmp.length() < 6)
+                return false;
+            return tmp.substr(6) == "select";
+
+        }
 
         query_builder& select(const json& fields) {
             use(fields);
@@ -72,27 +191,35 @@ namespace arcirk::database::builder {
         }
 
         query_builder& where(const json& values, bool use_values){
-            result.append("\nwhere ");
-            std::vector<std::pair<std::string, json>> where_values;
+
+            std::vector<sql_compare_value> where_values;
             auto items_ = values.items();
             for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
-                where_values.emplace_back(itr.key(), itr.value());
+                sql_compare_value val{};
+                val.key = itr.key();
+                const json& f_value = itr.value();
+                if(!f_value.is_object()){
+                    val.compare = Equals;
+                    if(use_values)
+                        val.value = f_value;
+                    else
+                        val.value = "?";
+                }else{
+                    val.compare = (sql_type_of_comparison)f_value.value("compare", 0);
+                    if(use_values)
+                        val.value = f_value.value("value", json{});
+                    else
+                        val.value = "?";
+                }
+                where_values.push_back(val);
             }
-            for (auto itr = where_values.cbegin(); itr != where_values.cend() ; ++itr) {
-                result.append(itr->first);
-                if(!use_values)
-                    result.append("=?");
-                else{
-                    if(itr->second.is_string())
-                        result.append(str_sample("='%1%'", itr->second.get<std::string>()));
-                    else if(itr->second.is_number_float())
-                        result.append(str_sample("='%1%'", std::to_string(itr->second.get<double>())));
-                    else if(itr->second.is_number_integer())
-                        result.append(str_sample("='%1%'", std::to_string(itr->second.get<int>())));
-                }
-                if(itr != (--where_values.cend())){
-                    result.append(" AND\n");
-                }
+
+            result.append("\nwhere ");
+
+            for (auto itr = where_values.begin(); itr != where_values.end() ; ++itr) {
+                result.append(itr->to_string(use_values));
+                if(itr != --where_values.end())
+                    result.append("\nAND\n");
             }
             return *this;
         }
@@ -177,8 +304,8 @@ namespace arcirk::database::builder {
             return *this;
         }
 
-        [[nodiscard]] std::string prepare(const json& exists = {}, bool use_values = false) const{
-            if (exists.empty())
+        [[nodiscard]] std::string prepare(const json& where_not_exists = {}, bool use_values = false) const{
+            if (where_not_exists.empty())
                 return result;
             else{
                 using namespace boost::algorithm;
@@ -204,7 +331,7 @@ namespace arcirk::database::builder {
                     else
                         tmp = result;
                     auto q = std::make_shared<query_builder>();
-                    std::string where_select = q->select({"*"}).from(table_name_).where(exists, use_values).prepare();
+                    std::string where_select = q->select({"*"}).from(table_name_).where(where_not_exists, use_values).prepare();
                     return str_sample(query_sample, where_select, tmp);
                 }
             }
@@ -230,6 +357,72 @@ namespace arcirk::database::builder {
             std::string q = prepare(exists, use_values);
             soci::statement st = (sql.prepare << q);
             st.execute(true);
+        }
+
+        static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}){
+
+            soci::rowset<soci::row> rs = (sql.prepare << query_text);
+
+            json columns = {"line_number"};
+            json roms = {};
+            int line_number = 0;
+
+            for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+            {
+                line_number++;
+                row const& row = *it;
+                json j_row = {{"line_number", line_number}};
+
+                for(std::size_t i = 0; i != row.size(); ++i)
+                {
+                    const column_properties & props = row.get_properties(i);
+                    std::string column_name = props.get_name();
+
+                    if((columns.size() -1) != row.size()){
+                        columns.push_back(column_name);
+                    }
+
+                    if(std::find(column_ignore.begin(), column_ignore.end(), column_name) != column_ignore.end()){
+                        j_row += {column_name, ""};
+                        continue;
+                    }
+
+                    switch(props.get_data_type())
+                    {
+                        case dt_string:
+                            j_row += {column_name, row.get<std::string>(i)} ;
+                            break;
+                        case dt_double:
+                            j_row += {column_name, row.get<double>(i)} ;
+                            break;
+                        case dt_integer:
+                            j_row += {column_name, row.get<int>(i)} ;
+                            break;
+                        case dt_long_long:
+                            j_row += {column_name, row.get<long long>(i)} ;
+                            break;
+                        case dt_unsigned_long_long:
+                            j_row += {column_name, row.get<unsigned long long>(i)} ;
+                            break;
+                        case dt_date:
+                            //std::tm when = r.get<std::tm>(i);
+                            break;
+                        case dt_blob:
+                            break;
+                        case dt_xml:
+                            break;
+                    }
+
+                }
+
+                roms += j_row;
+            }
+
+            result_table = {
+                    {"columns", columns},
+                    {"rows", roms}
+            };
+
         }
 
     private:

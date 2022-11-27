@@ -141,20 +141,25 @@ void verify_database(){
     using namespace soci;
 
     //таблица пользователей
-    const std::string table_ddl = "CREATE TABLE  IF NOT EXISTS Users (\n"
-                               "    _id         INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                               "    [first]     TEXT      DEFAULT \"\",\n"
-                               "    second      TEXT      DEFAULT \"\",\n"
-                               "    ref         TEXT (36) UNIQUE\n"
-                               "                          NOT NULL,\n"
-                               "    hash        TEXT      UNIQUE\n"
-                               "                          NOT NULL,\n"
-                               "    role        TEXT      DEFAULT user\n"
-                               "                          NOT NULL,\n"
-                               "    performance TEXT      DEFAULT \"\",\n"
-                               "    parent      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                               "    cache       TEXT      DEFAULT \"\"\n"
-                               ");";
+    const std::string table_ddl = "CREATE TABLE Users (\n"
+                                   "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                   "    [first]       TEXT      DEFAULT \"\"\n"
+                                   "                            NOT NULL,\n"
+                                   "    second        TEXT      DEFAULT \"\",\n"
+                                   "    ref           TEXT (36) UNIQUE\n"
+                                   "                            NOT NULL,\n"
+                                   "    hash          TEXT      UNIQUE\n"
+                                   "                            NOT NULL,\n"
+                                   "    role          TEXT      DEFAULT user\n"
+                                   "                            NOT NULL,\n"
+                                   "    performance   TEXT      DEFAULT \"\",\n"
+                                   "    parent        TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                   "    cache         TEXT      DEFAULT \"\",\n"
+                                   "    is_group      INTEGER   NOT NULL\n"
+                                   "                            DEFAULT (0),\n"
+                                   "    deletion_mark INTEGER   NOT NULL\n"
+                                   "                            DEFAULT (0) \n"
+                                   ");";
 
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
 

@@ -26,6 +26,26 @@ namespace arcirk{
         using n_json = nlohmann::json;
         return n_json(value).get<std::string>();
     };
+
+    template<typename T>
+    nlohmann::json values_from_param(const nlohmann::json& param){
+        if(param.empty())
+            return {};
+        T e = T();
+        auto source = pre::json::to_json(e);
+        nlohmann::json result = {};
+
+        if(source.is_object()){
+            for (auto itr = source.begin(); itr != source.end() ; ++itr) {
+                auto i = param.find(itr.key());
+                if( i != param.end()){
+                    result[itr.key()] = i.value();
+                }
+            }
+            return result;
+        }else
+            return {};
+    }
 }
 
 #endif

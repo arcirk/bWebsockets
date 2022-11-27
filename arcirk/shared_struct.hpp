@@ -135,6 +135,7 @@ namespace arcirk::server{
         InsertOrUpdateUser, //Обновить или добавить пользователя (база данных)
         CommandToClient, //Команда клиенту (подписчику)
         ServerUsersList, //Список пользователей (база данных)
+        ExecuteSqlQuery, //выполнить запрос к базе данных
         CMD_INVALID=-1,
     };
 
@@ -148,6 +149,7 @@ namespace arcirk::server{
         {InsertOrUpdateUser, "InsertOrUpdateUser"}    ,
         {CommandToClient, "CommandToClient"}    ,
         {ServerUsersList, "ServerUsersList"}    ,
+        {ExecuteSqlQuery, "ExecuteSqlQuery"}    ,
     })
 
 }

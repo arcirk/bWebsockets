@@ -324,6 +324,8 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
             auto usr_info = user_info();
             usr_info.ref = arcirk::uuids::nil_string_uuid();
             usr_info.parent = arcirk::uuids::nil_string_uuid();
+            usr_info.is_group = 0;
+            usr_info.deletion_mark = 0;
             std::string usr_info_json = to_string(pre::json::to_json(usr_info));
             return usr_info_json;
         }

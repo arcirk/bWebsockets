@@ -151,6 +151,7 @@ public:
     arcirk::server::server_command_result user_information(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result insert_or_update_user(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result command_to_client(const variant_t& param, const variant_t& session_id, const variant_t& session_id_receiver);
+    arcirk::server::server_command_result execute_sql_query(const variant_t& param, const variant_t& session_id);
 
     static auto parse_json(const std::string& json_text, bool is_base64 = false);
 
@@ -191,7 +192,6 @@ private:
     static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
     void execute_command_handler(const std::string& message, subscriber *session);
     void forward_message(const std::string& message, subscriber *session);
-    void set_uuid_form(const std::string& json_param, server::server_command_result& res);
 
 
     static void fail(const std::string& what, const std::string& error, bool conv = true){

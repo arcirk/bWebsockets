@@ -57,6 +57,9 @@ namespace arcirk {
     std::string get_sha1(const std::string& p_arg);
     std::string get_hash(const std::string& first, const std::string& second);
     T_vec split(const T_str& line, const T_str& sep);
+    void trim(std::string& source){ boost::trim(source);};
+    void to_upper(std::string& source){boost::to_upper(source);};
+    void to_lower(std::string& source){boost::to_lower(source);};
 
     std::string sample(const std::string& format_string, const std::vector<std::string>& args);
     template<typename... Arguments>

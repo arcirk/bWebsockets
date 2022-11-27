@@ -12,15 +12,18 @@
 
 BOOST_FUSION_DEFINE_STRUCT(
 (arcirk::database), user_info,
-(int, _id)
-(std::string, first)
-(std::string, second)
-(std::string, ref)
-(std::string, hash)
-(std::string, role)
-(std::string, performance)
-(std::string, parent)
-(std::string, cache));
+    (int, _id)
+    (std::string, first)
+    (std::string, second)
+    (std::string, ref)
+    (std::string, hash)
+    (std::string, role)
+    (std::string, performance)
+    (std::string, parent)
+    (std::string, cache)
+    (int, is_group)
+    (int, deletion_mark)
+    );
 
 namespace arcirk::database{
 
