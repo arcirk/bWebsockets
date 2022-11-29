@@ -3,13 +3,6 @@
 
 #include "includes.hpp"
 
-//BOOST_FUSION_DEFINE_STRUCT(
-//        (arcirk::database::query_builder), query_value,
-//        (std::string, key)
-//        (arcirk::database::sql_type_of_comparison, comparison)
-//        (arcirk::bVariant value)
-//)
-
 BOOST_FUSION_DEFINE_STRUCT(
 (arcirk::database), user_info,
     (int, _id)
