@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8">
+    <style>
+        html {
+            font-family: sans-serif;
+        }
+        body {
+            font-family: "Lato", sans-serif;
+        }
+        table {
+            border-collapse: collapse;
+            /*margin: 0 auto;*/
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            width: 600px;
+        }
+        .sidenav {
+            height: 100%;
+            width: 160px;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 20px;
+        }
+
+        .sidenav a {
+            padding: 6px 8px 6px 16px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+        }
+
+        .sidenav a:hover {
+            color: #f1f1f1;
+        }
+
+        .main {
+            margin-left: 160px; /* Same as the width of the sidenav */
+            font-size: 28px; /* Increased text to enable scrolling */
+            padding: 0px 10px;
+        }
+
+        @media screen and (max-height: 450px) {
+            .sidenav {padding-top: 15px;}
+            .sidenav a {font-size: 18px;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidenav">
+    <a href="#about">About</a>
+    <a href="#services">Services</a>
+    <a href="#clients">Clients</a>
+    <a href="#contact">Contact</a>
+</div>
+
+<div class="main">
+    <table>
+        <tr class="R1">
+            <td class="R1C1" height=50px><span style="max-width:0; font-size: 1rem;">Сервер:</span> </td>
+            <td class="R1C2" height=50px><label for="uri_w"></label><input class="draw-border" id="uri_w" size="47" value="ws://localhost:8080" style="margin-bottom: 5px;"> </td>
+            <td class="R1C3" height=50px><button class="echo-button" id="connect_">Connect</button> </td>
+            <td class="R1C4" height=50px><button class="echo-button" id="disconnect_">Disconnect</button> </td>
+        </tr>
+        <tr class="R2">
+            <td class="R2C1" height=50px><span style="max-width:0; font-size: 1rem;">Имя пользователя:</span> </td>
+            <td class="R2C2" height=50px><label for="userName_"></label><input class="draw-border" id="userName_" size=47 style="margin-bottom: 5px;"></td>
+        </tr>
+        <tr class="R3">
+            <td class="R3C1" height=50px><span style="max-width:0; font-size: 1rem;">Пароль:</span> </td>
+            <td class="R3C2" height=50px><label for="userPwd_"></label><input class="draw-border" id="userPwd_" size=47 style="margin-bottom: 5px;"></td>
+        </tr>
+        <tr class="R4">
+            <td class="R4C1"><pre id="messages" style="width: 600px; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre></td>
+        </tr>
+    </table>
+<!--    <h2>Sidebar</h2>-->
+<!--    Server URI: <input class="draw-border" id="uri" size="47" value="ws://localhost:8080" style="margin-bottom: 5px;">-->
+<!--    <button class="echo-button" id="connect">Connect</button>-->
+<!--    <button class="echo-button" id="disconnect">Disconnect</button><br>-->
+<!--    Your Name: <input class="draw-border" id="userName" size=47 style="margin-bottom: 5px;"><br>-->
+<!--    Пароль: <input class="draw-border" id="userPwd" size=47 style="margin-bottom: 5px;"><br>-->
+    <pre id="messages" style="width: 600px; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre>
+    <div style="margin-bottom: 5px;">
+        Message<br>
+        <input class="draw-border" id="sendMessage" size="74" value="">
+        <button class="echo-button" id="send">Send</button>
+    </div>
+</div>
+
+</body>
+</html>
