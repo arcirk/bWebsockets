@@ -98,7 +98,7 @@ private:
     //void write_conf(server::server_config & conf);
 
     void get_online_users(const variant_t &uuid_form);
-
+    void get_messages(const variant_t &sender, const variant_t &recipient, const variant_t &uuid_form);
     void set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName);
 
 //    void start_reconnect();

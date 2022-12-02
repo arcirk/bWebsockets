@@ -25,6 +25,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::CommandToClient), this, &shared_state::command_to_client);
     add_method(enum_synonym(server::server_commands::ServerUsersList), this, &shared_state::get_users_list);
     add_method(enum_synonym(server::server_commands::ExecuteSqlQuery), this, &shared_state::execute_sql_query);
+    add_method(enum_synonym(server::server_commands::GetMessages), this, &shared_state::get_messages);
 
 }
 
@@ -54,7 +55,7 @@ void shared_state::send_notify(const std::string &message, subscriber *sender, c
         if(sender_uuid != boost::uuids::nil_uuid())
             resp.sender = arcirk::uuids::uuid_to_string(sender_uuid);
     }
-    std::string response =  to_string(pre::json::to_json(resp));
+    std::string response =  pre::json::to_json(resp).dump();
 
     if(sender){
         if(sender->is_ssl())
@@ -125,14 +126,14 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
 
     server::server_response resp;
     resp.command = "message";
-    resp.message = msg;
-    resp.param = param;
+    resp.message = msg; //base64
+    resp.param = param; //base64
     resp.result = "OK";
     resp.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     resp.receiver = receiver;
     resp.app_name = session->app_name();
 
-    std::string response =  to_string(pre::json::to_json(resp));
+    std::string response =  pre::json::to_json(resp).dump();
 
     boost::uuids::uuid receiver_{};
     if(!uuids::is_valid_uuid(receiver, receiver_)){
@@ -146,13 +147,77 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         return;
     }
 
-    if(sett.ResponseTransferToBase64){
-        response = arcirk::base64::base64_encode(response);
+    if(sett.AllowHistoryMessages){
+        std::string content_type_ = arcirk::enum_synonym(database::text_type::dbText);
+        if(!param.empty()){
+            auto param_ = nlohmann::json::parse(arcirk::base64::base64_encode(param));
+            content_type_ = param_.value("content_type", content_type_);
+        }else
+            log("shared_state::forward_message", "Не указан тип сообщения, будет установлен по умолчанию 'Text'");
+
+        auto msg_struct = database::messages();
+        msg_struct.ref = boost::to_string(uuids::random_uuid());
+        msg_struct.first = resp.sender;
+        msg_struct.second = receiver;
+        msg_struct.message = msg;
+        msg_struct.content_type = content_type_;
+        msg_struct.date = (int)arcirk::current_date_seconds();
+        try {
+            auto sql = soci_initialize();
+            msg_struct.token  = get_channel_token(sql, msg_struct.first, msg_struct.second);
+            auto query = std::make_shared<database::builder::query_builder>();
+            query->use(pre::json::to_json(msg_struct));
+            query->insert("Messages", true);
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
     }
 
-    auto const ss = boost::make_shared<std::string const>(response);
-    itr->second->send(ss);
+    if(sett.ResponseTransferToBase64){
+        auto const ss = boost::make_shared<std::string const>(base64::base64_encode(response));
+        itr->second->send(ss);
+    }else{
+        auto const ss = boost::make_shared<std::string const>(response);
+        itr->second->send(ss);
+    }
 
+}
+
+std::string shared_state::get_channel_token(soci::session& sql, const std::string &first, const std::string &second) const{
+
+    using namespace arcirk::database::builder;
+    using namespace soci;
+
+    auto builder = std::make_shared<query_builder>();
+    std::vector<std::string> refs;
+
+    try {
+        nlohmann::json ref = {
+                {"ref", sql_compare_value("ref", {
+                        first,
+                        second}, sql_type_of_comparison::On_List).to_object()}
+        };
+        auto result = builder->select({"_id","ref"}).from("Users").where(ref, true).order_by({"_id"}).exec(sql,{}, true);
+
+
+        for (rowset<row>::const_iterator itr = result.begin(); itr != result.end(); ++itr) {
+            row const& row = *itr;
+            refs.push_back(row.get<std::string>(1));
+        }
+
+    } catch (std::exception &e) {
+        fail("shared_state::get_channel_token", e.what());
+        return "error";
+    }
+
+    if (refs.size() <= 1){//минимум 2 записи должно быть
+        fail("shared_state::get_channel_token", "Ошибка генерации токена!");
+        return "error";
+    }
+
+    std::string hash = arcirk::get_hash(refs[0], refs[1]);
+
+    return hash;
 }
 
 void shared_state::execute_command_handler(const std::string& message, subscriber *session) {
@@ -248,7 +313,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     result_response.app_name = session->app_name();
 
-    response = to_string(pre::json::to_json(result_response));
+    response = pre::json::to_json(result_response).dump();
 
     if(sett.ResponseTransferToBase64){
         response = arcirk::base64::base64_encode(response);
@@ -593,7 +658,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
             session->set_user_uuid(user_uuid_);
         }
         param_.session_uuid = uuids::uuid_to_string(session->uuid_session());
-        result.result = arcirk::base64::base64_encode(to_string(pre::json::to_json(param_)) );
+        result.result = arcirk::base64::base64_encode(pre::json::to_json(param_).dump() );
         session->set_app_name(param_.app_name);
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
@@ -772,7 +837,7 @@ arcirk::server::server_command_result shared_state::server_configuration(const v
     if (!operation_available)
         throw std::exception("Не достаточно прав доступа!");
 
-    std::string conf_json = to_string(pre::json::to_json(sett));
+    std::string conf_json = pre::json::to_json(sett).dump();
     server::server_command_result result;
     result.result = arcirk::base64::base64_encode(conf_json);
     result.command = enum_synonym(server::server_commands::ServerConfiguration);
@@ -843,7 +908,7 @@ arcirk::server::server_command_result shared_state::user_information(const varia
     }
 
     auto usr_info = get_user_info(user_uuid);
-    std::string info_json = to_string(pre::json::to_json(usr_info));
+    std::string info_json = pre::json::to_json(usr_info).dump();
     result.result = arcirk::base64::base64_encode(info_json);
     result.command = enum_synonym(server::server_commands::UserInfo);
     result.message = "OK";
@@ -869,7 +934,19 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     auto param_ = nlohmann::json::parse(param_json);
     result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
     std::string query_text = param_.value("query_text", "");
+    if(query_text.empty())
+        throw std::exception("Не задан текст запроса!");
 
+    auto query = std::make_shared<database::builder::query_builder>();
+    auto sql = soci_initialize();
+    nlohmann::json table = {};
+    query->execute(query_text, sql, table);
+
+    if(!table.empty()){
+        result.result = base64::base64_encode(table.dump());
+    }
+
+    return result;
 }
 
 arcirk::server::server_command_result shared_state::insert_or_update_user(const variant_t &param,
@@ -925,6 +1002,78 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
 
     result.result = "success";
     result.message = "OK";
+
+    return result;
+}
+
+soci::session shared_state::soci_initialize() const {
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    auto result = arcirk::database::user_info();
+
+    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+        if(sett.ServerWorkingDirectory.empty())
+        {
+            throw std::exception("Ошибки в параметрах сервера!");
+        }
+
+        path database(sett.ServerWorkingDirectory);
+        database /= sett.Version;
+        database /= "data";
+        database /= "arcirk.sqlite";
+
+        if(!exists(database)){
+            throw std::exception("Файл базы данных не найден!");
+        }
+
+        try {
+            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+            return session{soci::sqlite3, connection_string};
+        } catch (std::exception &e) {
+            fail("shared_state::get_user_info:error", e.what(), false);
+        }
+
+    }
+    return {};
+}
+
+arcirk::server::server_command_result shared_state::get_messages(const variant_t &param, const variant_t &session_id) {
+
+    using namespace arcirk::database;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::InsertOrUpdateUser);
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+    std::string sender = param_.value("sender", "");
+    std::string recipient = param_.value("recipient", "");
+
+    if(sender.empty() || recipient.empty())
+        throw std::exception("Не заданы параметры запроса!");
+
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available){
+        if(sender != boost::to_string(uuid) && recipient != boost::to_string(uuid))
+            throw std::exception("Не достаточно прав доступа!");
+    }
+
+    auto sql = soci_initialize();
+    std::string token = get_channel_token(sql, sender, recipient);
+
+    auto query = std::make_shared<database::builder::query_builder>();
+    nlohmann::json table = {};
+
+    query->select({"*"}).from("Messages").where({{"token", token}}, true).order_by({"date"});
+    query->execute(query->prepare(), sql, table);
+
+    result.message = base64::base64_encode(table.dump());
 
     return result;
 }

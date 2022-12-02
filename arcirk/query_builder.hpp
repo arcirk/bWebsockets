@@ -35,6 +35,15 @@ namespace arcirk::database::builder {
         Not_In_List
     };
 
+    enum sql_order_type{
+        dbASC = 0,
+        dbDESC
+    };
+    NLOHMANN_JSON_SERIALIZE_ENUM(sql_order_type, {
+        {dbASC, "asc"},
+        {dbDESC, "desc"}
+    });
+
     static std::map<sql_type_of_comparison, std::string> sql_compare_template = {
             std::pair<sql_type_of_comparison, std::string>(Equals, "%1%=%2%"),
             std::pair<sql_type_of_comparison, std::string>(Not_Equals, "not %1%=%2%"),
@@ -46,7 +55,7 @@ namespace arcirk::database::builder {
             std::pair<sql_type_of_comparison, std::string>(Not_In_List, "not %1% in (%2%)")
     };
 
-    struct sql_compare_value{
+    typedef struct sql_compare_value{
 
         std::string key;
         sql_type_of_comparison compare;
@@ -130,7 +139,7 @@ namespace arcirk::database::builder {
             return result;
         }
 
-    };
+    }sql_compare_value;
 
     class sql_where_values{
     public:
@@ -245,6 +254,41 @@ namespace arcirk::database::builder {
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                 result.append(itr->first);
                 if(itr != (--m_list.cend())){
+                    result.append(",\n");
+                }
+            }
+            return *this;
+        }
+
+        //0=asc, 1=desc
+        //fields = {{"field1", 0}, {"field2", 1}}
+        query_builder& order_by(const json& fields){
+
+            result +="\norder by ";
+            std::vector<std::pair<std::string, sql_order_type>> m_order_list;
+            if(fields.is_object()){
+                auto items_ = fields.items();
+                for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
+                    if(itr.value().is_number_integer()){
+                        int order = itr.value().get<int>();
+                        auto t = sql_order_type::dbASC;
+                        if(order <= 1 && order > 0)
+                            t = (sql_order_type)order;
+                        m_order_list.emplace_back(itr.key(), t);
+                    }else
+                        m_order_list.emplace_back(itr.key(), sql_order_type::dbASC);
+                }
+            }else if(fields.is_array()){
+                for (auto itr = fields.begin(); itr != fields.end(); ++itr) {
+                    m_order_list.emplace_back(*itr, sql_order_type::dbASC);
+                }
+            }
+
+            for (auto itr = m_order_list.cbegin(); itr != m_order_list.cend() ; ++itr) {
+                result.append(itr->first);
+                result.append(" ");
+                result.append(enum_synonym(itr->second));
+                if(itr != (--m_order_list.cend())){
                     result.append(",\n");
                 }
             }
@@ -424,6 +468,7 @@ namespace arcirk::database::builder {
             };
 
         }
+
 
     private:
         std::string result;

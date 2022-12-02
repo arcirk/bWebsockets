@@ -123,12 +123,11 @@ WebCore::WebCore(){
     AddMethod(L"CommandToClient", L"КомандаКлиенту", this, &WebCore::command_to_client);
     AddMethod(L"CommandToServer", L"КомандаСерверу", this, &WebCore::command_to_server);
     AddMethod(L"Sha1Hash", L"Sha1Hash", this, &WebCore::sha1_hash);
-//    AddMethod(L"SetAppName", L"УстановитьИмяПриложения", this, &WebCore::set_app_name);
     AddMethod(L"SessionUuid", L"ИдентификаторСессии", this, &WebCore::session_uuid);
-//    AddMethod(L"SetJobData", L"УстановитьПараметрыРабочегоМеста", this, &WebCore::set_job_data);
     AddMethod(L"SetParam", L"УстановитьПараметры", this, &WebCore::set_client_param);
     AddMethod(L"GetTableRowStructure", L"ПолучитьСтруктуруЗаписи", this, &WebCore::get_table_row_structure);
     AddMethod(L"GetServerCommands", L"ПолучитьСтруктуруКомандСервера", this, &WebCore::get_server_commands);
+    AddMethod(L"GetMessages", L"ПолучитьИсториюСообщений", this, &WebCore::get_messages);
 
 }
 
@@ -324,4 +323,16 @@ void WebCore::error(const std::string& src, const std::string &msg) {
     AddError(ADDIN_E_FAIL, src, msg, false);
 }
 
+void WebCore::get_messages(const variant_t &sender, const variant_t &recipient, const variant_t &uuid_form) {
 
+    nlohmann::json param_{
+            {"sender", std::get<std::string>(sender)},
+            {"recipient", std::get<std::string>(recipient)},
+            {"uuid_form", std::get<std::string>(uuid_form)},
+    };
+
+    if(!m_client->started())
+        return;
+
+    m_client->send_command(arcirk::enum_synonym(server::server_commands::GetMessages), param_.dump());
+}

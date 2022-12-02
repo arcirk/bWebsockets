@@ -215,4 +215,27 @@ namespace arcirk{
 #endif
         return current;
     }
+
+    long int current_date_seconds() {
+
+        tm current{};
+        time_t t = time(nullptr);
+
+#ifdef _WIN32
+        localtime_s(&current, &t);
+#else
+        localtime_r(&t, &current);
+#endif
+
+        std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(mktime(&current));
+
+        return
+                (long int)std::chrono::duration_cast<std::chrono::seconds>(
+                        tp.time_since_epoch()).count();
+
+    }
+
+    void trim(std::string& source){ boost::trim(source);};
+    void to_upper(std::string& source){boost::to_upper(source);};
+    void to_lower(std::string& source){boost::to_lower(source);};
 }

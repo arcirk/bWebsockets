@@ -136,6 +136,7 @@ namespace arcirk::server{
         CommandToClient, //Команда клиенту (подписчику)
         ServerUsersList, //Список пользователей (база данных)
         ExecuteSqlQuery, //выполнить запрос к базе данных
+        GetMessages,
         CMD_INVALID=-1,
     };
 
@@ -150,6 +151,7 @@ namespace arcirk::server{
         {CommandToClient, "CommandToClient"}    ,
         {ServerUsersList, "ServerUsersList"}    ,
         {ExecuteSqlQuery, "ExecuteSqlQuery"}    ,
+        {GetMessages, "GetMessages"}    ,
     })
 
 }
@@ -186,6 +188,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, Version)
         (bool, ResponseTransferToBase64)
         (bool, AllowDelayedAuthorization)
+        (bool, AllowHistoryMessages)
 );
 
 #endif

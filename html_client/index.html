@@ -14,85 +14,351 @@
             /*margin: 0 auto;*/
             letter-spacing: 1px;
             font-size: 0.8rem;
-            width: 600px;
+            /*width: 600px;*/
+            width: 100%;
+            max-width: 600px;
         }
-        .sidenav {
-            height: 100%;
-            width: 160px;
-            position: fixed;
-            z-index: 1;
-            top: 0;
-            left: 0;
-            background-color: #111;
-            overflow-x: hidden;
-            padding-top: 20px;
-        }
-
-        .sidenav a {
-            padding: 6px 8px 6px 16px;
-            text-decoration: none;
-            font-size: 25px;
-            color: #818181;
-            display: block;
-        }
-
-        .sidenav a:hover {
-            color: #f1f1f1;
+        .echo-button{
+            width: 100%;
+            margin-left: 10px;
         }
 
         .main {
-            margin-left: 160px; /* Same as the width of the sidenav */
-            font-size: 28px; /* Increased text to enable scrolling */
+            font-size: 28px;
             padding: 0px 10px;
         }
 
-        @media screen and (max-height: 450px) {
-            .sidenav {padding-top: 15px;}
-            .sidenav a {font-size: 18px;}
-        }
     </style>
 </head>
 <body>
 
-<div class="sidenav">
-    <a href="#about">About</a>
-    <a href="#services">Services</a>
-    <a href="#clients">Clients</a>
-    <a href="#contact">Contact</a>
-</div>
-
 <div class="main">
     <table>
         <tr class="R1">
-            <td class="R1C1" height=50px><span style="max-width:0; font-size: 1rem;">Сервер:</span> </td>
-            <td class="R1C2" height=50px><label for="uri_w"></label><input class="draw-border" id="uri_w" size="47" value="ws://localhost:8080" style="margin-bottom: 5px;"> </td>
-            <td class="R1C3" height=50px><button class="echo-button" id="connect_">Connect</button> </td>
-            <td class="R1C4" height=50px><button class="echo-button" id="disconnect_">Disconnect</button> </td>
+<!--            <td class="R1C1" height=50px><span style="max-width:0; font-size: 1rem;">Сервер:</span> </td>-->
+            <td class="R1C2" height=50px colspan="2"><label for="uri">Сервер:</label><input class="draw-border" id="uri" size="47" value="ws://192.168.10.80:8080" style="margin-bottom: 5px;width: 100%;"> </td>
+            <td class="R1C3" height=50px><button class="echo-button" id="connect">Подключится</button> </td>
+            <td class="R1C4" height=50px><button class="echo-button" id="disconnect">Отключится</button> </td>
         </tr>
         <tr class="R2">
-            <td class="R2C1" height=50px><span style="max-width:0; font-size: 1rem;">Имя пользователя:</span> </td>
-            <td class="R2C2" height=50px><label for="userName_"></label><input class="draw-border" id="userName_" size=47 style="margin-bottom: 5px;"></td>
+<!--            <td class="R2C1" height=50px><span style="max-width:0; font-size: 1rem;">Имя пользователя:</span> </td>-->
+            <td class="R2C2" height=50px colspan="2"><label for="userName">Имя пользователя:</label><input class="draw-border" id="userName" size=47 value="admin" style="margin-bottom: 5px;width: 100%;"></td>
         </tr>
         <tr class="R3">
-            <td class="R3C1" height=50px><span style="max-width:0; font-size: 1rem;">Пароль:</span> </td>
-            <td class="R3C2" height=50px><label for="userPwd_"></label><input class="draw-border" id="userPwd_" size=47 style="margin-bottom: 5px;"></td>
+<!--            <td class="R3C1" height=50px><span style="max-width:0; font-size: 1rem;">Пароль:</span> </td>-->
+            <td class="R3C2" height=50px colspan="2">Пароль:<label for="userPwd"></label><input class="draw-border" id="userPwd" size=47 value="admin" style="margin-bottom: 5px;width: 100%;"></td>
+        </tr>
+        <tr class="R6">
+            <td class="R6C1" height=50px>
+            <form name="UsersList">
+                <p><label>
+                    <select name="OnlineUsers" onchange="usersListOnChange()">
+                        <optgroup label="Активные пользователи">
+                            <option value="r1">Активные пользователи</option>
+                        </optgroup>
+                    </select>
+                </label></p>
+            </form>
+            </td>
         </tr>
         <tr class="R4">
-            <td class="R4C1"><pre id="messages" style="width: 600px; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre></td>
+            <td class="R4C1" colspan="4"><pre id="messages" style="max-width: 600px; width: 100%; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre></td>
+        </tr>
+        <tr class="R5">
+            <td class="R5C2" height=50px colspan="3">Сообщение:<br><label for="sendMessage"></label><input class="draw-border" id="sendMessage" size="74" value="" style="margin-bottom: 5px;width: 100%;"></td>
+            <td class="R5C4" height=50px><button class="echo-button" id="send">Отправить</button> </td>
         </tr>
     </table>
-<!--    <h2>Sidebar</h2>-->
-<!--    Server URI: <input class="draw-border" id="uri" size="47" value="ws://localhost:8080" style="margin-bottom: 5px;">-->
-<!--    <button class="echo-button" id="connect">Connect</button>-->
-<!--    <button class="echo-button" id="disconnect">Disconnect</button><br>-->
-<!--    Your Name: <input class="draw-border" id="userName" size=47 style="margin-bottom: 5px;"><br>-->
-<!--    Пароль: <input class="draw-border" id="userPwd" size=47 style="margin-bottom: 5px;"><br>-->
-    <pre id="messages" style="width: 600px; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre>
-    <div style="margin-bottom: 5px;">
-        Message<br>
-        <input class="draw-border" id="sendMessage" size="74" value="">
-        <button class="echo-button" id="send">Send</button>
-    </div>
+    <script>
+        let ws = null;
+        let is_connected = false;
+        let current_recipient = "";
+        let current_session = "";
+
+        /**
+         * Secure Hash Algorithm (SHA1)
+         * http://www.webtoolkit.info/
+         **/
+        function SHA1(msg) {
+            function rotate_left(n,s) {
+                var t4 = ( n<<s ) | (n>>>(32-s));
+                return t4;
+            };
+            function lsb_hex(val) {
+                var str='';
+                var i;
+                var vh;
+                var vl;
+                for( i=0; i<=6; i+=2 ) {
+                    vh = (val>>>(i*4+4))&0x0f;
+                    vl = (val>>>(i*4))&0x0f;
+                    str += vh.toString(16) + vl.toString(16);
+                }
+                return str;
+            };
+            function cvt_hex(val) {
+                var str='';
+                var i;
+                var v;
+                for( i=7; i>=0; i-- ) {
+                    v = (val>>>(i*4))&0x0f;
+                    str += v.toString(16);
+                }
+                return str;
+            };
+            function Utf8Encode(string) {
+                string = string.replace(/\r\n/g,'\n');
+                var utftext = '';
+                for (var n = 0; n < string.length; n++) {
+                    var c = string.charCodeAt(n);
+                    if (c < 128) {
+                        utftext += String.fromCharCode(c);
+                    }
+                    else if((c > 127) && (c < 2048)) {
+                        utftext += String.fromCharCode((c >> 6) | 192);
+                        utftext += String.fromCharCode((c & 63) | 128);
+                    }
+                    else {
+                        utftext += String.fromCharCode((c >> 12) | 224);
+                        utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                        utftext += String.fromCharCode((c & 63) | 128);
+                    }
+                }
+                return utftext;
+            };
+            var blockstart;
+            var i, j;
+            var W = new Array(80);
+            var H0 = 0x67452301;
+            var H1 = 0xEFCDAB89;
+            var H2 = 0x98BADCFE;
+            var H3 = 0x10325476;
+            var H4 = 0xC3D2E1F0;
+            var A, B, C, D, E;
+            var temp;
+            msg = Utf8Encode(msg);
+            var msg_len = msg.length;
+            var word_array = new Array();
+            for( i=0; i<msg_len-3; i+=4 ) {
+                j = msg.charCodeAt(i)<<24 | msg.charCodeAt(i+1)<<16 |
+                    msg.charCodeAt(i+2)<<8 | msg.charCodeAt(i+3);
+                word_array.push( j );
+            }
+            switch( msg_len % 4 ) {
+                case 0:
+                    i = 0x080000000;
+                    break;
+                case 1:
+                    i = msg.charCodeAt(msg_len-1)<<24 | 0x0800000;
+                    break;
+                case 2:
+                    i = msg.charCodeAt(msg_len-2)<<24 | msg.charCodeAt(msg_len-1)<<16 | 0x08000;
+                    break;
+                case 3:
+                    i = msg.charCodeAt(msg_len-3)<<24 | msg.charCodeAt(msg_len-2)<<16 | msg.charCodeAt(msg_len-1)<<8 | 0x80;
+                    break;
+            }
+            word_array.push( i );
+            while( (word_array.length % 16) != 14 ) word_array.push( 0 );
+            word_array.push( msg_len>>>29 );
+            word_array.push( (msg_len<<3)&0x0ffffffff );
+            for ( blockstart=0; blockstart<word_array.length; blockstart+=16 ) {
+                for( i=0; i<16; i++ ) W[i] = word_array[blockstart+i];
+                for( i=16; i<=79; i++ ) W[i] = rotate_left(W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16], 1);
+                A = H0;
+                B = H1;
+                C = H2;
+                D = H3;
+                E = H4;
+                for( i= 0; i<=19; i++ ) {
+                    temp = (rotate_left(A,5) + ((B&C) | (~B&D)) + E + W[i] + 0x5A827999) & 0x0ffffffff;
+                    E = D;
+                    D = C;
+                    C = rotate_left(B,30);
+                    B = A;
+                    A = temp;
+                }
+                for( i=20; i<=39; i++ ) {
+                    temp = (rotate_left(A,5) + (B ^ C ^ D) + E + W[i] + 0x6ED9EBA1) & 0x0ffffffff;
+                    E = D;
+                    D = C;
+                    C = rotate_left(B,30);
+                    B = A;
+                    A = temp;
+                }
+                for( i=40; i<=59; i++ ) {
+                    temp = (rotate_left(A,5) + ((B&C) | (B&D) | (C&D)) + E + W[i] + 0x8F1BBCDC) & 0x0ffffffff;
+                    E = D;
+                    D = C;
+                    C = rotate_left(B,30);
+                    B = A;
+                    A = temp;
+                }
+                for( i=60; i<=79; i++ ) {
+                    temp = (rotate_left(A,5) + (B ^ C ^ D) + E + W[i] + 0xCA62C1D6) & 0x0ffffffff;
+                    E = D;
+                    D = C;
+                    C = rotate_left(B,30);
+                    B = A;
+                    A = temp;
+                }
+                H0 = (H0 + A) & 0x0ffffffff;
+                H1 = (H1 + B) & 0x0ffffffff;
+                H2 = (H2 + C) & 0x0ffffffff;
+                H3 = (H3 + D) & 0x0ffffffff;
+                H4 = (H4 + E) & 0x0ffffffff;
+            }
+            var temp = cvt_hex(H0) + cvt_hex(H1) + cvt_hex(H2) + cvt_hex(H3) + cvt_hex(H4);
+
+            return temp.toLowerCase();
+        }
+
+        function sendParam(){
+            //Авторизация пользователя
+            let source_text = userName.value.toUpperCase() + userPwd.value;
+            console.log(source_text)
+            let hash = SHA1(source_text);
+            console.log(hash)
+            let param_object = {
+                user_name: userName.value,
+                hash: hash,
+                app_name: "html_client",
+                user_uuid: "",
+                host_name: "",
+                password: "",
+                session_uuid: "",
+                system_user: ""
+            };
+            let param = btoa(JSON.stringify(param_object));
+            let cmd = "cmd SetClientParam " +
+                btoa(JSON.stringify({parameters: param}));
+            ws.send(cmd)
+        }
+
+        function usersListOnChange(){
+
+            current_recipient = UsersList.OnlineUsers.options[UsersList.OnlineUsers.selectedIndex].value;
+            let param = {
+                sender: current_session,
+                recipient: current_recipient
+            }
+            sendCommand("GetMessages", param);
+
+        }
+
+        function sendMessage(msg, receiver){
+
+        }
+
+        function sendCommand(command, param){
+            if(!is_connected)
+                return;
+            let p = btoa(JSON.stringify(param));
+            let cmd = "cmd " + command + " " +
+                btoa(JSON.stringify({parameters: p}));
+            ws.send(cmd)
+        }
+
+        function parse_response(response){
+            let resp = JSON.parse(response);
+            let result = "";
+            if(resp.command === "SetClientParam"){
+
+                if (resp.message === "OK"){
+                    result = "Успешная авторизация на сервере!"
+                    is_connected = true;
+                    let param = {
+                        table: true,
+                        uuid_form: ""
+                    };
+                    current_session = resp.sender;
+                    sendCommand("ServerOnlineClientsList", param)
+                }
+                else{
+                    is_connected = false;
+                    result = "Ошибка авторизации на сервере!"
+                }
+            }else if(resp.command === "ServerOnlineClientsList"){
+                let res = JSON.parse(atob(resp.result));
+                let rows = res.rows;
+                UsersList.OnlineUsers.options.length = 0;
+                for (let i = 0; i < rows.length; i++) {
+                    let row = rows[i];
+                    if(row.session_uuid === current_session)
+                        continue;
+                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option(row.user_name + i, row.session_uuid);
+                }
+                if(UsersList.OnlineUsers.options.length === 0){
+                    current_recipient = "";
+                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option("Активные пользователи", "Активные пользователи")
+                }else{
+                    if (current_recipient === "")
+                        current_recipient = UsersList.OnlineUsers.options[0].value;
+
+                    let current_index = 0;
+                    for (var i = 0; i < UsersList.OnlineUsers.options.length; i++) {
+                        var option = UsersList.OnlineUsers.options[i];
+                        if (option.value === current_recipient) {
+                            current_index = i;
+                        }
+                    }
+                    if (UsersList.selectedIndex !== current_index)
+                        UsersList.selectedIndex = current_index;
+
+                }
+            }else if(resp.command === "ClientJoin"){
+                let param = {
+                    table: true,
+                    uuid_form: ""
+                };
+                sendCommand("ServerOnlineClientsList", param);
+            }else if(resp.command == "ClientLeave"){
+                let param = {
+                    table: true,
+                    uuid_form: ""
+                };
+                sendCommand("ServerOnlineClientsList", param);
+            }
+            return result;
+        }
+
+        function showMessage(msg) {
+            //
+            messages.innerText += msg + "\n";
+            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
+        };
+        connect.onclick = function() {
+            ws = new WebSocket(uri.value);
+            ws.onopen = function(ev) {
+                showMessage("[connection opened]");
+                sendParam();
+            };
+            ws.onclose = function(ev) {
+                showMessage("[connection closed]");
+            };
+            ws.onmessage = function(ev) {
+                let result = parse_response(ev.data);
+                showMessage(result);
+            };
+            ws.onerror = function(ev) {
+                showMessage("[error]");
+                console.log(ev);
+            };
+        };
+        disconnect.onclick = function() {
+            ws.close();
+        };
+        send.onclick = function() {
+            ws.send(userName.value + ": " + sendMessage.value);
+            sendMessage.value = "";
+        };
+        sendMessage.onkeyup = function(ev) {
+            ev.preventDefault();
+            if (ev.keyCode === 13) {
+                send.click();
+            }
+        }
+    </script>
 </div>
 
 </body>

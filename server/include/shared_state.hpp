@@ -152,6 +152,7 @@ public:
     arcirk::server::server_command_result insert_or_update_user(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result command_to_client(const variant_t& param, const variant_t& session_id, const variant_t& session_id_receiver);
     arcirk::server::server_command_result execute_sql_query(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_messages(const variant_t& param, const variant_t& session_id);
 
     static auto parse_json(const std::string& json_text, bool is_base64 = false);
 
@@ -177,6 +178,7 @@ private:
     bool is_operation_available(const boost::uuids::uuid &uuid, arcirk::database::roles level);
 
     [[nodiscard]] boost::filesystem::path sqlite_database_path() const;
+    std::string get_channel_token(soci::session& sql, const std::string &first, const std::string &second) const;
 
     class MethodMeta;
 
@@ -193,6 +195,8 @@ private:
     void execute_command_handler(const std::string& message, subscriber *session);
     void forward_message(const std::string& message, subscriber *session);
 
+
+    soci::session soci_initialize() const;
 
     static void fail(const std::string& what, const std::string& error, bool conv = true){
         std::tm tm = arcirk::current_date();

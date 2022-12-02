@@ -1,5 +1,7 @@
 #include <arcirk.hpp>
-#include <database_struct.hpp>
+#include <memory>
+//#include <database_struct.hpp>
+#include <query_builder.hpp>
 #include <shared_struct.hpp>
 
 #include <boost/filesystem.hpp>
@@ -135,60 +137,83 @@ void load_certs(boost::asio::ssl::context& ctx, const std::string& cert, const s
     load_server_certificate(ctx, _cert, _key);
 }
 
+std::vector<std::string> get_tables(soci::session& sql){
+
+    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
+    std::vector<std::string> result;
+    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+    {
+        soci::row const& row = *it;
+        result.push_back(row.get<std::string>(0));
+    }
+
+    return result;
+}
+
+void verify_table_users(soci::session& sql, const std::vector<std::string>& tables_arr){
+
+    using namespace soci;
+
+    if(std::find(tables_arr.begin(), tables_arr.end(), "Users") == tables_arr.end()){
+        try {
+            sql << database::users_table_ddl;
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+
+        database::user_info u;
+        u.ref = to_string(uuids::random_uuid());
+        u.first = "admin";
+        u.hash = arcirk::get_hash("admin", "admin");
+        u.parent = arcirk::uuids::nil_string_uuid();
+        u.role = enum_synonym(database::dbAdministrator);
+
+        try {
+            //Хотя бы одна учетная запись с ролью 'admin' должна быть
+            int count = -1;
+            sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
+            if(count <= 0){
+                //Добавить учетную запись по умолчанию
+                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
+            }
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
+
+}
+
+void verify_table_messages(soci::session& sql, const std::vector<std::string>& tables_arr){
+    using namespace soci;
+
+    if(std::find(tables_arr.begin(), tables_arr.end(), "Messages") == tables_arr.end()) {
+        try {
+            sql << database::messages_table_ddl;
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+    }
+}
+
 void verify_database(){
 
     using namespace boost::filesystem;
     using namespace soci;
-
-    //таблица пользователей
-    const std::string table_ddl = "CREATE TABLE Users (\n"
-                                   "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                   "    [first]       TEXT      DEFAULT \"\"\n"
-                                   "                            NOT NULL,\n"
-                                   "    second        TEXT      DEFAULT \"\",\n"
-                                   "    ref           TEXT (36) UNIQUE\n"
-                                   "                            NOT NULL,\n"
-                                   "    hash          TEXT      UNIQUE\n"
-                                   "                            NOT NULL,\n"
-                                   "    role          TEXT      DEFAULT user\n"
-                                   "                            NOT NULL,\n"
-                                   "    performance   TEXT      DEFAULT \"\",\n"
-                                   "    parent        TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                   "    cache         TEXT      DEFAULT \"\",\n"
-                                   "    is_group      INTEGER   NOT NULL\n"
-                                   "                            DEFAULT (0),\n"
-                                   "    deletion_mark INTEGER   NOT NULL\n"
-                                   "                            DEFAULT (0) \n"
-                                   ");";
-
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
 
     std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
     session sql(soci::sqlite3, connection_string);
+
     try {
-        sql << table_ddl;
+        auto m_tables = get_tables(sql);
+        verify_table_users(sql, m_tables);
+        verify_table_messages(sql, m_tables);
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 
-    database::user_info u;
-    u.ref = to_string(uuids::random_uuid());
-    u.first = "admin";
-    u.hash = arcirk::get_hash("admin", "admin");
-    u.parent = arcirk::uuids::nil_string_uuid();
-    u.role = enum_synonym(database::dbAdministrator);
-
-    try {
-        //Хотя бы одна учетная запись с ролью 'admin' должна быть
-        int count = -1;
-        sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
-        if(count <= 0){
-            //Добавить учетную запись по умолчанию
-            sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
-        }
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-    }
 }
 
 void read_command_line(const command_line_parser::cmd_parser& parser, server::server_config& conf){
@@ -223,6 +248,7 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
     }
     conf.UseAuthorization = parser.option_exists("-use_auth"); //требуется авторизация на сервере
     conf.AllowDelayedAuthorization = parser.option_exists("-ada");// разрешить отложенную авторизацию
+    conf.AllowHistoryMessages = parser.option_exists("-ahm"); //разрешить хранение истории сообщений
 }
 
 void save_conf(server::server_config& conf){
