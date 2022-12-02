@@ -381,7 +381,7 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 
     return false;
 }
-bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) const {
+bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash, std::string& user_uuid) const {
 
     log("shared_state::verify_auth_from_hash", "verify_connection ... ");
 
@@ -409,8 +409,10 @@ bool shared_state::verify_auth_from_hash(const std::string &usr, const std::stri
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             session sql(soci::sqlite3, connection_string);
             int count = -1;
-            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
-            return count > 0;
+//            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
+//            return count > 0;
+            auto builder = std::make_shared<database::builder::query_builder>();
+            auto rs = builder->select({"user_"})
         } catch (std::exception &e) {
             fail("shared_state::verify_auth:error", e.what(), false);
         }

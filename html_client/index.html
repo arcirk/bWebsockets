@@ -74,6 +74,7 @@
         let is_connected = false;
         let current_recipient = "";
         let current_session = "";
+        let current_user_uuid = "";
 
         /**
          * Secure Hash Algorithm (SHA1)
@@ -237,9 +238,10 @@
 
         function usersListOnChange(){
 
-            current_recipient = UsersList.OnlineUsers.options[UsersList.OnlineUsers.selectedIndex].value;
+            let usr = UsersList.OnlineUsers.options[UsersList.OnlineUsers.selectedIndex].value;
+            current_session = usr.session_uuid;
             let param = {
-                sender: current_session,
+                sender: usr.user_uuid,
                 recipient: current_recipient
             }
             sendCommand("GetMessages", param);
@@ -264,6 +266,9 @@
             let result = "";
             if(resp.command === "SetClientParam"){
 
+                let param_ = JSON.parse(atob(resp.param));
+                let result_ = JSON.parse(atob(resp.result));
+                
                 if (resp.message === "OK"){
                     result = "Успешная авторизация на сервере!"
                     is_connected = true;
@@ -286,7 +291,7 @@
                     let row = rows[i];
                     if(row.session_uuid === current_session)
                         continue;
-                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option(row.user_name + i, row.session_uuid);
+                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option(row.user_name + i, row);
                 }
                 if(UsersList.OnlineUsers.options.length === 0){
                     current_recipient = "";
@@ -312,7 +317,7 @@
                     uuid_form: ""
                 };
                 sendCommand("ServerOnlineClientsList", param);
-            }else if(resp.command == "ClientLeave"){
+            }else if(resp.command === "ClientLeave"){
                 let param = {
                     table: true,
                     uuid_form: ""
@@ -326,7 +331,7 @@
             //
             messages.innerText += msg + "\n";
             messages.scrollTop = messages.scrollHeight - messages.clientHeight;
-        };
+        }
         connect.onclick = function() {
             ws = new WebSocket(uri.value);
             ws.onopen = function(ev) {
