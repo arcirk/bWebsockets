@@ -132,6 +132,8 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
     resp.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     resp.receiver = receiver;
     resp.app_name = session->app_name();
+    resp.sender_name = session->user_name();
+    resp.sender_uuid = arcirk::uuids::uuid_to_string(session->user_uuid());
 
     std::string response =  pre::json::to_json(resp).dump();
 
@@ -147,27 +149,35 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         return;
     }
 
+    resp.receiver_name = itr->second->user_name();
+    resp.receiver_uuid = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
+
     if(sett.AllowHistoryMessages){
         std::string content_type_ = arcirk::enum_synonym(database::text_type::dbText);
         if(!param.empty()){
-            auto param_ = nlohmann::json::parse(arcirk::base64::base64_encode(param));
+            auto param_ = nlohmann::json::parse(arcirk::base64::base64_decode(param));
             content_type_ = param_.value("content_type", content_type_);
         }else
             log("shared_state::forward_message", "Не указан тип сообщения, будет установлен по умолчанию 'Text'");
 
         auto msg_struct = database::messages();
         msg_struct.ref = boost::to_string(uuids::random_uuid());
-        msg_struct.first = resp.sender;
-        msg_struct.second = receiver;
+        msg_struct.first = boost::to_string(session->user_uuid());
+        msg_struct.second = boost::to_string(itr->second->user_uuid());
         msg_struct.message = msg;
         msg_struct.content_type = content_type_;
         msg_struct.date = (int)arcirk::current_date_seconds();
+        msg_struct.unread_messages = 1;
         try {
             auto sql = soci_initialize();
-            msg_struct.token  = get_channel_token(sql, msg_struct.first, msg_struct.second);
+            msg_struct.token  = get_channel_token(sql, boost::to_string(session->user_uuid()), boost::to_string(itr->second->user_uuid()));
+            if(msg_struct.token == "error"){
+                fail("shared_state::forward_message", "Ошибка генерации токена!");
+                return;
+            }
             auto query = std::make_shared<database::builder::query_builder>();
             query->use(pre::json::to_json(msg_struct));
-            query->insert("Messages", true);
+            query->insert("Messages", true).execute(sql);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
         }
@@ -312,6 +322,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         result_response.receiver = session_id_receiver;
 
     result_response.app_name = session->app_name();
+    result_response.param = return_value.param;
 
     response = pre::json::to_json(result_response).dump();
 
@@ -381,7 +392,7 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 
     return false;
 }
-bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash, std::string& user_uuid) const {
+bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) const {
 
     log("shared_state::verify_auth_from_hash", "verify_connection ... ");
 
@@ -409,10 +420,8 @@ bool shared_state::verify_auth_from_hash(const std::string &usr, const std::stri
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             session sql(soci::sqlite3, connection_string);
             int count = -1;
-//            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
-//            return count > 0;
-            auto builder = std::make_shared<database::builder::query_builder>();
-            auto rs = builder->select({"user_"})
+            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
+            return count > 0;
         } catch (std::exception &e) {
             fail("shared_state::verify_auth:error", e.what(), false);
         }
@@ -675,15 +684,19 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
                     auto info = get_user_info(param_.hash);
                     //если используется авторизация устанавливаем параметры из базы данных
                     set_session_info(session, info);
+                    info.hash = "";
+                    param_.user_uuid = info.ref;
+                    result.result = base64::base64_encode(pre::json::to_json(info).dump());
                 }
 
             }else{
                 fail("shared_state::set_client_param", "failed authorization");
                 result.message = "failed authorization";
             }
-
-
         }
+
+        result.param = base64::base64_encode(pre::json::to_json(param_).dump());
+
     } catch (std::exception &e) {
         fail("shared_state::set_client_param:error", e.what(), false);
         result.result = "error";
@@ -1033,7 +1046,7 @@ soci::session shared_state::soci_initialize() const {
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             return session{soci::sqlite3, connection_string};
         } catch (std::exception &e) {
-            fail("shared_state::get_user_info:error", e.what(), false);
+            fail("shared_state::soci_initialize:error", e.what(), false);
         }
 
     }

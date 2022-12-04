@@ -37,6 +37,7 @@ private:
     std::string url_;
     bool auto_reconnect;
     bool allow_delayed_authorization;
+    boost::uuids::uuid default_form{};
 
 //    std::string _client_param;
 
@@ -90,6 +91,7 @@ private:
     void on_connect();
     void on_message(const std::string& message);
     void on_stop();
+    void on_successful_authorization();
     void on_error(const std::string &what, const std::string &err, int code);
     void on_status_changed(bool status);
 

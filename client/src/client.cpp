@@ -27,6 +27,8 @@ void websocket_client::connect(const client::client_events &event, const client:
         m_data.on_message = boost::get<callback_message>(f);
     }else if(event == client::client_events::wsStatusChanged){
         m_data.on_status_changed = boost::get<callback_status>(f);
+    }else if(event == client::client_events::wsSuccessfulAuthorization){
+        m_data.on_successful_authorization = boost::get<callback_successful_authorization>(f);
     }
 }
 
@@ -74,6 +76,7 @@ void websocket_client::start(arcirk::Uri &url) {
     state_->connect(client::client_events::wsError, (callback_error)std::bind(&websocket_client::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     state_->connect(client::client_events::wsConnect,  (callback_connect)std::bind(&websocket_client::on_connect, this));
     state_->connect(client::client_events::wsClose, (callback_close)std::bind(&websocket_client::on_close, this));
+    state_->connect(client::client_events::wsSuccessfulAuthorization, (callback_successful_authorization)std::bind(&websocket_client::on_successful_authorization, this));
     std::make_shared<resolver>(ioc, ctx_, state_)->run(url.Host.c_str(), url.Port.c_str(), _ssl);
 
     ioc.run();
@@ -156,7 +159,8 @@ void websocket_client::on_message(const std::string &message) {
             if(resp.command == enum_synonym(server::server_commands::SetClientParam)){
                 client::client_param client_param;
                 if(!resp.result.empty()){
-                    std::string r = arcirk::base64::base64_decode(resp.result);
+                    //std::string r = arcirk::base64::base64_decode(resp.result);
+                    std::string r = arcirk::base64::base64_decode(resp.param);
                     client_param = pre::json::from_json<client::client_param>(r);
                     client_param_.session_uuid = client_param.session_uuid;
                     boost::uuids::uuid uuid{};
@@ -164,6 +168,8 @@ void websocket_client::on_message(const std::string &message) {
                         state_->set_uuid_session(uuid);
                     if(resp.message == "failed authorization")
                         on_error(resp.command, "failed authorization", 0);
+                    else
+                        on_successful_authorization();
                     log("websocket_client::on_message", resp.command + ": session uuid " +  client_param_.session_uuid + ": user uuid " + client_param_.user_uuid);
                     return;
                 }
@@ -338,4 +344,9 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
     }
 
     return {};
+}
+
+void websocket_client::on_successful_authorization() {
+    if(m_data.on_successful_authorization)
+        m_data.on_successful_authorization();
 }

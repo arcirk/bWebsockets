@@ -4,6 +4,7 @@
 #include "database_struct.hpp"
 #include <map>
 #include <functional>
+#include <exception>
 
 namespace arcirk::database::builder {
 
@@ -42,6 +43,21 @@ namespace arcirk::database::builder {
     NLOHMANN_JSON_SERIALIZE_ENUM(sql_order_type, {
         {dbASC, "asc"},
         {dbDESC, "desc"}
+    });
+
+    enum sql_join_type{
+        joinCross = 0,
+        joinLeft,
+        joinRight,
+        joinInner,
+        joinFull
+    };
+    NLOHMANN_JSON_SERIALIZE_ENUM(sql_join_type, {
+        {joinCross, "cross"},
+        {joinLeft, "left"},
+        {joinRight, "right"},
+        {joinInner, "inner"},
+        {joinFull, "full"}
     });
 
     static std::map<sql_type_of_comparison, std::string> sql_compare_template = {
@@ -192,6 +208,84 @@ namespace arcirk::database::builder {
             return select();
         }
 
+        query_builder& select(){
+            queryType = Select;
+            result = "select ";
+            for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
+                result.append(itr->first);
+                if(itr != (--m_list.cend())){
+                    result.append(",\n");
+                }
+            }
+            return *this;
+        }
+
+        query_builder& join(const std::string& table_name, const json& fields, std::string, sql_join_type join_type, const json& join_options = {}){
+
+            if(table_name_.empty())
+                throw std::exception("Используйте 'from' сначала для первой таблицы.");
+
+            std::string table_first_alias = table_name_ + "First";
+            std::string table_second_alias = table_name + "Second";
+
+            if(fields.is_object()){
+                auto items_ = fields.items();
+                for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
+                    result.append(table_name + "." + itr.key() + " as " + table_second_alias + "_" + itr.key());
+                    result.append(",\n");
+                }
+            }else if(fields.is_array()){
+                for (auto itr = fields.begin(); itr != fields.end(); ++itr) {
+                    std::string key = *itr;
+                    result.append(table_name + "." + key + " as " + table_second_alias + "_" +  key);
+                    result.append(",\n");
+                }
+            }
+
+            if(m_list.empty()){
+                result = "select " + table_name_ + ".*";
+            }else{
+                result = "select ";
+                for (auto itr = m_list.begin(); itr != m_list.end() ; ++itr) {
+                    result.append(table_name_ + "." + itr->first + " as " + table_first_alias + "_" + itr->first);
+                    if(itr != --m_list.end())
+                        result.append(",\n");
+                }
+            }
+
+            result.append("\nfrom " + table_name_ + " as " + table_first_alias + " ");
+            result.append(enum_synonym(join_type));
+            result.append(" join " + table_name + " as " + table_second_alias);
+
+            if(join_type != sql_join_type::joinCross && join_options.empty()){
+                throw std::exception("Не заданы параметры соединения таблиц!");
+            }
+
+            std::vector<std::pair<std::string, std::string>> inner_join;
+            if(join_options.is_object()){
+                auto items = join_options.items();
+                for (auto itr = items.begin(); itr != items.end(); ++itr) {
+                    inner_join.emplace_back(itr.key(), itr.value().get<std::string>());
+                }
+            }else if(join_options.is_array()){
+                for (auto itr = fields.begin(); itr != fields.end(); ++itr) {
+                    std::string key = *itr;
+                    inner_join.emplace_back(key, key);
+                }
+            }else
+                throw std::exception("Не верный тип массива параметров соединения!");
+
+            result.append(" on ");
+            for (auto itr = inner_join.begin(); itr != inner_join.end(); ++itr) {
+                result.append(table_name_ + "." + itr->first + "=" + table_name + "." + itr->second);
+                if(itr != --inner_join.end()){
+                    result.append("\nand ");
+                }
+            }
+
+            return *this;
+        }
+
         query_builder& from(const std::string& table_name){
             table_name_ = table_name;
             result.append("\nfrom ");
@@ -199,7 +293,7 @@ namespace arcirk::database::builder {
             return *this;
         }
 
-        query_builder& where(const json& values, bool use_values){
+        query_builder& where(const json& values, bool use_values, bool use_table_name = true){
 
             std::vector<sql_compare_value> where_values;
             auto items_ = values.items();
@@ -226,11 +320,56 @@ namespace arcirk::database::builder {
             result.append("\nwhere ");
 
             for (auto itr = where_values.begin(); itr != where_values.end() ; ++itr) {
+                if(use_table_name)
+                    result.append(table_name_ + ".");
                 result.append(itr->to_string(use_values));
                 if(itr != --where_values.end())
-                    result.append("\nAND\n");
+                    result.append("\nand\n");
             }
             return *this;
+        }
+
+        query_builder& with_temp_table(){
+           result.insert(0, "with temp_table as(");
+           result.append(")");
+           return *this;
+        }
+
+        query_builder& join_temp_table(sql_join_type join_type){
+            result.append(enum_synonym(join_type));
+            result.append(" join temp_table");
+            return *this;
+        }
+
+        query_builder& where_join(const json& values, const std::string& join_table_name, bool use_values){
+            std::vector<sql_compare_value> where_values;
+            auto items_ = values.items();
+            for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
+                sql_compare_value val{};
+                val.key = itr.key();
+                const json& f_value = itr.value();
+                if(!f_value.is_object()){
+                    val.compare = Equals;
+                    if(use_values)
+                        val.value = f_value;
+                    else
+                        val.value = "?";
+                }else{
+                    val.compare = (sql_type_of_comparison)f_value.value("compare", 0);
+                    if(use_values)
+                        val.value = f_value.value("value", json{});
+                    else
+                        val.value = "?";
+                }
+                where_values.push_back(val);
+            }
+            result.append("\nand ");
+            for (auto itr = where_values.begin(); itr != where_values.end() ; ++itr) {
+                result.append(join_table_name + ".");
+                result.append(itr->to_string(use_values));
+                if(itr != --where_values.end())
+                    result.append("\nand\n");
+            }
         }
 
         void use(const json& source){
@@ -246,18 +385,6 @@ namespace arcirk::database::builder {
                 }
             }
 
-        }
-
-        query_builder& select(){
-            queryType = Select;
-            result = "select ";
-            for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
-                result.append(itr->first);
-                if(itr != (--m_list.cend())){
-                    result.append(",\n");
-                }
-            }
-            return *this;
         }
 
         //0=asc, 1=desc
@@ -324,6 +451,8 @@ namespace arcirk::database::builder {
             result = str_sample("insert into %1% (", table_name);
             std::string string_values;
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
+                if(itr->first == "_id")
+                    continue;
                 result.append(itr->first);
                 if(use_values){
                     if(itr->second.is_string())
@@ -406,6 +535,8 @@ namespace arcirk::database::builder {
         static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}){
 
             soci::rowset<soci::row> rs = (sql.prepare << query_text);
+
+            std::cout << query_text << std::endl;
 
             json columns = {"line_number"};
             json roms = {};

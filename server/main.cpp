@@ -311,8 +311,6 @@ int main(int argc, char* argv[])
     }else
         load_server_default_certificate(ctx);
 
-
-
     // Create and launch a listening port
     std::make_shared<listener>(
             ioc,

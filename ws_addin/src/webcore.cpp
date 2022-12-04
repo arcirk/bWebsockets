@@ -57,6 +57,8 @@ WebCore::WebCore(){
     client_param.system_user = getlogin();
 #endif
 
+    default_form = arcirk::uuids::nil_uuid();
+
     m_client = std::make_shared<websocket_client>(ctx, client_param);
 
     m_client->connect(client::client_events::wsMessage, (callback_message)std::bind(&WebCore::on_message, this, std::placeholders::_1));
@@ -64,6 +66,7 @@ WebCore::WebCore(){
     m_client->connect(client::client_events::wsError, (callback_error)std::bind(&WebCore::on_error, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     m_client->connect(client::client_events::wsConnect, (callback_connect)std::bind(&WebCore::on_connect, this));
     m_client->connect(client::client_events::wsClose, (callback_close)std::bind(&WebCore::on_stop, this));
+    m_client->connect(client::client_events::wsSuccessfulAuthorization, (callback_successful_authorization)std::bind(&WebCore::on_successful_authorization, this));
 
     auto_reconnect = false;
     allow_delayed_authorization = false;
@@ -90,12 +93,13 @@ WebCore::WebCore(){
     }, [&](const variant_t& v){
         allow_delayed_authorization = std::get<bool>(v);
     });
-//    AddProperty(L"DisablePublicNotify", L"ОтключитьПубличныеОповещения", [&]() {
-//        const bool m_no_notify = no_notify;
-//        return std::make_shared<variant_t>(std::move(m_no_notify));
-//    }, [&](const variant_t& v){
-//        no_notify = std::get<bool>(v);
-//    });
+    AddProperty(L"DefaultForm", L"ОсновнаяФорма", [&]() {
+        const std::string form_def = arcirk::uuids::uuid_to_string(default_form);
+        return std::make_shared<variant_t>(std::move(form_def));
+    }, [&](const variant_t& v){
+        std::string def_form =  std::get<std::string>(v);
+        default_form = arcirk::uuids::string_to_uuid(def_form);
+    });
 //    AddProperty(L"CurrentRecipient", L"ТекущийПолучатель", [&]() {
 //        const std::string m_current_recipient = _current_recipient;
 //        return std::make_shared<variant_t>(std::move(m_current_recipient));
@@ -273,6 +277,7 @@ void WebCore::on_connect(){
     response.command = "on_connect";
     response.message = "ok";
     response.result = "success";
+    response.uuid_form = uuids::uuid_to_string(default_form);
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsConnect), msg);
 }
@@ -287,6 +292,7 @@ void WebCore::on_stop(){
     response.command = "on_stop";
     response.message = "ok";
     response.result = "success";
+    response.uuid_form = uuids::uuid_to_string(default_form);
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsClose), msg);
 }
@@ -296,6 +302,7 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
     response.command = "on_error";
     response.message = err;
     response.result = "error";
+    response.uuid_form = uuids::uuid_to_string(default_form);
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsError), msg);
     //error(what, err);
@@ -306,6 +313,7 @@ void WebCore::on_status_changed(bool status){
     response.command = "on_status_changed";
     response.message = "ok";
     response.result = status ? "true" : "false";
+    response.uuid_form = uuids::uuid_to_string(default_form);
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsStatusChanged), msg);
 }
@@ -335,4 +343,14 @@ void WebCore::get_messages(const variant_t &sender, const variant_t &recipient, 
         return;
 
     m_client->send_command(arcirk::enum_synonym(server::server_commands::GetMessages), param_.dump());
+}
+
+void WebCore::on_successful_authorization() {
+    auto response = arcirk::server::server_response();
+    response.command = "on_successful_authorization";
+    response.message = "ok";
+    response.result = "success";
+    response.uuid_form = uuids::uuid_to_string(default_form);
+    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+    emit(enum_synonym(arcirk::client::client_events::wsSuccessfulAuthorization), msg);
 }

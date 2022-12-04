@@ -79,6 +79,7 @@ private:
     void on_status_changed(bool status);
     void on_error(const std::string &what, const std::string &err, int code);
     void on_close();
+    void on_successful_authorization();
 
     void start(arcirk::Uri& url);
 

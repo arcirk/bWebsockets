@@ -54,6 +54,7 @@
   <settingsStorages>SettingsStorage.ПользовательскиеНастройки</settingsStorages>
   <commonCommands>CommonCommand.ОткрытьФормуАктивныеПользователи</commonCommands>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
+  <commonCommands>CommonCommand.ОткрытьФормуОбменСообщениями</commonCommands>
   <constants>Constant.DavСервис</constants>
   <constants>Constant.DavСервисПароль</constants>
   <constants>Constant.DavСеривсПользователь</constants>

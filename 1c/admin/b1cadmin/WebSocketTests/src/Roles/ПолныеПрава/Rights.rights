@@ -810,4 +810,25 @@
 			<value>true</value>
 		</right>
 	</object>
+	<object>
+		<name>CommonForm.ФормаОбменСообщениями</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>Subsystem.Клиент</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>CommonCommand.ОткрытьФормуОбменСообщениями</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
 </Rights>

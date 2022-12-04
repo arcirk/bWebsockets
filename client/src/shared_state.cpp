@@ -45,6 +45,8 @@ void shared_state::connect(const client::client_events &event, const client::cal
         m_data.on_message = boost::get<callback_message>(f);
     }else if(event == client::client_events::wsStatusChanged){
         m_data.on_status_changed = boost::get<callback_status>(f);
+    }else if(event == client::client_events::wsSuccessfulAuthorization){
+        m_data.on_successful_authorization = boost::get<callback_successful_authorization>(f);
     }
 }
 
@@ -117,4 +119,9 @@ void shared_state::command_to_client(const std::string &receiver, const std::str
 
     auto const ss = boost::make_shared<std::string const>(std::move(cmd));
     send(ss);
+}
+
+void shared_state::on_successful_authorization() {
+    if(m_data.on_successful_authorization)
+        m_data.on_successful_authorization();
 }

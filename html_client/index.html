@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8">
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1" charset="utf-8">-->
+    <meta charset="utf-8" />
     <style>
         html {
             font-family: sans-serif;
@@ -29,6 +30,7 @@
         }
 
     </style>
+    <script src="base64.js"></script>
 </head>
 <body>
 
@@ -36,7 +38,7 @@
     <table>
         <tr class="R1">
 <!--            <td class="R1C1" height=50px><span style="max-width:0; font-size: 1rem;">Сервер:</span> </td>-->
-            <td class="R1C2" height=50px colspan="2"><label for="uri">Сервер:</label><input class="draw-border" id="uri" size="47" value="ws://192.168.10.80:8080" style="margin-bottom: 5px;width: 100%;"> </td>
+            <td class="R1C2" height=50px colspan="2"><label for="uri">Сервер:</label><input class="draw-border" id="uri" size="47" value="ws://192.168.43.4:8080" style="margin-bottom: 5px;width: 100%;"> </td>
             <td class="R1C3" height=50px><button class="echo-button" id="connect">Подключится</button> </td>
             <td class="R1C4" height=50px><button class="echo-button" id="disconnect">Отключится</button> </td>
         </tr>
@@ -65,7 +67,7 @@
             <td class="R4C1" colspan="4"><pre id="messages" style="max-width: 600px; width: 100%; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre></td>
         </tr>
         <tr class="R5">
-            <td class="R5C2" height=50px colspan="3">Сообщение:<br><label for="sendMessage"></label><input class="draw-border" id="sendMessage" size="74" value="" style="margin-bottom: 5px;width: 100%;"></td>
+            <td class="R5C2" height=50px colspan="3">Сообщение:<br><label for="MessageText"></label><input class="draw-border" id="MessageText" size="74" value="" style="margin-bottom: 5px;width: 100%;"></td>
             <td class="R5C4" height=50px><button class="echo-button" id="send">Отправить</button> </td>
         </tr>
     </table>
@@ -237,27 +239,46 @@
         }
 
         function usersListOnChange(){
-
-            let usr = UsersList.OnlineUsers.options[UsersList.OnlineUsers.selectedIndex].value;
-            current_session = usr.session_uuid;
+            messages.innerText = "";
+            let usr = JSON.parse(UsersList.OnlineUsers.options[UsersList.OnlineUsers.selectedIndex].value);
             let param = {
-                sender: usr.user_uuid,
-                recipient: current_recipient
+                sender: current_user_uuid,
+                recipient: usr.user_uuid
             }
+            current_recipient = usr.session_uuid;
             sendCommand("GetMessages", param);
 
         }
 
-        function sendMessage(msg, receiver){
+        function displayMessages(tableObject){
+            messages.innerText = "";
+            let rows = tableObject.rows;
+            if (rows === null)
+                return;
+            for (let i = 0; i < rows.length; i++) {
+                let row = rows[i];
+                let date = new Date(row.date * 1000);
+                messages.innerText += date.toUTCString() + " " + Base64.decode(row.message) + "\n";
+            }
+            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
+        }
 
+        function sendMessage(msg){
+            if (current_recipient === "")
+                return "";
+            let message = Base64.encode(msg)//btoa(msg);
+            let param = {
+                content_type: "HtmlText"
+            }
+            ws.send("msg " + current_recipient + " " + message + " " + Base64.encode(JSON.stringify(param)));
         }
 
         function sendCommand(command, param){
             if(!is_connected)
                 return;
-            let p = btoa(JSON.stringify(param));
+            let p = Base64.encode(JSON.stringify(param));
             let cmd = "cmd " + command + " " +
-                btoa(JSON.stringify({parameters: p}));
+                Base64.encode(JSON.stringify({parameters: p}));
             ws.send(cmd)
         }
 
@@ -265,9 +286,6 @@
             let resp = JSON.parse(response);
             let result = "";
             if(resp.command === "SetClientParam"){
-
-                let param_ = JSON.parse(atob(resp.param));
-                let result_ = JSON.parse(atob(resp.result));
                 
                 if (resp.message === "OK"){
                     result = "Успешная авторизация на сервере!"
@@ -277,6 +295,9 @@
                         uuid_form: ""
                     };
                     current_session = resp.sender;
+
+                    let result_ = JSON.parse(Base64.decode(resp.result));
+                    current_user_uuid = result_.ref;
                     sendCommand("ServerOnlineClientsList", param)
                 }
                 else{
@@ -284,14 +305,14 @@
                     result = "Ошибка авторизации на сервере!"
                 }
             }else if(resp.command === "ServerOnlineClientsList"){
-                let res = JSON.parse(atob(resp.result));
+                let res = JSON.parse(Base64.decode(resp.result));
                 let rows = res.rows;
                 UsersList.OnlineUsers.options.length = 0;
                 for (let i = 0; i < rows.length; i++) {
                     let row = rows[i];
                     if(row.session_uuid === current_session)
                         continue;
-                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option(row.user_name + i, row);
+                    UsersList.OnlineUsers.options[UsersList.OnlineUsers.options.length] = new Option(row.user_name + i, JSON.stringify(row));
                 }
                 if(UsersList.OnlineUsers.options.length === 0){
                     current_recipient = "";
@@ -323,6 +344,11 @@
                     uuid_form: ""
                 };
                 sendCommand("ServerOnlineClientsList", param);
+            }else if(resp.command === "GetMessages"){
+                if (resp.message !== ""){
+                    let messages_ = JSON.parse(atob(resp.message));
+                    displayMessages(messages_);
+                }
             }
             return result;
         }
@@ -354,15 +380,21 @@
             ws.close();
         };
         send.onclick = function() {
-            ws.send(userName.value + ": " + sendMessage.value);
-            sendMessage.value = "";
+            sendMessage(MessageText.value);
+            showMessage(MessageText.value);
+            //ws.send(userName.value + ": " + sendMessage.value);
+            MessageText.value = "";
         };
-        sendMessage.onkeyup = function(ev) {
+        MessageText.onkeyup = function(ev) {
             ev.preventDefault();
             if (ev.keyCode === 13) {
                 send.click();
             }
         }
+        function utf8_to_b64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
+
     </script>
 </div>
 

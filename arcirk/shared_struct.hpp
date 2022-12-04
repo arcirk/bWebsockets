@@ -11,6 +11,7 @@ typedef std::function<void(bool)> callback_status;
 typedef std::function<void()> callback_connect;
 typedef std::function<void(const std::string&, const std::string&, int)> callback_error;
 typedef std::function<void()> callback_close;
+typedef std::function<void()> callback_successful_authorization;
 
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -35,6 +36,10 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, receiver)
         (std::string, uuid_form)
         (std::string, app_name)
+        (std::string, sender_name)
+        (std::string, sender_uuid)
+        (std::string, receiver_name)
+        (std::string, receiver_uuid)
 )
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_command_result,
@@ -43,6 +48,8 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, result)
         (std::string, message)
         (std::string, error_description)
+        (std::string, param)
+
 )
 
 class server_commands_exception : public std::exception
@@ -69,7 +76,7 @@ public:
 
 namespace arcirk::client{
 
-    typedef boost::variant<callback_message, callback_status, callback_connect, callback_error, callback_close> callbacks;
+    typedef boost::variant<callback_message, callback_status, callback_connect, callback_error, callback_close, callback_successful_authorization> callbacks;
 
     struct client_data{
 
@@ -80,9 +87,10 @@ namespace arcirk::client{
         callback_connect on_connect;
         callback_error  on_error;
         callback_close on_close;
-        bool exitParent;
-        bool is_ssl;
-        bool isRun;
+        callback_successful_authorization on_successful_authorization;
+//        bool exitParent;
+//        bool is_ssl;
+//        bool isRun;
         boost::uuids::uuid session_uuid;
 
     public:
@@ -95,9 +103,10 @@ namespace arcirk::client{
                 , on_connect(nullptr)
                 , on_error(nullptr)
                 , on_close(nullptr)
-                , exitParent(false)
-                , isRun(false)
-                , is_ssl(false)
+                , on_successful_authorization(nullptr)
+//                , exitParent(false)
+//                , isRun(false)
+//                , is_ssl(false)
                 , session_uuid(boost::uuids::nil_uuid())
         {}
     };
@@ -108,6 +117,7 @@ namespace arcirk::client{
         wsConnect,
         wsClose,
         wsError,
+        wsSuccessfulAuthorization,
         TS_INVALID=-1,
     };
 
@@ -119,6 +129,7 @@ namespace arcirk::client{
         {wsConnect, "WebCore::Connect"}    ,
         {wsClose, "WebCore::Close"}    ,
         {wsError, "WebCore::Error"}    ,
+        {wsSuccessfulAuthorization, "WebCore::SuccessfulAuthorization"}    ,
 
     })
 

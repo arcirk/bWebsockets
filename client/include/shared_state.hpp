@@ -22,6 +22,7 @@ public:
     void on_close();
     void on_connect(session_base * base);
     void on_status_changed(bool status);
+    void on_successful_authorization();
 
     void connect(const client::client_events& event, const client::callbacks& f);
     void close(bool disable_notify);

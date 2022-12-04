@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:CommonCommand xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="f7aa4686-d188-4e03-a0e4-49fb8f546e92">
+  <name>ОткрытьФормуОбменСообщениями</name>
+  <synonym>
+    <key>ru</key>
+    <value>Обмен сообщениями (Демо Чат)</value>
+  </synonym>
+  <group>NavigationPanelOrdinary</group>
+  <representation>Auto</representation>
+</mdclass:CommonCommand>

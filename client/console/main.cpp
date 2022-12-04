@@ -98,13 +98,16 @@ void on_status_changed(bool status){
     std::cout << "websocket on_status_changed: " << status << std::endl;
 }
 
+void on_successful_authorization(){
+    std::cout << "websocket on_successful_authorization: " << std::endl;
+}
+
 class InputParser{
 public:
     InputParser (int &argc, char **argv){
         for (int i=1; i < argc; ++i)
             this->tokens.emplace_back(argv[i]);
     }
-    /// @author iain
     [[nodiscard]] const std::string& getCmdOption(const std::string &option) const{
         std::vector<std::string>::const_iterator itr;
         itr =  std::find(this->tokens.begin(), this->tokens.end(), option);
@@ -114,7 +117,6 @@ public:
         static const std::string empty_string;
         return empty_string;
     }
-    /// @author iain
     [[nodiscard]] bool cmdOptionExists(const std::string &option) const{
         return std::find(this->tokens.begin(), this->tokens.end(), option)
                != this->tokens.end();
@@ -158,6 +160,7 @@ main(int argc, char* argv[]){
     callback_message _message = std::bind(&on_message, std::placeholders::_1);
     callback_status _status = std::bind(&on_status_changed, std::placeholders::_1);
     callback_close _on_close = std::bind(&on_stop);
+    callback_successful_authorization _on_successful_authorization = std::bind(&on_successful_authorization);
 
     verify_directories();
 
@@ -212,6 +215,7 @@ main(int argc, char* argv[]){
     m_client->connect(client::client_events::wsError, _err);
     m_client->connect(client::client_events::wsConnect, _connect);
     m_client->connect(client::client_events::wsClose, _on_close);
+    m_client->connect(client::client_events::wsSuccessfulAuthorization, _on_successful_authorization);
 
     app_conf.ServerPort = port;
     app_conf.ServerHost = host;

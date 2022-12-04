@@ -9,4 +9,6 @@
   <includeInCommandInterface>true</includeInCommandInterface>
   <content>SettingsStorage.ПользовательскиеНастройки</content>
   <content>CommonForm.ФормаНастройкиСервера</content>
+  <content>CommonForm.ФормаОбменСообщениями</content>
+  <content>CommonCommand.ОткрытьФормуОбменСообщениями</content>
 </mdclass:Subsystem>
