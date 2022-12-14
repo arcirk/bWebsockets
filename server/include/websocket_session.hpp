@@ -219,7 +219,6 @@ class websocket_session
     void
     do_read()
     {
-        buffer_.consume(buffer_.size());
         // Read a message into our buffer
         derived().ws().async_read(
                 buffer_,
@@ -248,6 +247,8 @@ class websocket_session
             return fail(ec, "read");
 
         derived().deliver(beast::buffers_to_string(buffer_.data()));
+
+        buffer_.consume(buffer_.size());
 
         do_read();
 

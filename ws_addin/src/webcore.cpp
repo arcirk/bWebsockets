@@ -132,6 +132,7 @@ WebCore::WebCore(){
     AddMethod(L"GetTableRowStructure", L"ПолучитьСтруктуруЗаписи", this, &WebCore::get_table_row_structure);
     AddMethod(L"GetServerCommands", L"ПолучитьСтруктуруКомандСервера", this, &WebCore::get_server_commands);
     AddMethod(L"GetMessages", L"ПолучитьИсториюСообщений", this, &WebCore::get_messages);
+    AddMethod(L"SendMessage", L"ОтправитьСообщение", this, &WebCore::send_message);
 
 }
 
@@ -152,7 +153,6 @@ std::string WebCore::get_server_commands() {
 }
 
 void WebCore::command_to_client(const variant_t &receiver, const variant_t &command, const variant_t &param) {
-
     if(!m_client->started())
         return;
     m_client->send_command_to_client(std::get<std::string>(receiver), std::get<std::string>(command), std::get<std::string>(param));
@@ -172,8 +172,20 @@ void WebCore::command_to_server(const variant_t &command, const variant_t &param
     m_client->send_command(command_, param_.dump());
 }
 
-void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
+void WebCore::send_message(const variant_t &receiver, const variant_t &message, const variant_t &param) {
 
+    if(!m_client->started())
+        return;
+
+    std::string message_ = std::get<std::string>(message);
+    std::string param_ = std::get<std::string>(param);
+    std::string receiver_ = std::get<std::string>(receiver);
+
+    m_client->send_message(message_, receiver_, param_);
+
+}
+
+void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
     if(!std::get<std::string>(userName).empty())
         client_param.user_name = std::get<std::string>(userName);
     if(!std::get<std::string>(userHash).empty())
@@ -190,7 +202,6 @@ void WebCore::set_client_param(const variant_t &userName, const variant_t &userH
             error(arcirk::to_utf("WebCore::set_client_param"), arcirk::to_utf(e.what()));
         }
     }
-
 }
 
 WebCore::~WebCore() {
@@ -198,7 +209,6 @@ WebCore::~WebCore() {
 }
 
 std::string WebCore::get_table_row_structure(const variant_t &table_name) {
-
     using json_nl = nlohmann::json;
     std::string table = std::get<std::string>(table_name);
     json_nl enm_json = table;
@@ -208,7 +218,6 @@ std::string WebCore::get_table_row_structure(const variant_t &table_name) {
     } catch (std::exception &ex) {
         error("WebCore::get_table_row_structure", ex.what());
     }
-
     return {};
 }
 
@@ -233,12 +242,10 @@ void WebCore::close(const variant_t &exit_base) {
         {
             m_client->close(std::get<bool>(exit_base));
         }
-
     }
 }
 
 void WebCore::open(const variant_t &url) {
-
     if (m_client->started()) {
         error(arcirk::to_utf("WebCore::open"), arcirk::to_utf("Клиент уже запущен!"));
         return;
@@ -247,7 +254,6 @@ void WebCore::open(const variant_t &url) {
     m_client->update_client_param(client_param);
     url_ = std::get<std::string>(url);
     m_client->open(arcirk::Uri::Parse(url_));
-
 }
 
 bool WebCore::started() {
@@ -267,12 +273,7 @@ std::string WebCore::session_uuid() {
         return arcirk::uuids::uuid_to_string(m_client->session_uuid());
 }
 
-//void WebCore::set_job_data(const variant_t &jobUuid, const variant_t &jobDescription) {
-//    _job = std::get<std::string>(jobUuid);
-//    _job_description = std::get<std::string>(jobDescription);
-//}
 void WebCore::on_connect(){
-
     auto response = arcirk::server::server_response();
     response.command = "on_connect";
     response.message = "ok";
@@ -305,7 +306,6 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
     response.uuid_form = uuids::uuid_to_string(default_form);
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsError), msg);
-    //error(what, err);
 }
 
 void WebCore::on_status_changed(bool status){

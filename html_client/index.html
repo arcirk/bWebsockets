@@ -232,7 +232,7 @@
                 session_uuid: "",
                 system_user: ""
             };
-            let param = btoa(JSON.stringify(param_object));
+            let param = Base64.encode(JSON.stringify(param_object));
             let cmd = "cmd SetClientParam " +
                 btoa(JSON.stringify({parameters: param}));
             ws.send(cmd)

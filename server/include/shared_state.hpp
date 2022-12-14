@@ -196,7 +196,7 @@ private:
     void forward_message(const std::string& message, subscriber *session);
 
 
-    soci::session soci_initialize() const;
+    [[nodiscard]] soci::session soci_initialize() const;
 
     static void fail(const std::string& what, const std::string& error, bool conv = true){
         std::tm tm = arcirk::current_date();

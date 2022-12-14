@@ -542,13 +542,12 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
     using n_json = nlohmann::json;
 
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
-    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
         throw std::exception("Не достаточно прав доступа!");
 
     server::server_command_result result;
     result.command = enum_synonym(server::server_commands::ServerOnlineClientsList);
-
 
     try {
         auto param_ = parse_json(std::get<std::string>(param), true);
@@ -565,6 +564,8 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         auto rows = n_json::array();
 
         for (auto itr = sessions_.cbegin(); itr != sessions_.cend() ; ++itr) {
+            if(sett.UseAuthorization && !itr->second->authorized())
+                continue;
             char cur_date[100];
             auto tm = itr->second->start_date();
             std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
@@ -868,14 +869,20 @@ arcirk::server::server_command_result shared_state::server_configuration(const v
 
 bool shared_state::is_operation_available(const boost::uuids::uuid &uuid, arcirk::database::roles level) {
 
+    using json = nlohmann::json;
     auto session = get_session(uuid);
     if(!session)
         return false;
     if(use_authorization() && !session->authorized())
         return false;
 
-    return session->role() == enum_synonym(level);
 
+    json role_ = session->role();
+    int u_role = (int)role_.get<arcirk::database::roles>();
+    int d_role = (int)level;
+
+    //return session->role() == enum_synonym(level);
+    return u_role >= d_role;
 }
 
 arcirk::server::server_command_result shared_state::user_information(const variant_t &param,
@@ -1070,12 +1077,17 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     std::string sender = param_.value("sender", "");
     std::string recipient = param_.value("recipient", "");
 
+    log("shared_state::get_messages", "sender: " + sender + " receiver:" + recipient);
+
     if(sender.empty() || recipient.empty())
         throw std::exception("Не заданы параметры запроса!");
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    auto current_session = get_session(uuid);
+    if(!current_session)
+        throw std::exception("Не достаточно прав доступа!");
     if (!operation_available){
-        if(sender != boost::to_string(uuid) && recipient != boost::to_string(uuid))
+        if(sender != boost::to_string(current_session->user_uuid()) && recipient != boost::to_string(current_session->user_uuid()))
             throw std::exception("Не достаточно прав доступа!");
     }
 

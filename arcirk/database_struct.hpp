@@ -34,8 +34,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 namespace arcirk::database{
 
     enum roles{
-        dbAdministrator,
         dbUser,
+        dbAdministrator,
         roles_INVALID=-1,
     };
 

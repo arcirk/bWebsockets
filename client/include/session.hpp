@@ -94,7 +94,7 @@ public:
 
         if (ec == boost::asio::error::connection_reset
         || ec == websocket::error::closed){
-            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
+            derived().state()->on_error(what, err, ec.value());
             return;
         }
 
@@ -137,7 +137,7 @@ public:
             || ec==boost::asio::error::eof
             || ec==websocket::error::no_connection
             || ec == websocket::error::closed){
-            derived().state()->on_error(what, arcirk::to_utf(err), ec.value());
+            derived().state()->on_error(what, err, ec.value());
             started_ = false;
             return;
         }
@@ -237,7 +237,7 @@ private:
     void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep){
 
         if (ec.value() == 111 || ec.value() == 10061) { //connection refused
-            derived().state()->on_error("on_connect", arcirk::to_utf(ec.message()), ec.value());
+            derived().state()->on_error("on_connect", ec.message(), ec.value());
             return;
         }
 
