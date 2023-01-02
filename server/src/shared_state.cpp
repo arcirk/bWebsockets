@@ -26,6 +26,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ServerUsersList), this, &shared_state::get_users_list);
     add_method(enum_synonym(server::server_commands::ExecuteSqlQuery), this, &shared_state::execute_sql_query);
     add_method(enum_synonym(server::server_commands::GetMessages), this, &shared_state::get_messages);
+    add_method(enum_synonym(server::server_commands::UpdateServerConfiguration), this, &shared_state::update_server_configuration);
 
 }
 
@@ -842,6 +843,31 @@ void shared_state::set_session_info(subscriber* session, const arcirk::database:
     session->set_user_name(info.first);
     session->set_full_name(info.second);
     session->set_user_uuid(arcirk::uuids::string_to_uuid(info.ref));
+}
+
+arcirk::server::server_command_result shared_state::update_server_configuration(const variant_t& param, const variant_t &session_id) {
+
+    using namespace arcirk::database;
+    using n_json = nlohmann::json;
+
+    boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    auto param_ = parse_json(std::get<std::string>(param), true);
+    auto p = param_.value("config", n_json::object());
+    if(!p.empty()){
+        sett = pre::json::from_json<arcirk::server::server_config>(p.dump());
+        write_conf(sett, app_directory(), ARCIRK_SERVER_CONF);
+    }
+
+    server::server_command_result result;
+    result.result = "";
+    result.command = enum_synonym(server::server_commands::UpdateServerConfiguration);
+    result.message = "OK";
+
+    return result;
 }
 
 arcirk::server::server_command_result shared_state::server_configuration(const variant_t& param, const variant_t &session_id) {

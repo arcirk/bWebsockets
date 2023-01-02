@@ -147,7 +147,8 @@ namespace arcirk::server{
         CommandToClient, //Команда клиенту (подписчику)
         ServerUsersList, //Список пользователей (база данных)
         ExecuteSqlQuery, //выполнить запрос к базе данных
-        GetMessages,
+        GetMessages, //Список сообщений
+        UpdateServerConfiguration, //Обновить конфигурацию сервера
         CMD_INVALID=-1,
     };
 
@@ -163,6 +164,7 @@ namespace arcirk::server{
         {ServerUsersList, "ServerUsersList"}    ,
         {ExecuteSqlQuery, "ExecuteSqlQuery"}    ,
         {GetMessages, "GetMessages"}    ,
+        {UpdateServerConfiguration, "UpdateServerConfiguration"}    ,
     })
 
 }

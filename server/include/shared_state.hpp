@@ -148,6 +148,7 @@ public:
     arcirk::server::server_command_result server_version(const variant_t& session_id);
     arcirk::server::server_command_result set_client_param(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result server_configuration(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result update_server_configuration(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result user_information(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result insert_or_update_user(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result command_to_client(const variant_t& param, const variant_t& session_id, const variant_t& session_id_receiver);
