@@ -8,10 +8,9 @@
   <includeHelpInContents>true</includeHelpInContents>
   <includeInCommandInterface>true</includeInCommandInterface>
   <content>Role.ПолныеПрава</content>
-  <content>Catalog.Пользователи</content>
   <content>SessionParameter.ТекущийПользователь</content>
   <content>SessionParameter.АвторизованныйПользователь</content>
-  <content>Catalog.ВнешниеПользователи</content>
   <content>CommonForm.ФормаАктивныеПользователи</content>
   <content>CommonCommand.ОткрытьФормуАктивныеПользователи</content>
+  <subsystems>Справочники</subsystems>
 </mdclass:Subsystem>

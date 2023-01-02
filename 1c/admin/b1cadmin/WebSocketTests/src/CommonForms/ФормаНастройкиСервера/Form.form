@@ -1612,6 +1612,20 @@
       <common>true</common>
     </edit>
   </attributes>
+  <attributes>
+    <name>Реквизит1</name>
+    <id>10</id>
+    <valueType>
+      <types>String</types>
+      <stringQualifiers/>
+    </valueType>
+    <view>
+      <common>true</common>
+    </view>
+    <edit>
+      <common>true</common>
+    </edit>
+  </attributes>
   <formCommands>
     <name>УстановитьПарольПользователя</name>
     <title>

@@ -69,5 +69,10 @@
   <commonForms>CommonForm.ФормаОбменСообщениями</commonForms>
   <commonForms>CommonForm.ФормаПользователиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>
+  <catalogs>Catalog.Организации</catalogs>
+  <catalogs>Catalog.Подразделения</catalogs>
   <catalogs>Catalog.Пользователи</catalogs>
+  <catalogs>Catalog.РабочиеМеста</catalogs>
+  <catalogs>Catalog.Склады</catalogs>
+  <catalogs>Catalog.ТипыЦенНоменклатуры</catalogs>
 </mdclass:Configuration>

@@ -336,7 +336,44 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
             return usr_info_json;
         }
         case tbMessages:{
-            break;
+            auto tbl = messages();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.content_type ="Text";
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbOrganizations:{
+            auto tbl = organizations();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbSubdivisions:{
+            auto tbl = subdivisions();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbWarehouses:{
+            auto tbl = warehouses();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbPriceTypes:{
+            auto tbl = price_types();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbWorkplaces:{
+            auto tbl = workplaces();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.price = arcirk::uuids::nil_string_uuid();
+            tbl.warehouse = arcirk::uuids::nil_string_uuid();
+            tbl.subdivision = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
         }
         case tables_INVALID:{
             break;
