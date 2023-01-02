@@ -154,6 +154,8 @@ public:
     arcirk::server::server_command_result execute_sql_query(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_messages(const variant_t& param, const variant_t& session_id);
 
+    std::string execute_random_sql_query(soci::session& sql, const std::string& query_text) const;
+
     static auto parse_json(const std::string& json_text, bool is_base64 = false);
 
     template<typename T, typename C, typename ... Ts>

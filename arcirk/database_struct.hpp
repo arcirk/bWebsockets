@@ -31,6 +31,54 @@ BOOST_FUSION_DEFINE_STRUCT(
         (int, unread_messages)
 );
 
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), organizations,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), subdivisions,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), warehouses,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), price_types,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), workplaces,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+        (std::string, price)
+        (std::string, warehouse)
+        (std::string, subdivision)
+);
+
 namespace arcirk::database{
 
     enum roles{
@@ -64,6 +112,11 @@ namespace arcirk::database{
     enum tables{
         tbUsers,
         tbMessages,
+        tbOrganizations,
+        tbSubdivisions,
+        tbWarehouses,
+        tbPriceTypes,
+        tbWorkplaces,
         tables_INVALID=-1,
     };
 
@@ -71,6 +124,11 @@ namespace arcirk::database{
         {tables_INVALID, nullptr}    ,
         {tbUsers, "Users"}  ,
         {tbMessages, "Messages"}  ,
+        {tbOrganizations, "Organizations"}  ,
+        {tbSubdivisions, "Subdivisions"}  ,
+        {tbWarehouses, "Warehouses"}  ,
+        {tbPriceTypes, "PriceTypes"}  ,
+        {tbWorkplaces, "Workplaces"}  ,
     })
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
@@ -105,6 +163,51 @@ namespace arcirk::database{
                                   "    deletion_mark INTEGER   NOT NULL\n"
                                   "                            DEFAULT (0) \n"
                                   ");";
+
+    const std::string organizations_table_ddl = "CREATE TABLE Organizations (\n"
+                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                           "    [first]         TEXT,\n"
+                                           "    second          TEXT,\n"
+                                           "    ref             TEXT (36) UNIQUE\n"
+                                           "                             NOT NULL,\n"
+                                           "    cache           TEXT      DEFAULT \"\"\n"
+                                           ");";
+    const std::string subdivisions_table_ddl = "CREATE TABLE Subdivisions (\n"
+                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]         TEXT,\n"
+                                               "    second          TEXT,\n"
+                                               "    ref             TEXT (36) UNIQUE\n"
+                                               "                             NOT NULL,\n"
+                                               "    cache           TEXT      DEFAULT \"\"\n"
+                                               ");";
+    const std::string warehouses_table_ddl = "CREATE TABLE Warehouses (\n"
+                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]         TEXT,\n"
+                                               "    second          TEXT,\n"
+                                               "    ref             TEXT (36) UNIQUE\n"
+                                               "                             NOT NULL,\n"
+                                               "    cache           TEXT      DEFAULT \"\"\n"
+                                               ");";
+    const std::string price_types_table_ddl = "CREATE TABLE PriceTypes (\n"
+                                             "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                             "    [first]         TEXT,\n"
+                                             "    second          TEXT,\n"
+                                             "    ref             TEXT (36) UNIQUE\n"
+                                             "                             NOT NULL,\n"
+                                             "    cache           TEXT      DEFAULT \"\"\n"
+                                             ");";
+    const std::string workplaces_table_ddl = "CREATE TABLE Workplaces (\n"
+                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                              "    [first]         TEXT,\n"
+                                              "    second          TEXT,\n"
+                                              "    ref             TEXT (36) UNIQUE\n"
+                                              "                             NOT NULL,\n"
+                                              "    cache           TEXT      DEFAULT \"\",\n"
+                                              "    price           TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                              "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                              "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                              "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                              ");";
 }
 
 #endif

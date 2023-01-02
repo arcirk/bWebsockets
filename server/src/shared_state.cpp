@@ -955,20 +955,70 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     std::string param_json = base64_to_string(std::get<std::string>(param));
     auto param_ = nlohmann::json::parse(param_json);
     result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
     std::string query_text = param_.value("query_text", "");
+    auto sql = soci_initialize();
+    if(!query_text.empty()){
+        result.result = base64::base64_encode(execute_random_sql_query(sql, query_text)); //текст запроса передан в параметрах
+    }
+    else{
+        std::string base64_query_param = param_.value("query_param", "");
+        if(!base64_query_param.empty()){
+            auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
+            std::string table_name = query_param.value("table_name", "");
+            std::string query_type = query_param.value("query_type", "");
+            std::string values = param_.value("values", "");
+            std::string where_values = param_.value("where_values", "");
+            std::string order_by = param_.value("order_by", "");
+
+            if(!table_name.empty()){
+                bool return_table = false;
+                auto query = std::make_shared<database::builder::query_builder>();
+                if(query_type == "select" && !values.empty()){
+                    query->select(nlohmann::json(values)).from(table_name);
+                    return_table = true;
+                }else if(query_type == "insert"){
+                    query->use(nlohmann::json(values));
+                    query->insert(table_name, true);
+                }else if(query_type == "update"){
+                    query->use(nlohmann::json(values));
+                    query->update(table_name, true);
+                }
+                if(query->is_valid()){
+                    if(!where_values.empty()){
+                        query->where(nlohmann::json(where_values), true);
+                    }
+                    if(!order_by.empty()){
+                        query->order_by(nlohmann::json(order_by));
+                    }
+                    query_text = query->prepare();
+
+                }
+                if(return_table)
+                    result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
+                else{
+                    query->execute(sql, {}, true);
+                    result.result = "{}";
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+std::string shared_state::execute_random_sql_query(soci::session &sql, const std::string &query_text) const {
+
     if(query_text.empty())
         throw std::exception("Не задан текст запроса!");
 
     auto query = std::make_shared<database::builder::query_builder>();
-    auto sql = soci_initialize();
     nlohmann::json table = {};
     query->execute(query_text, sql, table);
-
     if(!table.empty()){
-        result.result = base64::base64_encode(table.dump());
-    }
-
-    return result;
+        return table.dump();
+    }else
+        return {};
 }
 
 arcirk::server::server_command_result shared_state::insert_or_update_user(const variant_t &param,

@@ -600,6 +600,9 @@ namespace arcirk::database::builder {
 
         }
 
+        bool is_valid(){
+            return !result.empty();
+        }
 
     private:
         std::string result;

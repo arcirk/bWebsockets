@@ -197,6 +197,23 @@ void verify_table_messages(soci::session& sql, const std::vector<std::string>& t
     }
 }
 
+void verify_tables(soci::session& sql, const std::vector<std::string>& tables_arr, std::map<std::string, std::string>& t_ddl){
+    using namespace soci;
+
+    for (auto itr = t_ddl.begin(); itr != t_ddl.end() ; ++itr) {
+        if(std::find(tables_arr.begin(), tables_arr.end(), itr->first) == tables_arr.end()) {
+            try {
+                sql << itr->second;
+            } catch (std::exception &e) {
+                std::cerr << e.what() << std::endl;
+                continue;
+            }
+        }
+    }
+
+
+}
+
 void verify_database(){
 
     using namespace boost::filesystem;
@@ -210,6 +227,15 @@ void verify_database(){
         auto m_tables = get_tables(sql);
         verify_table_users(sql, m_tables);
         verify_table_messages(sql, m_tables);
+
+        std::map<std::string, std::string> t_ddl;
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbOrganizations), database::organizations_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbPriceTypes), database::price_types_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbSubdivisions), database::subdivisions_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWarehouses), database::warehouses_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::workplaces_table_ddl);
+        verify_tables(sql, m_tables, t_ddl);
+
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
