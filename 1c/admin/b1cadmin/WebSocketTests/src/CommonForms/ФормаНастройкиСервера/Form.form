@@ -1613,12 +1613,13 @@
     </edit>
   </attributes>
   <attributes>
-    <name>Реквизит1</name>
+    <name>КонфигурацияСервера</name>
+    <title>
+      <key>ru</key>
+      <value>Конфигурация сервера</value>
+    </title>
     <id>10</id>
-    <valueType>
-      <types>String</types>
-      <stringQualifiers/>
-    </valueType>
+    <valueType/>
     <view>
       <common>true</common>
     </view>
