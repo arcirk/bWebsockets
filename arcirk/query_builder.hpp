@@ -387,6 +387,14 @@ namespace arcirk::database::builder {
 
         }
 
+        std::string ref() const{
+            for (auto itr = m_list.cbegin(); itr != m_list.cend(); ++itr) {
+                if(itr->first == "ref")
+                    return itr->second;
+            }
+            return {};
+        }
+
         //0=asc, 1=desc
         //fields = {{"field1", 0}, {"field2", 1}}
         query_builder& order_by(const json& fields){

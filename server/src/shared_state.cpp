@@ -967,32 +967,49 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
             std::string table_name = query_param.value("table_name", "");
             std::string query_type = query_param.value("query_type", "");
-            std::string values = param_.value("values", "");
-            std::string where_values = param_.value("where_values", "");
-            std::string order_by = param_.value("order_by", "");
+            auto values = query_param.value("values", nlohmann::json::object());
+            auto where_values = param_.value("where_values", nlohmann::json::object());
+            auto order_by = param_.value("order_by", nlohmann::json::object());
+            auto not_exists = param_.value("not_exists", nlohmann::json::object());
 
             if(!table_name.empty()){
                 bool return_table = false;
                 auto query = std::make_shared<database::builder::query_builder>();
                 if(query_type == "select" && !values.empty()){
-                    query->select(nlohmann::json(values)).from(table_name);
+                    query->select(values).from(table_name);
                     return_table = true;
                 }else if(query_type == "insert"){
-                    query->use(nlohmann::json(values));
+                    query->use(values);
                     query->insert(table_name, true);
                 }else if(query_type == "update"){
-                    query->use(nlohmann::json(values));
+                    query->use(values);
                     query->update(table_name, true);
+                }else if(query_type == "update_or_insert"){
+                    query->use(values);
+                    std::string ref = query->ref();
+                    if(ref.empty())
+                        throw std::exception("Не найдено значение идентификатора для сравнения!");
+                    int count = 0;
+                    auto query_temp = std::make_shared<database::builder::query_builder>();
+                    sql << query_temp->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+                    if(count <= 0){
+                        query->insert(table_name, true);
+                    }else{
+                        query->update(table_name, true).where({{"ref", ref}}, true);
+                    }
                 }
                 if(query->is_valid()){
                     if(!where_values.empty()){
-                        query->where(nlohmann::json(where_values), true);
+                        query->where(where_values, true);
                     }
                     if(!order_by.empty()){
-                        query->order_by(nlohmann::json(order_by));
+                        query->order_by(order_by);
                     }
-                    query_text = query->prepare();
-
+                    if(not_exists.empty())
+                        query_text = query->prepare();
+                    else{
+                        query_text = query->prepare(not_exists, true);
+                    }
                 }
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));

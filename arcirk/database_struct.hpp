@@ -77,6 +77,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, price)
         (std::string, warehouse)
         (std::string, subdivision)
+        (std::string, organization)
 );
 
 namespace arcirk::database{
