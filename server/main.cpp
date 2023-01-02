@@ -234,6 +234,7 @@ void verify_database(){
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbSubdivisions), database::subdivisions_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWarehouses), database::warehouses_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::workplaces_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::config_table_ddl);
         verify_tables(sql, m_tables, t_ddl);
 
     } catch (std::exception &e) {
