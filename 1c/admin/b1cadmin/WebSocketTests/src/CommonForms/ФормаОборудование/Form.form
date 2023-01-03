@@ -169,6 +169,14 @@
       <horizontalAlign>Left</horizontalAlign>
       <autoFill>true</autoFill>
     </autoCommandBar>
+    <handlers>
+      <event>Selection</event>
+      <name>СписокОборудованияВыбор</name>
+    </handlers>
+    <handlers>
+      <event>ValueChoice</event>
+      <name>СписокОборудованияВыборЗначения</name>
+    </handlers>
     <searchStringAddition>
       <visible>true</visible>
       <enabled>true</enabled>
@@ -336,7 +344,6 @@
       <common>true</common>
     </userVisible>
     <horizontalAlign>Left</horizontalAlign>
-    <autoFill>true</autoFill>
   </autoCommandBar>
   <handlers>
     <event>BeforeClose</event>
