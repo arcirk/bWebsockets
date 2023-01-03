@@ -67,6 +67,7 @@
   <commonForms>CommonForm.ФормаАктивныеПользователи</commonForms>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
   <commonForms>CommonForm.ФормаОбменСообщениями</commonForms>
+  <commonForms>CommonForm.ФормаОборудование</commonForms>
   <commonForms>CommonForm.ФормаПользователиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>
   <catalogs>Catalog.Организации</catalogs>
