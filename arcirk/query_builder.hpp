@@ -435,6 +435,8 @@ namespace arcirk::database::builder {
             table_name_ = table_name;
             result = str_sample("update %1% set ", table_name);
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
+                if(itr->first == "_id")
+                    continue;
                 result.append(itr->first);
                 if(use_values){
                     if(itr->second.is_string())

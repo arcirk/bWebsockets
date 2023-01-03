@@ -1020,8 +1020,11 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             if(!table_name.empty()){
                 bool return_table = false;
                 auto query = std::make_shared<database::builder::query_builder>();
-                if(query_type == "select" && !values.empty()){
-                    query->select(values).from(table_name);
+                if(query_type == "select"){
+                    if(!values.empty())
+                        query->select(values).from(table_name);
+                    else
+                        query->select({"*"}).from(table_name);
                     return_table = true;
                 }else if(query_type == "insert"){
                     query->use(values);
@@ -1056,6 +1059,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query_text = query->prepare(not_exists, true);
                     }
                 }
+                //std::cout << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
                 else{
