@@ -40,6 +40,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, sender_uuid)
         (std::string, receiver_name)
         (std::string, receiver_uuid)
+        (std::string, version)
 )
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_command_result,
@@ -149,6 +150,7 @@ namespace arcirk::server{
         ExecuteSqlQuery, //выполнить запрос к базе данных
         GetMessages, //Список сообщений
         UpdateServerConfiguration, //Обновить конфигурацию сервера
+        HttpServiceConfiguration, //Получить конфигурацию http сервиса 1С
         CMD_INVALID=-1,
     };
 
@@ -165,6 +167,7 @@ namespace arcirk::server{
         {ExecuteSqlQuery, "ExecuteSqlQuery"}    ,
         {GetMessages, "GetMessages"}    ,
         {UpdateServerConfiguration, "UpdateServerConfiguration"}    ,
+        {HttpServiceConfiguration, "HttpServiceConfiguration"}    ,
     })
 
 }

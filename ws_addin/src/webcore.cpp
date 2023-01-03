@@ -280,6 +280,7 @@ void WebCore::on_connect(){
     response.message = "ok";
     response.result = "success";
     response.uuid_form = uuids::uuid_to_string(default_form);
+    response.version = ARCIRK_VERSION;
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsConnect), msg);
 }
@@ -295,6 +296,7 @@ void WebCore::on_stop(){
     response.message = "ok";
     response.result = "success";
     response.uuid_form = uuids::uuid_to_string(default_form);
+    response.version = ARCIRK_VERSION;
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsClose), msg);
 }
@@ -305,6 +307,7 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
     response.message = err;
     response.result = "error";
     response.uuid_form = uuids::uuid_to_string(default_form);
+    response.version = ARCIRK_VERSION;
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsError), msg);
 }
@@ -315,6 +318,7 @@ void WebCore::on_status_changed(bool status){
     response.message = "ok";
     response.result = status ? "true" : "false";
     response.uuid_form = uuids::uuid_to_string(default_form);
+    response.version = ARCIRK_VERSION;
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsStatusChanged), msg);
 }
@@ -352,6 +356,7 @@ void WebCore::on_successful_authorization() {
     response.message = "ok";
     response.result = "success";
     response.uuid_form = uuids::uuid_to_string(default_form);
+    response.version = ARCIRK_VERSION;
     std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
     emit(enum_synonym(arcirk::client::client_events::wsSuccessfulAuthorization), msg);
 }

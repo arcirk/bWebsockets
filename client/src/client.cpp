@@ -156,6 +156,7 @@ void websocket_client::on_message(const std::string &message) {
         //парсим ответ если это установка параметров
         try {
             auto resp = pre::json::from_json<server::server_response>(message);
+            resp.version = ARCIRK_VERSION;
             if(resp.command == enum_synonym(server::server_commands::SetClientParam)){
                 client::client_param client_param;
                 if(!resp.result.empty()){

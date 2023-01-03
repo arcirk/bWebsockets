@@ -27,6 +27,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ExecuteSqlQuery), this, &shared_state::execute_sql_query);
     add_method(enum_synonym(server::server_commands::GetMessages), this, &shared_state::get_messages);
     add_method(enum_synonym(server::server_commands::UpdateServerConfiguration), this, &shared_state::update_server_configuration);
+    add_method(enum_synonym(server::server_commands::HttpServiceConfiguration), this, &shared_state::get_http_service_configuration);
 
 }
 
@@ -49,6 +50,7 @@ void shared_state::send_notify(const std::string &message, subscriber *sender, c
     resp.command = notify_command;
     resp.message = message;
     resp.result = "OK";
+    resp.version = ARCIRK_VERSION;
     if(sender){
         resp.sender = arcirk::uuids::uuid_to_string(sender->uuid_session());
         resp.app_name = sender->app_name();
@@ -135,6 +137,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
     resp.app_name = session->app_name();
     resp.sender_name = session->user_name();
     resp.sender_uuid = arcirk::uuids::uuid_to_string(session->user_uuid());
+    resp.version = ARCIRK_VERSION;
 
     std::string response =  pre::json::to_json(resp).dump();
 
@@ -315,6 +318,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     result_response.message = return_value.message.empty() ? return_value.result != "error" ? "OK" : "error" : return_value.message;
     result_response.result = is_command_to_client ? "" : return_value.result; //base64 string
     result_response.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
+    result_response.version = ARCIRK_VERSION;
     if(!is_command_to_client){
         result_response.receiver = arcirk::uuids::uuid_to_string(session->uuid_session());
         result_response.uuid_form = return_value.uuid_form;
@@ -973,10 +977,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     server::server_command_result result;
     result.command = enum_synonym(server::server_commands::ExecuteSqlQuery);
-
-    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
-    if (!operation_available)
-        throw std::exception("Не достаточно прав доступа!");
+    result.param = std::get<std::string>(param);
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
     auto param_ = nlohmann::json::parse(param_json);
@@ -985,6 +986,10 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     std::string query_text = param_.value("query_text", "");
     auto sql = soci_initialize();
     if(!query_text.empty()){
+        //произвольный запрос только с правами администратора
+        bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+        if (!operation_available)
+            throw std::exception("Не достаточно прав доступа!");
         result.result = base64::base64_encode(execute_random_sql_query(sql, query_text)); //текст запроса передан в параметрах
     }
     else{
@@ -993,6 +998,20 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
             std::string table_name = query_param.value("table_name", "");
             std::string query_type = query_param.value("query_type", "");
+
+            if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert"){
+                if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbDevices) &&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)){
+                    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+                    if (!operation_available)
+                        throw std::exception("Не достаточно прав доступа!");
+                }else{
+                    bool operation_available = is_operation_available(uuid, roles::dbUser);
+                    if (!operation_available)
+                        throw std::exception("Не достаточно прав доступа!");
+                }
+            }
+
             auto values = query_param.value("values", nlohmann::json::object());
             auto where_values = param_.value("where_values", nlohmann::json::object());
             auto order_by = param_.value("order_by", nlohmann::json::object());
@@ -1194,6 +1213,31 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     query->execute(query->prepare(), sql, table);
 
     result.message = base64::base64_encode(table.dump());
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::get_http_service_configuration(const variant_t &param,
+                                                                                   const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::HttpServiceConfiguration);
+
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    nlohmann::json res = {
+            {"HSHost", sett.HSHost},
+            {"HSUser", sett.HSUser},
+            {"HSPassword", sett.HSPassword}
+    };
+
+    result.result = arcirk::base64::base64_encode(res.dump());
+    result.message = "OK";
 
     return result;
 }

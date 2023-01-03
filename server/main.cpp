@@ -234,7 +234,7 @@ void verify_database(){
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbSubdivisions), database::subdivisions_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWarehouses), database::warehouses_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::workplaces_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::config_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbDevices), database::devices_table_ddl);
         verify_tables(sql, m_tables, t_ddl);
 
     } catch (std::exception &e) {
@@ -294,14 +294,15 @@ int main(int argc, char* argv[])
         std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << ARCIRK_VERSION << std::endl;
         return EXIT_SUCCESS;
     }
+    //Проверяем доступность структуры каталогов
+    verify_directories();
+
     auto conf = server::server_config();
     //инициализируем настройки
     read_conf(conf, m_root_conf, ARCIRK_SERVER_CONF);
     //если рабочий каталог не задан используем каталог по умолчанию
     if(conf.ServerWorkingDirectory.empty())
         conf.ServerWorkingDirectory = program_data().string();
-    //Проверяем доступность структуры каталогов
-    verify_directories(conf.ServerWorkingDirectory);
     //проверяем доступность базы данных
     verify_database();
     //читаем командную строку

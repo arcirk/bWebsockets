@@ -81,14 +81,14 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), config,
+        (arcirk::database), devices,
         (int, _id)
         (std::string, first)
         (std::string, second)
         (std::string, ref)
         (std::string, cache)
-        (std::string, hsservice)
-        (std::string, host)
+        (std::string, deviceType)
+        (std::string, workplace)
 );
 
 namespace arcirk::database{
@@ -129,7 +129,7 @@ namespace arcirk::database{
         tbWarehouses,
         tbPriceTypes,
         tbWorkplaces,
-        tbConfig,
+        tbDevices,
         tables_INVALID=-1,
     };
 
@@ -142,7 +142,7 @@ namespace arcirk::database{
         {tbWarehouses, "Warehouses"}  ,
         {tbPriceTypes, "PriceTypes"}  ,
         {tbWorkplaces, "Workplaces"}  ,
-        {tbConfig, "Config"}  ,
+        {tbDevices, "Devices"}  ,
     })
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
@@ -222,15 +222,15 @@ namespace arcirk::database{
                                               "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                               "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                               ");";
-    const std::string config_table_ddl = "CREATE TABLE Config (\n"
+    const std::string devices_table_ddl = "CREATE TABLE Devices (\n"
                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                           "    [first]         TEXT,\n"
                                           "    second          TEXT,\n"
                                           "    ref             TEXT (36) UNIQUE\n"
                                           "                             NOT NULL,\n"
                                           "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    hsservice       TEXT,\n"
-                                          "    host            TEXT,\n"
+                                          "    deviceType      TEXT      DEFAULT \"\",\n"
+                                          "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
 }
 
