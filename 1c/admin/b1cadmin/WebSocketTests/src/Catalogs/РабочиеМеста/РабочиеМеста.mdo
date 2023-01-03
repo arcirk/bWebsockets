@@ -91,21 +91,65 @@
     <fullTextSearch>Use</fullTextSearch>
     <dataHistory>Use</dataHistory>
   </attributes>
-  <attributes uuid="49cc144e-997f-4a36-9634-4f675e8530c4">
-    <name>ИдентификаторУстройства</name>
+  <tabularSections uuid="35081b8e-342b-44d4-87e1-9634c3ce852b">
+    <producedTypes>
+      <objectType typeId="f2503804-2fe8-4a86-ad69-9b40d346a5c2" valueTypeId="a920216e-c3c2-4493-96a8-cc72978f5585"/>
+      <rowType typeId="98e7ab39-0fa1-4940-93b8-e34c8ebf636f" valueTypeId="1a2e202e-8d4c-4944-bd2a-339790a065f8"/>
+    </producedTypes>
+    <name>Устройства</name>
     <synonym>
       <key>ru</key>
-      <value>Идентификатор устройства</value>
+      <value>Устройства</value>
     </synonym>
-    <type>
-      <types>UUID</types>
-    </type>
-    <minValue xsi:type="core:UndefinedValue"/>
-    <maxValue xsi:type="core:UndefinedValue"/>
-    <fillValue xsi:type="core:UndefinedValue"/>
-    <fullTextSearch>Use</fullTextSearch>
-    <dataHistory>Use</dataHistory>
-  </attributes>
+    <attributes uuid="766df55e-702a-4239-af05-8cd65c7c44f4">
+      <name>ИдентификаторУстройства</name>
+      <synonym>
+        <key>ru</key>
+        <value>Идентификатор устройства</value>
+      </synonym>
+      <type>
+        <types>Boolean</types>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+    <attributes uuid="801da94b-7827-434f-a37e-906a89268350">
+      <name>Представление</name>
+      <synonym>
+        <key>ru</key>
+        <value>Представление</value>
+      </synonym>
+      <type>
+        <types>String</types>
+        <stringQualifiers>
+          <length>150</length>
+        </stringQualifiers>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+    <attributes uuid="32ccec8d-50c5-4205-a5a1-dcf8c740254b">
+      <name>ТипУстройства</name>
+      <synonym>
+        <key>ru</key>
+        <value>Тип устройства</value>
+      </synonym>
+      <type>
+        <types>String</types>
+        <stringQualifiers>
+          <length>100</length>
+        </stringQualifiers>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+  </tabularSections>
   <forms uuid="208d72d7-0d74-4f50-ad87-b9c0751ef8ed">
     <name>ФормаЭлемента</name>
     <synonym>

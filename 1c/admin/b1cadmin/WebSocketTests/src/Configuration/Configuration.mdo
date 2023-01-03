@@ -55,6 +55,7 @@
   <commonCommands>CommonCommand.ОткрытьФормуАктивныеПользователи</commonCommands>
   <commonCommands>CommonCommand.ОткрытьФормуНастроекКомпоненты</commonCommands>
   <commonCommands>CommonCommand.ОткрытьФормуОбменСообщениями</commonCommands>
+  <commonCommands>CommonCommand.ОткрытьФормуСпискаОборудования</commonCommands>
   <constants>Constant.DavСервис</constants>
   <constants>Constant.DavСервисПароль</constants>
   <constants>Constant.DavСеривсПользователь</constants>

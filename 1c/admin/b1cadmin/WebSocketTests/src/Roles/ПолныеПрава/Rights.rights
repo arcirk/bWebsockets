@@ -1360,4 +1360,11 @@
 			<value>true</value>
 		</right>
 	</object>
+	<object>
+		<name>CommonCommand.ОткрытьФормуСпискаОборудования</name>
+		<right>
+			<name>View</name>
+			<value>true</value>
+		</right>
+	</object>
 </Rights>

@@ -12,5 +12,6 @@
   <content>Constant.DavСервисПароль</content>
   <content>Constant.DavСеривсПользователь</content>
   <content>CommonForm.ФормаНастройкиСервера</content>
+  <content>CommonCommand.ОткрытьФормуСпискаОборудования</content>
   <parentSubsystem>Subsystem.Сервер</parentSubsystem>
 </mdclass:Subsystem>
