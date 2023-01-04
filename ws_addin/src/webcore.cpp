@@ -149,6 +149,7 @@ std::string WebCore::get_server_commands() {
             {enum_synonym(server_commands::InsertOrUpdateUser), enum_synonym(server_commands::InsertOrUpdateUser)},
             {enum_synonym(server_commands::ExecuteSqlQuery), enum_synonym(server_commands::ExecuteSqlQuery)},
             {enum_synonym(server_commands::UpdateServerConfiguration), enum_synonym(server_commands::UpdateServerConfiguration)},
+            {enum_synonym(server_commands::InsertToDatabaseFromArray), enum_synonym(server_commands::InsertToDatabaseFromArray)},
     };
 
     return commands.dump();

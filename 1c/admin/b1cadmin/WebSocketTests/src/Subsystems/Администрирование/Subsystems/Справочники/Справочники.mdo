@@ -13,5 +13,7 @@
   <content>Catalog.ТипыЦенНоменклатуры</content>
   <content>Catalog.Подразделения</content>
   <content>Catalog.РабочиеМеста</content>
+  <content>Catalog.УстройстваИКомпьютеры</content>
+  <content>Catalog.ТипыУстройствИКомпьютеров</content>
   <parentSubsystem>Subsystem.Администрирование</parentSubsystem>
 </mdclass:Subsystem>
