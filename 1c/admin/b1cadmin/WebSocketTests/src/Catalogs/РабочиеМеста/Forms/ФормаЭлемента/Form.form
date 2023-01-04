@@ -624,7 +624,7 @@
     </picture>
     <action xsi:type="form:FormCommandHandlerContainer">
       <handler>
-        <name>СинхронизироватьССервером3</name>
+        <name>СинхронизироватьССервером</name>
       </handler>
     </action>
     <representation>TextPicture</representation>
