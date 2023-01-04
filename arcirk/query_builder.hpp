@@ -614,6 +614,12 @@ namespace arcirk::database::builder {
             return !result.empty();
         }
 
+        void clear(){
+            result = "";
+            m_list.clear();
+            table_name_ = "";
+        }
+
     private:
         std::string result;
         std::vector<std::pair<std::string, json>> m_list;

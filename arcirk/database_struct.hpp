@@ -121,6 +121,24 @@ namespace arcirk::database{
         {dbJsonText, "JsonText"}  ,
     })
 
+    enum devices_type{
+        devDesktop,
+        devServer,
+        devPhone,
+        devTablet,
+        devExtendedLib,
+        dev_INVALID=-1
+    };
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(devices_type, {
+        {dev_INVALID, nullptr},
+        {devDesktop, "Desktop"},
+        {devServer, "Server"},
+        {devPhone, "Phone"},
+        {devTablet, "Tablet"},
+        {devExtendedLib, "ExtendedLib"},
+    })
+
     enum tables{
         tbUsers,
         tbMessages,
@@ -130,6 +148,7 @@ namespace arcirk::database{
         tbPriceTypes,
         tbWorkplaces,
         tbDevices,
+        tbDevicesType,
         tables_INVALID=-1,
     };
 
@@ -143,6 +162,7 @@ namespace arcirk::database{
         {tbPriceTypes, "PriceTypes"}  ,
         {tbWorkplaces, "Workplaces"}  ,
         {tbDevices, "Devices"}  ,
+        {tbDevicesType, "DevicesType"}  ,
     })
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
@@ -210,6 +230,14 @@ namespace arcirk::database{
                                              "                             NOT NULL,\n"
                                              "    cache           TEXT      DEFAULT \"\"\n"
                                              ");";
+    const std::string devices_type_table_ddl = "CREATE TABLE DevicesType (\n"
+                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                              "    [first]         TEXT,\n"
+                                              "    second          TEXT,\n"
+                                              "    ref             TEXT (36) UNIQUE\n"
+                                              "                             NOT NULL\n"
+                                              ");";
+
     const std::string workplaces_table_ddl = "CREATE TABLE Workplaces (\n"
                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                               "    [first]         TEXT,\n"
@@ -217,10 +245,7 @@ namespace arcirk::database{
                                               "    ref             TEXT (36) UNIQUE\n"
                                               "                             NOT NULL,\n"
                                               "    cache           TEXT      DEFAULT \"\",\n"
-                                              "    price           TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                              "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                              "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                              "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                              "    server          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                               ");";
     const std::string devices_table_ddl = "CREATE TABLE Devices (\n"
                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -229,8 +254,13 @@ namespace arcirk::database{
                                           "    ref             TEXT (36) UNIQUE\n"
                                           "                             NOT NULL,\n"
                                           "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    deviceType      TEXT      DEFAULT \"\",\n"
-                                          "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                          "    deviceType      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    address         TEXT      DEFAULT \"127.0.0.1\",\n"
+                                          "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    price           TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
 }
 

@@ -28,6 +28,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::GetMessages), this, &shared_state::get_messages);
     add_method(enum_synonym(server::server_commands::UpdateServerConfiguration), this, &shared_state::update_server_configuration);
     add_method(enum_synonym(server::server_commands::HttpServiceConfiguration), this, &shared_state::get_http_service_configuration);
+    add_method(enum_synonym(server::server_commands::InsertToDatabaseFromArray), this, &shared_state::insert_to_database_from_array);
 
 }
 
@@ -1073,7 +1074,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     return result;
 }
 
-std::string shared_state::execute_random_sql_query(soci::session &sql, const std::string &query_text) const {
+std::string shared_state::execute_random_sql_query(soci::session &sql, const std::string &query_text) {
 
     if(query_text.empty())
         throw std::exception("Не задан текст запроса!");
@@ -1242,6 +1243,66 @@ arcirk::server::server_command_result shared_state::get_http_service_configurati
 
     result.result = arcirk::base64::base64_encode(res.dump());
     result.message = "OK";
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::insert_to_database_from_array(const variant_t &param,
+                                                                                  const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::HttpServiceConfiguration);
+
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+    auto values_array = param_.value("values_array", nlohmann::json{});
+    std::string where_is_exists_field = param_.value("where_is_exists_field", "");
+    std::string table_name = param_.value("table_name", "");
+    if(table_name.empty())
+        throw std::exception("Не указана таблица.");
+
+    if(values_array.empty() || !values_array.is_array()){
+        throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
+    }
+
+    auto sql = soci_initialize();
+    auto tr = soci::transaction(sql);
+    auto query = std::make_shared<builder::query_builder>();
+    auto items = values_array.items();
+
+    for (auto itr = items.begin(); itr != items.end() ; ++itr) {
+        if(!itr.value().is_object())
+            throw std::exception("Не верная запись в массиве.");
+
+        query->clear();
+        query->use(itr.value());
+        query->insert(table_name, true);
+        std::string query_text = "";
+        if(!where_is_exists_field.empty()){
+            std::string is_exists_val = itr.value().value(where_is_exists_field, "");
+            if(is_exists_val.empty())
+                throw std::exception("Не верная запись в поле сравнения.");
+            query_text = query->prepare({
+                {where_is_exists_field, is_exists_val}
+            }, true);
+
+            sql << query_text;
+        }
+        tr.commit();
+    }
+
+    result.message = "OK";
+    result.result = "success";
 
     return result;
 }

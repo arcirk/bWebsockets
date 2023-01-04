@@ -151,6 +151,7 @@ namespace arcirk::server{
         GetMessages, //Список сообщений
         UpdateServerConfiguration, //Обновить конфигурацию сервера
         HttpServiceConfiguration, //Получить конфигурацию http сервиса 1С
+        InsertToDatabaseFromArray, //Добавить массив записей в базу
         CMD_INVALID=-1,
     };
 
@@ -168,6 +169,7 @@ namespace arcirk::server{
         {GetMessages, "GetMessages"}    ,
         {UpdateServerConfiguration, "UpdateServerConfiguration"}    ,
         {HttpServiceConfiguration, "HttpServiceConfiguration"}    ,
+        {InsertToDatabaseFromArray, "InsertToDatabaseFromArray"}    ,
     })
 
 }

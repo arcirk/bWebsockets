@@ -218,6 +218,8 @@ void verify_database(){
 
     using namespace boost::filesystem;
     using namespace soci;
+    using namespace arcirk::database;
+
     path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
 
     std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
@@ -229,14 +231,34 @@ void verify_database(){
         verify_table_messages(sql, m_tables);
 
         std::map<std::string, std::string> t_ddl;
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbOrganizations), database::organizations_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbPriceTypes), database::price_types_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbSubdivisions), database::subdivisions_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWarehouses), database::warehouses_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbWorkplaces), database::workplaces_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(database::tables::tbDevices), database::devices_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbOrganizations), organizations_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbPriceTypes), price_types_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbSubdivisions), subdivisions_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbWarehouses), warehouses_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbWorkplaces), workplaces_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
+
+        //проверка таблиц
         verify_tables(sql, m_tables, t_ddl);
 
+        //заполняем перечисления
+        int count = -1;
+        sql << "select count(*) from DevicesType", into(count);
+        auto query = std::make_shared<builder::query_builder>();
+        if(count <= 0){
+            for (int l = 0; l < 5; ++l) {
+                auto val = (devices_type)l;
+                std::string ref = to_string(arcirk::uuids::random_uuid());
+                std::string enum_name = arcirk::enum_synonym(val);
+                query->clear();
+                query->use({
+                                   {"first", enum_name},
+                                   {"ref", ref}
+                });
+                query->insert("DevicesType", true).execute(sql, {}, true);
+            }
+        }
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
