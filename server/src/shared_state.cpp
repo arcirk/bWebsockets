@@ -1055,7 +1055,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query->order_by(order_by);
                     }
                     if(not_exists.empty())
-                        query_text = query->prepare();
+                         query_text = query->prepare();
                     else{
                         query_text = query->prepare(not_exists, true);
                     }

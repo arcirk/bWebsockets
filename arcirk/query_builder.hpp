@@ -542,6 +542,16 @@ namespace arcirk::database::builder {
             st.execute(true);
         }
 
+        template<typename T>
+        static T get_value(soci::row const& row, const std::size_t& column_index){
+            //не знаю как правильно проверить на null поэтому вот так ...
+            try {
+                return row.get<T>(column_index);
+            }catch (...){
+                return {};
+            }
+        }
+
         static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}){
 
             soci::rowset<soci::row> rs = (sql.prepare << query_text);
@@ -574,20 +584,30 @@ namespace arcirk::database::builder {
 
                     switch(props.get_data_type())
                     {
-                        case dt_string:
-                            j_row += {column_name, row.get<std::string>(i)} ;
+                        case dt_string:{
+                                auto val = get_value<std::string>(row, i);
+                                j_row += {column_name, val};
+                            }
                             break;
-                        case dt_double:
-                            j_row += {column_name, row.get<double>(i)} ;
+                        case dt_double:{
+                                auto val = get_value<double>(row, i);
+                                j_row += {column_name, val};
+                            }
                             break;
-                        case dt_integer:
-                            j_row += {column_name, row.get<int>(i)} ;
+                        case dt_integer:{
+                                auto val = get_value<int>(row, i);
+                                j_row += {column_name, val};
+                            }
                             break;
-                        case dt_long_long:
-                            j_row += {column_name, row.get<long long>(i)} ;
+                        case dt_long_long:{
+                                auto val = get_value<long long>(row, i);
+                                j_row += {column_name, val};
+                            }
                             break;
-                        case dt_unsigned_long_long:
-                            j_row += {column_name, row.get<unsigned long long>(i)} ;
+                        case dt_unsigned_long_long:{
+                                auto val = get_value<unsigned long long>(row, i);
+                                j_row += {column_name, val};
+                            }
                             break;
                         case dt_date:
                             //std::tm when = r.get<std::tm>(i);
