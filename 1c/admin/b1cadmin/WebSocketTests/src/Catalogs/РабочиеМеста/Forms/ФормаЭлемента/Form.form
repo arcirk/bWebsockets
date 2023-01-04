@@ -315,15 +315,18 @@
       </extInfo>
     </items>
     <items xsi:type="form:FormField">
-      <name>УстройстваИдентификаторУстройства</name>
+      <name>УстройстваУстройство</name>
       <id>37</id>
       <visible>true</visible>
       <enabled>true</enabled>
       <userVisible>
         <common>true</common>
       </userVisible>
+      <dataPath xsi:type="form:DataPath">
+        <segments>Объект.Устройства.Устройство</segments>
+      </dataPath>
       <extendedTooltip>
-        <name>УстройстваИдентификаторУстройстваРасширеннаяПодсказка</name>
+        <name>УстройстваУстройствоРасширеннаяПодсказка</name>
         <id>39</id>
         <visible>true</visible>
         <enabled>true</enabled>
@@ -338,7 +341,7 @@
         </extInfo>
       </extendedTooltip>
       <contextMenu>
-        <name>УстройстваИдентификаторУстройстваКонтекстноеМеню</name>
+        <name>УстройстваУстройствоКонтекстноеМеню</name>
         <id>38</id>
         <visible>true</visible>
         <enabled>true</enabled>
@@ -347,86 +350,19 @@
         </userVisible>
         <autoFill>true</autoFill>
       </contextMenu>
+      <type>InputField</type>
       <editMode>Enter</editMode>
       <showInHeader>true</showInHeader>
       <headerHorizontalAlign>Left</headerHorizontalAlign>
       <showInFooter>true</showInFooter>
-    </items>
-    <items xsi:type="form:FormField">
-      <name>УстройстваПредставление</name>
-      <id>40</id>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <extendedTooltip>
-        <name>УстройстваПредставлениеРасширеннаяПодсказка</name>
-        <id>42</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
+      <extInfo xsi:type="form:InputFieldExtInfo">
         <autoMaxWidth>true</autoMaxWidth>
         <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>УстройстваПредставлениеКонтекстноеМеню</name>
-        <id>41</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
-    </items>
-    <items xsi:type="form:FormField">
-      <name>УстройстваТипУстройства</name>
-      <id>43</id>
-      <visible>true</visible>
-      <enabled>true</enabled>
-      <userVisible>
-        <common>true</common>
-      </userVisible>
-      <extendedTooltip>
-        <name>УстройстваТипУстройстваРасширеннаяПодсказка</name>
-        <id>45</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <type>Label</type>
-        <autoMaxWidth>true</autoMaxWidth>
-        <autoMaxHeight>true</autoMaxHeight>
-        <extInfo xsi:type="form:LabelDecorationExtInfo">
-          <horizontalAlign>Left</horizontalAlign>
-        </extInfo>
-      </extendedTooltip>
-      <contextMenu>
-        <name>УстройстваТипУстройстваКонтекстноеМеню</name>
-        <id>44</id>
-        <visible>true</visible>
-        <enabled>true</enabled>
-        <userVisible>
-          <common>true</common>
-        </userVisible>
-        <autoFill>true</autoFill>
-      </contextMenu>
-      <editMode>Enter</editMode>
-      <showInHeader>true</showInHeader>
-      <headerHorizontalAlign>Left</headerHorizontalAlign>
-      <showInFooter>true</showInFooter>
+        <wrap>true</wrap>
+        <chooseType>true</chooseType>
+        <typeDomainEnabled>true</typeDomainEnabled>
+        <textEdit>true</textEdit>
+      </extInfo>
     </items>
     <autoCommandBar>
       <name>УстройстваКоманднаяПанель</name>
@@ -439,10 +375,6 @@
       <horizontalAlign>Left</horizontalAlign>
       <autoFill>true</autoFill>
     </autoCommandBar>
-    <handlers>
-      <event>BeforeAddRow</event>
-      <name>УстройстваПередНачаломДобавления</name>
-    </handlers>
     <searchStringAddition>
       <visible>true</visible>
       <enabled>true</enabled>

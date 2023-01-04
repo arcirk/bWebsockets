@@ -30,6 +30,7 @@
   <defaultPresentation>AsDescription</defaultPresentation>
   <editType>InDialog</editType>
   <choiceMode>BothWays</choiceMode>
+  <defaultObjectForm>Catalog.УстройстваИКомпьютеры.Form.ФормаЭлемента</defaultObjectForm>
   <defaultListForm>Catalog.УстройстваИКомпьютеры.Form.ФормаСписка</defaultListForm>
   <attributes uuid="8407df3c-267e-4c0a-903b-724d45d43ea8">
     <name>ТипУстройства</name>
@@ -145,6 +146,15 @@
     <synonym>
       <key>ru</key>
       <value>Форма списка</value>
+    </synonym>
+    <usePurposes>PersonalComputer</usePurposes>
+    <usePurposes>MobileDevice</usePurposes>
+  </forms>
+  <forms uuid="29ede698-18b0-4926-8033-d5656e431b81">
+    <name>ФормаЭлемента</name>
+    <synonym>
+      <key>ru</key>
+      <value>Форма элемента</value>
     </synonym>
     <usePurposes>PersonalComputer</usePurposes>
     <usePurposes>MobileDevice</usePurposes>
