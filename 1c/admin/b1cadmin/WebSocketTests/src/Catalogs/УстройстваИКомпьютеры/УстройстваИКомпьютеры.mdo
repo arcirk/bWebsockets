@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Catalog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="f9daaae2-52c2-401b-b643-f5648e7d84aa">
+  <producedTypes>
+    <objectType typeId="7b432d4d-dbf1-436b-8e8c-bc547a00cfec" valueTypeId="004edd21-8b16-4504-8eac-ba942e2a2ead"/>
+    <refType typeId="00b21784-6da9-4702-a596-3dc2c95fadec" valueTypeId="f26b64f2-2b96-4b6a-8305-c80c2bc1bcd6"/>
+    <selectionType typeId="d787b845-26cc-4237-9e88-fe03212c83a1" valueTypeId="8987b458-0c35-476c-8124-337e74174f3a"/>
+    <listType typeId="00d37911-5a6b-45f3-bc6f-e1c8e2d4cca6" valueTypeId="5e8cde36-8b93-42a0-ad27-36e1c540ca64"/>
+    <managerType typeId="f24b940d-8458-4ba6-be83-068734ee148d" valueTypeId="1695011c-f3b3-4f85-bca0-e6ea13c03773"/>
+  </producedTypes>
+  <name>УстройстваИКомпьютеры</name>
+  <synonym>
+    <key>ru</key>
+    <value>Устройства и компьютеры</value>
+  </synonym>
+  <useStandardCommands>true</useStandardCommands>
+  <inputByString>Catalog.УстройстваИКомпьютеры.StandardAttribute.Code</inputByString>
+  <inputByString>Catalog.УстройстваИКомпьютеры.StandardAttribute.Description</inputByString>
+  <fullTextSearchOnInputByString>DontUse</fullTextSearchOnInputByString>
+  <createOnInput>Use</createOnInput>
+  <dataLockControlMode>Managed</dataLockControlMode>
+  <fullTextSearch>Use</fullTextSearch>
+  <levelCount>2</levelCount>
+  <foldersOnTop>true</foldersOnTop>
+  <codeLength>9</codeLength>
+  <descriptionLength>25</descriptionLength>
+  <codeType>String</codeType>
+  <codeAllowedLength>Variable</codeAllowedLength>
+  <checkUnique>true</checkUnique>
+  <autonumbering>true</autonumbering>
+  <defaultPresentation>AsDescription</defaultPresentation>
+  <editType>InDialog</editType>
+  <choiceMode>BothWays</choiceMode>
+  <attributes uuid="8407df3c-267e-4c0a-903b-724d45d43ea8">
+    <name>ТипУстройства</name>
+    <synonym>
+      <key>ru</key>
+      <value>Тип устройства</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.ТипыУстройствИКомпьютеров</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+  <attributes uuid="3b4da6b6-9587-401a-965d-1679481b029f">
+    <name>Организация</name>
+    <synonym>
+      <key>ru</key>
+      <value>Организация</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.Организации</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+  <attributes uuid="9d9dfa41-2302-4e1a-8131-2eef431d1a76">
+    <name>Подразделение</name>
+    <synonym>
+      <key>ru</key>
+      <value>Подразделение</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.Подразделения</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+  <attributes uuid="cdf7c5dc-58e8-4c41-ad7c-f78c070ef5d2">
+    <name>Склад</name>
+    <synonym>
+      <key>ru</key>
+      <value>Склад</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.Склады</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+  <attributes uuid="6f2783fc-fff0-4b91-943b-0ae9935a45a2">
+    <name>ТипЦен</name>
+    <synonym>
+      <key>ru</key>
+      <value>Тип цен</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.ТипыЦенНоменклатуры</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+</mdclass:Catalog>

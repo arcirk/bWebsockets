@@ -76,5 +76,7 @@
   <catalogs>Catalog.Пользователи</catalogs>
   <catalogs>Catalog.РабочиеМеста</catalogs>
   <catalogs>Catalog.Склады</catalogs>
+  <catalogs>Catalog.ТипыУстройствИКомпьютеров</catalogs>
   <catalogs>Catalog.ТипыЦенНоменклатуры</catalogs>
+  <catalogs>Catalog.УстройстваИКомпьютеры</catalogs>
 </mdclass:Configuration>
