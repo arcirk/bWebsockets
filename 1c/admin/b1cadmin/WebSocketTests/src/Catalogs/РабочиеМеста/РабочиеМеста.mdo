@@ -31,59 +31,14 @@
   <editType>InDialog</editType>
   <choiceMode>BothWays</choiceMode>
   <defaultObjectForm>Catalog.РабочиеМеста.Form.ФормаЭлемента</defaultObjectForm>
-  <attributes uuid="201d1e15-6095-4def-aa5b-7b412e02a50a">
-    <name>Организация</name>
+  <attributes uuid="ff3fa6b6-9aeb-47a8-bf86-ae3d32e38914">
+    <name>Сервер</name>
     <synonym>
       <key>ru</key>
-      <value>Организация</value>
+      <value>Сервер</value>
     </synonym>
     <type>
-      <types>CatalogRef.Организации</types>
-    </type>
-    <minValue xsi:type="core:UndefinedValue"/>
-    <maxValue xsi:type="core:UndefinedValue"/>
-    <fillValue xsi:type="core:UndefinedValue"/>
-    <fullTextSearch>Use</fullTextSearch>
-    <dataHistory>Use</dataHistory>
-  </attributes>
-  <attributes uuid="e79c8b0e-e713-4a05-92a2-cced5102c130">
-    <name>Подразделение</name>
-    <synonym>
-      <key>ru</key>
-      <value>Подразделение</value>
-    </synonym>
-    <type>
-      <types>CatalogRef.Подразделения</types>
-    </type>
-    <minValue xsi:type="core:UndefinedValue"/>
-    <maxValue xsi:type="core:UndefinedValue"/>
-    <fillValue xsi:type="core:UndefinedValue"/>
-    <fullTextSearch>Use</fullTextSearch>
-    <dataHistory>Use</dataHistory>
-  </attributes>
-  <attributes uuid="aa854a36-3990-45a6-825e-258a6c718521">
-    <name>Склад</name>
-    <synonym>
-      <key>ru</key>
-      <value>Склад</value>
-    </synonym>
-    <type>
-      <types>CatalogRef.Склады</types>
-    </type>
-    <minValue xsi:type="core:UndefinedValue"/>
-    <maxValue xsi:type="core:UndefinedValue"/>
-    <fillValue xsi:type="core:UndefinedValue"/>
-    <fullTextSearch>Use</fullTextSearch>
-    <dataHistory>Use</dataHistory>
-  </attributes>
-  <attributes uuid="46d63b00-9bcd-43c7-9e8c-3a486b15ec4c">
-    <name>ТипЦен</name>
-    <synonym>
-      <key>ru</key>
-      <value>Тип цен</value>
-    </synonym>
-    <type>
-      <types>CatalogRef.ТипыЦенНоменклатуры</types>
+      <types>CatalogRef.УстройстваИКомпьютеры</types>
     </type>
     <minValue xsi:type="core:UndefinedValue"/>
     <maxValue xsi:type="core:UndefinedValue"/>
@@ -101,48 +56,14 @@
       <key>ru</key>
       <value>Устройства</value>
     </synonym>
-    <attributes uuid="766df55e-702a-4239-af05-8cd65c7c44f4">
-      <name>ИдентификаторУстройства</name>
+    <attributes uuid="24c0e7d6-e167-4fc2-980d-9a0afc2224b8">
+      <name>Устройство</name>
       <synonym>
         <key>ru</key>
-        <value>Идентификатор устройства</value>
+        <value>Устройство</value>
       </synonym>
       <type>
-        <types>Boolean</types>
-      </type>
-      <minValue xsi:type="core:UndefinedValue"/>
-      <maxValue xsi:type="core:UndefinedValue"/>
-      <dataHistory>Use</dataHistory>
-      <fullTextSearch>Use</fullTextSearch>
-    </attributes>
-    <attributes uuid="801da94b-7827-434f-a37e-906a89268350">
-      <name>Представление</name>
-      <synonym>
-        <key>ru</key>
-        <value>Представление</value>
-      </synonym>
-      <type>
-        <types>String</types>
-        <stringQualifiers>
-          <length>150</length>
-        </stringQualifiers>
-      </type>
-      <minValue xsi:type="core:UndefinedValue"/>
-      <maxValue xsi:type="core:UndefinedValue"/>
-      <dataHistory>Use</dataHistory>
-      <fullTextSearch>Use</fullTextSearch>
-    </attributes>
-    <attributes uuid="32ccec8d-50c5-4205-a5a1-dcf8c740254b">
-      <name>ТипУстройства</name>
-      <synonym>
-        <key>ru</key>
-        <value>Тип устройства</value>
-      </synonym>
-      <type>
-        <types>String</types>
-        <stringQualifiers>
-          <length>100</length>
-        </stringQualifiers>
+        <types>CatalogRef.УстройстваИКомпьютеры</types>
       </type>
       <minValue xsi:type="core:UndefinedValue"/>
       <maxValue xsi:type="core:UndefinedValue"/>

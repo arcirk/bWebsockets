@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="2d79c0b1-e81f-461d-aa18-8a88c72a01ba">
+  <producedTypes>
+    <objectType typeId="83ed293a-b20c-47d8-85d1-d1f5a2a9b1a3" valueTypeId="e5605c87-ca30-4452-82ac-bbd239a3af28"/>
+    <refType typeId="c87df663-301f-44cf-8767-9cea6cdd7125" valueTypeId="565830e2-09d9-40f3-8c58-aa99ef0e8b56"/>
+    <selectionType typeId="e005ab19-ab72-487f-876c-908989c46a50" valueTypeId="83e88afa-e472-464d-a892-20232e3f5d1b"/>
+    <listType typeId="99e8a914-31b4-4873-bbab-5e7dcb550c82" valueTypeId="288db5e0-f900-4803-b883-2a4a84f71fcb"/>
+    <managerType typeId="587da355-dc7e-4079-8304-ed43d970e61f" valueTypeId="11e61fcb-5ce2-4744-a4dd-770f21fe923b"/>
+  </producedTypes>
+  <name>ТипыУстройствИКомпьютеров</name>
+  <synonym>
+    <key>ru</key>
+    <value>Типы устройств и компьютеров</value>
+  </synonym>
+  <useStandardCommands>true</useStandardCommands>
+  <inputByString>Catalog.ТипыУстройствИКомпьютеров.StandardAttribute.Code</inputByString>
+  <inputByString>Catalog.ТипыУстройствИКомпьютеров.StandardAttribute.Description</inputByString>
+  <fullTextSearchOnInputByString>DontUse</fullTextSearchOnInputByString>
+  <createOnInput>Use</createOnInput>
+  <dataLockControlMode>Managed</dataLockControlMode>
+  <fullTextSearch>Use</fullTextSearch>
+  <levelCount>2</levelCount>
+  <foldersOnTop>true</foldersOnTop>
+  <codeLength>9</codeLength>
+  <descriptionLength>25</descriptionLength>
+  <codeType>String</codeType>
+  <codeAllowedLength>Variable</codeAllowedLength>
+  <checkUnique>true</checkUnique>
+  <autonumbering>true</autonumbering>
+  <defaultPresentation>AsDescription</defaultPresentation>
+  <editType>InDialog</editType>
+  <choiceMode>BothWays</choiceMode>
+  <defaultObjectForm>Catalog.ТипыУстройствИКомпьютеров.Form.ФормаЭлемента</defaultObjectForm>
+  <defaultListForm>Catalog.ТипыУстройствИКомпьютеров.Form.ФормаСписка</defaultListForm>
+  <forms uuid="e25ea4f6-2aaa-4c5a-bfb3-adeba66b6b67">
+    <name>ФормаЭлемента</name>
+    <synonym>
+      <key>ru</key>
+      <value>Форма элемента</value>
+    </synonym>
+    <usePurposes>PersonalComputer</usePurposes>
+    <usePurposes>MobileDevice</usePurposes>
+  </forms>
+  <forms uuid="af3b07e4-9ee3-427a-acce-659924b18531">
+    <name>ФормаСписка</name>
+    <synonym>
+      <key>ru</key>
+      <value>Форма списка</value>
+    </synonym>
+    <usePurposes>PersonalComputer</usePurposes>
+    <usePurposes>MobileDevice</usePurposes>
+  </forms>
+</mdclass:Catalog>
