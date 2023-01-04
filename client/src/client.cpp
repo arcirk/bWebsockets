@@ -370,9 +370,20 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
         case tbWorkplaces:{
             auto tbl = workplaces();
             tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.server = arcirk::uuids::nil_string_uuid();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbDevices:{
+            auto tbl = devices();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.deviceType = "Desktop";
+            tbl.address = "127.0.0.1";
+            tbl.workplace = arcirk::uuids::nil_string_uuid();
             tbl.price = arcirk::uuids::nil_string_uuid();
             tbl.warehouse = arcirk::uuids::nil_string_uuid();
             tbl.subdivision = arcirk::uuids::nil_string_uuid();
+            tbl.organization = arcirk::uuids::nil_string_uuid();
             std::string tbl_json = to_string(pre::json::to_json(tbl));
             return tbl_json;
         }

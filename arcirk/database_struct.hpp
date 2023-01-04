@@ -74,10 +74,8 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, second)
         (std::string, ref)
         (std::string, cache)
-        (std::string, price)
-        (std::string, warehouse)
-        (std::string, subdivision)
-        (std::string, organization)
+        (std::string, server)
+
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -88,7 +86,12 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, ref)
         (std::string, cache)
         (std::string, deviceType)
+        (std::string, address)
         (std::string, workplace)
+        (std::string, price)
+        (std::string, warehouse)
+        (std::string, subdivision)
+        (std::string, organization)
 );
 
 namespace arcirk::database{
