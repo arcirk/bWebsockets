@@ -1287,7 +1287,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         query->clear();
         query->use(itr.value());
         query->insert(table_name, true);
-        std::string query_text = "";
+        std::string query_text;
         if(!where_is_exists_field.empty()){
             std::string is_exists_val = itr.value().value(where_is_exists_field, "");
             if(is_exists_val.empty())
