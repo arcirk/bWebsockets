@@ -94,6 +94,16 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, organization)
 );
 
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), devices_view,
+        (std::string, ref)
+        (std::string, workplace)
+        (std::string, price)
+        (std::string, warehouse)
+        (std::string, subdivision)
+        (std::string, organization)
+);
+
 namespace arcirk::database{
 
     enum roles{
@@ -167,6 +177,15 @@ namespace arcirk::database{
         {tbDevices, "Devices"}  ,
         {tbDevicesType, "DevicesType"}  ,
     })
+
+    enum views{
+        dvDevicesView,
+        views_INVALID=-1,
+    };
+    NLOHMANN_JSON_SERIALIZE_ENUM(views, {
+        { views_INVALID, nullptr }    ,
+        { dvDevicesView, "DevicesView" }  ,
+    });
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
                                          "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -265,6 +284,25 @@ namespace arcirk::database{
                                           "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
+
+    const std::string devises_view_ddl = "CREATE VIEW DevicesView AS\n"
+                                         "    SELECT Devices.ref AS ref,\n"
+                                         "           Organizations.[first] AS organization,\n"
+                                         "           Subdivisions.[first] AS subdivision,\n"
+                                         "           Warehouses.[first] AS warehouse,\n"
+                                         "           PriceTypes.[first] AS price,\n"
+                                         "           Workplaces.[first] AS workplace\n"
+                                         "      FROM Devices\n"
+                                         "           LEFT JOIN\n"
+                                         "           Organizations ON Devices.organization = Organizations.ref\n"
+                                         "           LEFT JOIN\n"
+                                         "           Subdivisions ON Devices.subdivision = Subdivisions.ref\n"
+                                         "           LEFT JOIN\n"
+                                         "           Warehouses ON Devices.warehouse = Warehouses.ref\n"
+                                         "           LEFT JOIN\n"
+                                         "           PriceTypes ON Devices.price = PriceTypes.ref\n"
+                                         "           LEFT JOIN\n"
+                                         "           Workplaces ON Devices.workplace = Workplaces.ref;";
 }
 
 #endif

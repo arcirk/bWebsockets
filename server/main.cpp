@@ -150,6 +150,19 @@ std::vector<std::string> get_tables(soci::session& sql){
     return result;
 }
 
+std::vector<std::string> get_views(soci::session& sql){
+
+    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
+    std::vector<std::string> result;
+    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+    {
+        soci::row const& row = *it;
+        result.push_back(row.get<std::string>(0));
+    }
+
+    return result;
+}
+
 void verify_table_users(soci::session& sql, const std::vector<std::string>& tables_arr){
 
     using namespace soci;
@@ -227,6 +240,7 @@ void verify_database(){
 
     try {
         auto m_tables = get_tables(sql);
+        auto m_views = get_tables(sql);
         verify_table_users(sql, m_tables);
         verify_table_messages(sql, m_tables);
 
@@ -259,6 +273,12 @@ void verify_database(){
                 query->insert("DevicesType", true).execute(sql, {}, true);
             }
         }
+
+        t_ddl.clear();
+        t_ddl.emplace(arcirk::enum_synonym(views::dvDevicesView), devises_view_ddl);
+        //проверка представлений
+        verify_tables(sql, m_views, t_ddl);
+
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
