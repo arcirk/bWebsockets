@@ -544,7 +544,7 @@ namespace arcirk::database::builder {
 
         soci::rowset<soci::row> exec(soci::session& sql, const json& exists = {}, bool use_values = false) const{
             std::string q = prepare(exists, use_values);
-            std::cout << q << std::endl;
+            //std::cout << q << std::endl;
             return (sql.prepare << q);
         }
 
@@ -568,7 +568,7 @@ namespace arcirk::database::builder {
 
             soci::rowset<soci::row> rs = (sql.prepare << query_text);
 
-            std::cout << query_text << std::endl;
+           // std::cout << query_text << std::endl;
 
             json columns = {"line_number"};
             json roms = {};
