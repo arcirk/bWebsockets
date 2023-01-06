@@ -996,7 +996,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     else{
         std::string base64_query_param = param_.value("query_param", "");
         if(!base64_query_param.empty()){
-            auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
+            std::string str_query_param = base64_to_string(base64_query_param);
+            //std::cout << str_query_param << std::endl;
+            auto query_param = nlohmann::json::parse(str_query_param);
             std::string table_name = query_param.value("table_name", "");
             std::string query_type = query_param.value("query_type", "");
 
@@ -1014,9 +1016,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             }
 
             auto values = query_param.value("values", nlohmann::json::object());
-            auto where_values = param_.value("where_values", nlohmann::json::object());
-            auto order_by = param_.value("order_by", nlohmann::json::object());
-            auto not_exists = param_.value("not_exists", nlohmann::json::object());
+            auto where_values = query_param.value("where_values", nlohmann::json::object());
+            auto order_by = query_param.value("order_by", nlohmann::json::object());
+            auto not_exists = query_param.value("not_exists", nlohmann::json::object());
 
             if(!table_name.empty()){
                 bool return_table = false;
@@ -1254,7 +1256,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     server::server_command_result result;
-    result.command = enum_synonym(server::server_commands::HttpServiceConfiguration);
+    result.command = enum_synonym(server::server_commands::InsertToDatabaseFromArray);
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
@@ -1265,41 +1267,47 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
     auto param_ = nlohmann::json::parse(param_json);
     result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
 
-    auto values_array = param_.value("values_array", nlohmann::json{});
-    std::string where_is_exists_field = param_.value("where_is_exists_field", "");
-    std::string table_name = param_.value("table_name", "");
-    if(table_name.empty())
-        throw std::exception("Не указана таблица.");
+    std::string base64_query_param = param_.value("query_param", "");
+    if(!base64_query_param.empty()) {
+        auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
+        std::string table_name = query_param.value("table_name", "");
+        auto values_array = query_param.value("values_array", nlohmann::json{});
+        std::string where_is_exists_field = query_param.value("where_is_exists_field", "");
 
-    if(values_array.empty() || !values_array.is_array()){
-        throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
-    }
+        if (table_name.empty())
+            throw std::exception("Не указана таблица.");
 
-    auto sql = soci_initialize();
-    auto tr = soci::transaction(sql);
-    auto query = std::make_shared<builder::query_builder>();
-    auto items = values_array.items();
+        if (values_array.empty() || !values_array.is_array()) {
+            throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
+        }
 
-    for (auto itr = items.begin(); itr != items.end() ; ++itr) {
-        if(!itr.value().is_object())
-            throw std::exception("Не верная запись в массиве.");
+        auto sql = soci_initialize();
+        auto tr = soci::transaction(sql);
+        auto query = std::make_shared<builder::query_builder>();
+        auto items = values_array.items();
 
-        query->clear();
-        query->use(itr.value());
-        query->insert(table_name, true);
-        std::string query_text;
-        if(!where_is_exists_field.empty()){
-            std::string is_exists_val = itr.value().value(where_is_exists_field, "");
-            if(is_exists_val.empty())
-                throw std::exception("Не верная запись в поле сравнения.");
-            query_text = query->prepare({
-                {where_is_exists_field, is_exists_val}
-            }, true);
+        for (auto itr = items.begin(); itr != items.end(); ++itr) {
+            if (!itr.value().is_object())
+                throw std::exception("Не верная запись в массиве.");
 
-            sql << query_text;
+            query->clear();
+            query->use(itr.value());
+            query->insert(table_name, true);
+            std::string query_text;
+            if (!where_is_exists_field.empty()) {
+                std::string is_exists_val = itr.value().value(where_is_exists_field, "");
+                if (is_exists_val.empty())
+                    throw std::exception("Не верная запись в поле сравнения.");
+                query_text = query->prepare({
+                                                    {where_is_exists_field, is_exists_val}
+                                            }, true);
+
+                sql << query_text;
+            }
         }
         tr.commit();
-    }
+    }else
+        throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
 
     result.message = "OK";
     result.result = "success";

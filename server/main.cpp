@@ -240,7 +240,7 @@ void verify_database(){
 
     try {
         auto m_tables = get_tables(sql);
-        auto m_views = get_tables(sql);
+        auto m_views = get_views(sql);
         verify_table_users(sql, m_tables);
         verify_table_messages(sql, m_tables);
 

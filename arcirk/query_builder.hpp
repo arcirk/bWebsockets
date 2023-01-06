@@ -437,14 +437,20 @@ namespace arcirk::database::builder {
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                 if(itr->first == "_id")
                     continue;
-                result.append(itr->first);
+                result.append("[" + itr->first + "]");
                 if(use_values){
+                    std::string value;
                     if(itr->second.is_string())
-                        result.append(str_sample("='%1%'", itr->second.get<std::string>()));
+                        value = itr->second.get<std::string>();
                     else if(itr->second.is_number_float())
-                        result.append(str_sample("='%1%'", std::to_string(itr->second.get<double>())));
+                        value = std::to_string(itr->second.get<double>());
                     else if(itr->second.is_number_integer())
-                        result.append(str_sample("='%1%'", std::to_string(itr->second.get<int>())));
+                        value = std::to_string(itr->second.get<int>());
+
+                    if(value.empty())
+                        result.append("=''");
+                    else
+                        result.append(str_sample("='%1%'", value));
                 }else
                     result.append("=?");
                 if(itr != (--m_list.cend())){
@@ -463,14 +469,20 @@ namespace arcirk::database::builder {
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                 if(itr->first == "_id")
                     continue;
-                result.append(itr->first);
+                result.append("[" + itr->first + "]");
                 if(use_values){
+                    std::string value;
                     if(itr->second.is_string())
-                        string_values.append(str_sample("'%1%'", itr->second.get<std::string>()));
+                        value = itr->second.get<std::string>();
                     else if(itr->second.is_number_float())
-                        string_values.append(str_sample("'%1%'", std::to_string(itr->second.get<double>())));
+                        value = std::to_string(itr->second.get<double>());
                     else if(itr->second.is_number_integer())
-                        string_values.append(str_sample("'%1%'", std::to_string(itr->second.get<int>())));
+                        value = std::to_string(itr->second.get<int>());
+
+                    if(value.empty())
+                        string_values.append("''");
+                    else
+                        string_values.append(str_sample("'%1%'", value));
                 }else
                     string_values.append("?");
 
