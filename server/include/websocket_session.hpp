@@ -63,6 +63,10 @@ public:
         _uuid_session = value;
     }
 
+    virtual void set_device_id(const boost::uuids::uuid& value){
+        _device_id = value;
+    }
+
     virtual void set_user_name(const std::string& value){
         _user_name = value;
     }
@@ -91,6 +95,10 @@ public:
         return _address;
     }
 
+    [[nodiscard]] virtual boost::uuids::uuid device_id() const {
+        return _device_id;
+    }
+
 protected:
     std::string _user_name = UnknownUser;
     boost::uuids::uuid _user_uuid{};
@@ -101,7 +109,7 @@ protected:
     std::string _role = "user";
     std::string _full_name;
     std::string _address;
-
+    boost::uuids::uuid _device_id{};
 
 };
 

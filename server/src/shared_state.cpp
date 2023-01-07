@@ -29,6 +29,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::UpdateServerConfiguration), this, &shared_state::update_server_configuration);
     add_method(enum_synonym(server::server_commands::HttpServiceConfiguration), this, &shared_state::get_http_service_configuration);
     add_method(enum_synonym(server::server_commands::InsertToDatabaseFromArray), this, &shared_state::insert_to_database_from_array);
+    add_method(enum_synonym(server::server_commands::SetNewDeviceId), this, &shared_state::set_new_device_id);
 
 }
 
@@ -563,7 +564,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         auto table_object = n_json::object();
 
         if(is_table) {
-            auto j = n_json(R"({"session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role"})");
+            auto j = n_json(R"({"session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role", "device_id", "address"})");
             table_object["columns"] = j;
         }
 
@@ -582,7 +583,9 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
                     {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
                     {"start_date", dt},
                     {"app_name", itr->second->app_name()},
-                    {"role", itr->second->role()}
+                    {"role", itr->second->role()},
+                    {"device_id", itr->second->device_id()},
+                    {"address", itr->second->address()}
             };
             rows += row;
         }
@@ -678,6 +681,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         param_.session_uuid = uuids::uuid_to_string(session->uuid_session());
         result.result = arcirk::base64::base64_encode(pre::json::to_json(param_).dump() );
         session->set_app_name(param_.app_name);
+        session->set_device_id(uuids::string_to_uuid(param_.device_id));
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.user_name, param_.hash);
@@ -1245,6 +1249,59 @@ arcirk::server::server_command_result shared_state::get_http_service_configurati
 
     result.result = arcirk::base64::base64_encode(res.dump());
     result.message = "OK";
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::set_new_device_id(const variant_t &param,
+                                                                      const variant_t &session_id) {
+    using namespace arcirk::database;
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::SetNewDeviceId);
+
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    if (!operation_available)
+        throw std::exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string remote_session_ = param_.value("uuid_form", "");
+    std::string new_uuid_device = param_.value("device_id", "");
+
+    if(new_uuid_device.empty())
+        throw std::exception("Не указан новый идентификатор устройства!");
+
+    auto uuid_device_ = uuids::string_to_uuid(new_uuid_device);
+    if(uuid_device_ == uuids::nil_uuid())
+        throw std::exception("Указан не корректный идентификатор устройства!");
+
+    if(remote_session_.empty())
+        throw std::exception("Не указана удаленная сессия клиента!");
+
+    auto uuid_remote_session = uuids::string_to_uuid(remote_session_);
+    auto remote_session = get_session(uuid_remote_session);
+
+    if(!remote_session)
+        throw std::exception("Не найдена удаленная сессия клиента!");
+
+    remote_session->set_device_id(uuid_device_);
+
+    nlohmann::json remote_param = {
+            {"command", enum_synonym(server::server_commands::SetNewDeviceId)},
+            {"result", base64::base64_encode(nlohmann::json({
+                {"device_id", new_uuid_device}
+            }).dump())}
+    };
+
+    //эмитируем команду клиенту
+    execute_command_handler("cmd " + enum_synonym(server::server_commands::CommandToClient) + " " +
+                                    base64::base64_encode(remote_param.dump()) + " " + remote_session_, get_session(uuid));
+
+    result.message = "OK";
+    result.result = "success";
 
     return result;
 }

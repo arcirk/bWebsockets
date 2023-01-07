@@ -24,6 +24,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, password)
         (std::string, session_uuid)
         (std::string, system_user)
+        (std::string, device_id)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -152,6 +153,7 @@ namespace arcirk::server{
         UpdateServerConfiguration, //Обновить конфигурацию сервера
         HttpServiceConfiguration, //Получить конфигурацию http сервиса 1С
         InsertToDatabaseFromArray, //Добавить массив записей в базу
+        SetNewDeviceId, //Явная установка идентификатора на устройствах где не возможно его получить
         CMD_INVALID=-1,
     };
 
@@ -170,6 +172,7 @@ namespace arcirk::server{
         {UpdateServerConfiguration, "UpdateServerConfiguration"}    ,
         {HttpServiceConfiguration, "HttpServiceConfiguration"}    ,
         {InsertToDatabaseFromArray, "InsertToDatabaseFromArray"}    ,
+        {SetNewDeviceId, "SetNewDeviceId"}    ,
     })
 
 }
