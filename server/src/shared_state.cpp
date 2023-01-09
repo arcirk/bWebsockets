@@ -482,7 +482,7 @@ arcirk::server::server_command_result shared_state::command_to_client(const vari
     //
     server::server_command_result result;
     result.command = enum_synonym(server::server_commands::CommandToClient);
-    result.result = std::get<std::string>(param);
+    result.param = std::get<std::string>(param);
 
     return result;
 }
@@ -584,7 +584,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
                     {"start_date", dt},
                     {"app_name", itr->second->app_name()},
                     {"role", itr->second->role()},
-                    {"device_id", itr->second->device_id()},
+                    {"device_id", arcirk::uuids::uuid_to_string(itr->second->device_id())},
                     {"address", itr->second->address()}
             };
             rows += row;
@@ -1268,7 +1268,7 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
 
     auto param_ = nlohmann::json::parse(param_json);
     result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
-    std::string remote_session_ = param_.value("uuid_form", "");
+    std::string remote_session_ = param_.value("remote_session", "");
     std::string new_uuid_device = param_.value("device_id", "");
 
     if(new_uuid_device.empty())
@@ -1291,14 +1291,18 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
 
     nlohmann::json remote_param = {
             {"command", enum_synonym(server::server_commands::SetNewDeviceId)},
-            {"result", base64::base64_encode(nlohmann::json({
+            {"param", base64::base64_encode(nlohmann::json({
                 {"device_id", new_uuid_device}
-            }).dump())}
+            }).dump())},
+    };
+
+    nlohmann::json cmd_param = {
+            {"param", base64::base64_encode(remote_param.dump())}
     };
 
     //эмитируем команду клиенту
-    execute_command_handler("cmd " + enum_synonym(server::server_commands::CommandToClient) + " " +
-                                    base64::base64_encode(remote_param.dump()) + " " + remote_session_, get_session(uuid));
+    execute_command_handler("cmd " + enum_synonym(server::server_commands::CommandToClient) + " " + remote_session_ + " " +
+                                    base64::base64_encode(cmd_param.dump()), get_session(uuid));
 
     result.message = "OK";
     result.result = "success";
