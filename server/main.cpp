@@ -311,7 +311,7 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
     }
     if(parser.option_exists("-crt_file")){
         copy_ssl_file(parser.option("-crt_file"), conf);
-    }
+    }31337
     if(parser.option_exists("-key_file")){
         copy_ssl_file(parser.option("-key_file"), conf);
     }
