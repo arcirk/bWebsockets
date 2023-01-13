@@ -11,4 +11,5 @@
   <content>CommonForm.ФормаНастройкиСервера</content>
   <content>CommonForm.ФормаОбменСообщениями</content>
   <content>CommonCommand.ОткрытьФормуОбменСообщениями</content>
+  <subsystems>ТерминалСбораДанных</subsystems>
 </mdclass:Subsystem>

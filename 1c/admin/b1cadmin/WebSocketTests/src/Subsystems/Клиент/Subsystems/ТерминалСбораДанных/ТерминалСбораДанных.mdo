@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Subsystem xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="7666c8c8-5b37-4185-891b-465553c3b8cd">
+  <name>ТерминалСбораДанных</name>
+  <synonym>
+    <key>ru</key>
+    <value>Терминал сбора данных</value>
+  </synonym>
+  <includeHelpInContents>true</includeHelpInContents>
+  <includeInCommandInterface>true</includeInCommandInterface>
+  <content>Document.ПодборШтрихкодов</content>
+  <parentSubsystem>Subsystem.Клиент</parentSubsystem>
+</mdclass:Subsystem>

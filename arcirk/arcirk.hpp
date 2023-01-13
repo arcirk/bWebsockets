@@ -38,6 +38,8 @@
 #include <boost/locale.hpp>
 #include <boost/filesystem.hpp>
 
+static constexpr time_t const NULL_TIME = -1;
+
 namespace arcirk {
 
 #ifdef USE_RAPIDJSON
@@ -66,7 +68,9 @@ namespace arcirk {
     std::string str_sample(const std::string& format_string, const Arguments&... args){return boost::str((boost::format(format_string) % ... % args));}
 
     std::tm current_date();
-    long int current_date_seconds();
+    long int date_to_seconds(const tm& dt = {}, bool offset = false);
+    long int tz_offset(time_t when = NULL_TIME);
+    long int add_day(const long int dt, const int quantity);
 
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);

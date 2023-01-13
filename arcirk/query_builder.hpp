@@ -370,6 +370,8 @@ namespace arcirk::database::builder {
                 if(itr != --where_values.end())
                     result.append("\nand\n");
             }
+
+            return *this;
         }
 
         void use(const json& source){
@@ -496,6 +498,12 @@ namespace arcirk::database::builder {
             result.append(string_values);
             result.append(")");
 
+            return *this;
+        }
+
+        query_builder& remove(){
+            queryType = Delete;
+            result = "delete ";
             return *this;
         }
 

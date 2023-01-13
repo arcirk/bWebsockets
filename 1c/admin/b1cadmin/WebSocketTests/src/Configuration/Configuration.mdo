@@ -79,4 +79,5 @@
   <catalogs>Catalog.ТипыУстройствИКомпьютеров</catalogs>
   <catalogs>Catalog.ТипыЦенНоменклатуры</catalogs>
   <catalogs>Catalog.УстройстваИКомпьютеры</catalogs>
+  <documents>Document.ПодборШтрихкодов</documents>
 </mdclass:Configuration>

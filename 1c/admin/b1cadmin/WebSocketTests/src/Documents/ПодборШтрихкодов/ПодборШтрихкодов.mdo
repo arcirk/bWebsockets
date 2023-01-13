@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="db053803-d1be-455d-bbdc-dc445cd917b0">
+  <producedTypes>
+    <objectType typeId="70bcc978-4b2b-4535-a99f-928a2bc1c13b" valueTypeId="978bba63-d1e4-46c0-aace-9af493efa758"/>
+    <refType typeId="e1d1ef50-89fe-43bc-86ba-fcc84154c0cf" valueTypeId="bde820e8-6575-42df-919b-2dd1eaa21418"/>
+    <selectionType typeId="cf7bc5af-4d0f-41d1-9fbf-d4efd0ddb90b" valueTypeId="7d2414c4-4565-47a2-a217-17eff1270830"/>
+    <listType typeId="14516042-586f-4d3c-824d-9462a17c9cae" valueTypeId="e8016d7b-9174-461a-9b67-ea16b6abb49e"/>
+    <managerType typeId="8fde780e-1916-4743-bf00-3e2a4ed190a7" valueTypeId="02c04997-00c7-4123-9d91-315290d3d856"/>
+  </producedTypes>
+  <name>ПодборШтрихкодов</name>
+  <synonym>
+    <key>ru</key>
+    <value>Подбор штрихкодов</value>
+  </synonym>
+  <useStandardCommands>true</useStandardCommands>
+  <inputByString>Document.ПодборШтрихкодов.StandardAttribute.Number</inputByString>
+  <fullTextSearchOnInputByString>DontUse</fullTextSearchOnInputByString>
+  <createOnInput>Use</createOnInput>
+  <dataLockControlMode>Managed</dataLockControlMode>
+  <fullTextSearch>Use</fullTextSearch>
+  <numberType>String</numberType>
+  <numberLength>9</numberLength>
+  <numberAllowedLength>Variable</numberAllowedLength>
+  <checkUnique>true</checkUnique>
+  <autonumbering>true</autonumbering>
+  <defaultObjectForm>Document.ПодборШтрихкодов.Form.ФормаДокумента</defaultObjectForm>
+  <defaultListForm>Document.ПодборШтрихкодов.Form.ФормаСписка</defaultListForm>
+  <posting>Deny</posting>
+  <realTimePosting>Deny</realTimePosting>
+  <postInPrivilegedMode>true</postInPrivilegedMode>
+  <unpostInPrivilegedMode>true</unpostInPrivilegedMode>
+  <attributes uuid="760c0077-f4d1-49c5-bb9c-908baafe6484">
+    <name>Устройство</name>
+    <synonym>
+      <key>ru</key>
+      <value>Устройство</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.УстройстваИКомпьютеры</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+  </attributes>
+  <forms uuid="6e2ae8b9-f613-40bd-a289-d52b1c4c0d44">
+    <name>ФормаДокумента</name>
+    <synonym>
+      <key>ru</key>
+      <value>Форма документа</value>
+    </synonym>
+    <usePurposes>PersonalComputer</usePurposes>
+    <usePurposes>MobileDevice</usePurposes>
+  </forms>
+  <forms uuid="10afc57f-510e-493f-946f-85cfaf66a0c3">
+    <name>ФормаСписка</name>
+    <synonym>
+      <key>ru</key>
+      <value>Форма списка</value>
+    </synonym>
+    <usePurposes>PersonalComputer</usePurposes>
+    <usePurposes>MobileDevice</usePurposes>
+  </forms>
+  <tabularSections uuid="eeccba3d-0a22-49eb-95a8-faa97b4cd003">
+    <producedTypes>
+      <objectType typeId="99b292dc-2551-4320-a2ce-4d883aa0b11e" valueTypeId="fde36394-fef1-4c46-b5e2-97c55f3994b0"/>
+      <rowType typeId="4d361555-8d86-4d6e-a6af-92d333cdd17c" valueTypeId="e98fdf28-3a0a-4e86-b827-6d97619f000d"/>
+    </producedTypes>
+    <name>Штрихкоды</name>
+    <synonym>
+      <key>ru</key>
+      <value>Штрихкоды</value>
+    </synonym>
+    <attributes uuid="1d6fc605-9849-47d1-9225-93c716d279ab">
+      <name>Штрихкод</name>
+      <synonym>
+        <key>ru</key>
+        <value>Штрихкод</value>
+      </synonym>
+      <type>
+        <types>String</types>
+        <stringQualifiers>
+          <length>128</length>
+        </stringQualifiers>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+    <attributes uuid="189130c0-684d-4648-9ab4-3b86b8944636">
+      <name>Количество</name>
+      <synonym>
+        <key>ru</key>
+        <value>Количество</value>
+      </synonym>
+      <type>
+        <types>Number</types>
+        <numberQualifiers>
+          <precision>10</precision>
+        </numberQualifiers>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+    <attributes uuid="3056c64a-0cfa-462e-b568-e80851d3777d">
+      <name>КлючСтроки</name>
+      <synonym>
+        <key>ru</key>
+        <value>Ключ строки</value>
+      </synonym>
+      <type>
+        <types>UUID</types>
+      </type>
+      <minValue xsi:type="core:UndefinedValue"/>
+      <maxValue xsi:type="core:UndefinedValue"/>
+      <dataHistory>Use</dataHistory>
+      <fullTextSearch>Use</fullTextSearch>
+    </attributes>
+  </tabularSections>
+</mdclass:Document>

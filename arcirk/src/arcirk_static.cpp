@@ -1,5 +1,4 @@
 #include "../arcirk.hpp"
-
 namespace arcirk{
 
     namespace uuids{
@@ -216,9 +215,9 @@ namespace arcirk{
         return current;
     }
 
-    long int current_date_seconds() {
+    long int date_to_seconds(const tm& dt, bool offset) {
 
-        tm current{};
+        tm current = dt;
         time_t t = time(nullptr);
 
 #ifdef _WIN32
@@ -229,10 +228,31 @@ namespace arcirk{
 
         std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(mktime(&current));
 
+        auto i_offset = offset ? tz_offset() : 0;
+
         return
                 (long int)std::chrono::duration_cast<std::chrono::seconds>(
-                        tp.time_since_epoch()).count();
+                        tp.time_since_epoch()).count() + i_offset;
 
+    }
+
+    long int tz_offset(time_t when)
+    {
+        if (when == NULL_TIME)
+            when = std::time(nullptr);
+        auto const tm = *std::localtime(&when);
+        std::ostringstream os;
+        os << std::put_time(&tm, "%z");
+        std::string s = os.str();
+        // s is in ISO 8601 format: "±HHMM"
+        int h = std::stoi(s.substr(0,3), nullptr, 10);
+        int m = std::stoi(s[0]+s.substr(3), nullptr, 10);
+
+        return (h-1) * 3600 + m * 60;
+    }
+
+    long int add_day(const long int dt, const int quantity){
+        return dt + (quantity * (60*60*24));
     }
 
     void trim(std::string& source){ boost::trim(source);};

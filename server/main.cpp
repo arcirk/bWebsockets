@@ -252,6 +252,8 @@ void verify_database(){
         t_ddl.emplace(arcirk::enum_synonym(tables::tbWorkplaces), workplaces_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocuments), documents_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTable), document_table_table_ddl);
 
         //проверка таблиц
         verify_tables(sql, m_tables, t_ddl);
@@ -267,8 +269,8 @@ void verify_database(){
                 std::string enum_name = arcirk::enum_synonym(val);
                 query->clear();
                 query->use({
-                                   {"first", enum_name},
-                                   {"ref", ref}
+                       {"first", enum_name},
+                       {"ref", ref}
                 });
                 query->insert("DevicesType", true).execute(sql, {}, true);
             }
@@ -311,7 +313,7 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
     }
     if(parser.option_exists("-crt_file")){
         copy_ssl_file(parser.option("-crt_file"), conf);
-    }31337
+    }
     if(parser.option_exists("-key_file")){
         copy_ssl_file(parser.option("-key_file"), conf);
     }

@@ -172,7 +172,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         msg_struct.second = boost::to_string(itr->second->user_uuid());
         msg_struct.message = msg;
         msg_struct.content_type = content_type_;
-        msg_struct.date = (int)arcirk::current_date_seconds();
+        msg_struct.date = (int) arcirk::date_to_seconds();
         msg_struct.unread_messages = 1;
         try {
             auto sql = soci_initialize();
@@ -1006,7 +1006,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             std::string table_name = query_param.value("table_name", "");
             std::string query_type = query_param.value("query_type", "");
 
-            if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert"){
+            if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert" || query_type == "delete"){
                 if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbDevices) &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)){
                     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
@@ -1052,6 +1052,8 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                     }else{
                         query->update(table_name, true).where({{"ref", ref}}, true);
                     }
+                }else if(query_type == "delete"){
+                    query->remove().from(table_name);
                 }
                 if(query->is_valid()){
                     if(!where_values.empty()){
@@ -1333,7 +1335,14 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         auto query_param = nlohmann::json::parse(base64_to_string(base64_query_param));
         std::string table_name = query_param.value("table_name", "");
         auto values_array = query_param.value("values_array", nlohmann::json{});
+        //устарела, оставлена для совместимости
         std::string where_is_exists_field = query_param.value("where_is_exists_field", "");
+
+        //если where_values = Структура, тогда параметры единые для всего массива записей
+        //если where_values = Массив, тогда where_values - это массив полей, значения в каждой записи свои
+        auto where_values = query_param.value("where_values", nlohmann::json{});
+
+        bool delete_is_exists = query_param.value("delete_is_exists", false);
 
         if (table_name.empty())
             throw std::exception("Не указана таблица.");
@@ -1346,6 +1355,27 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         auto tr = soci::transaction(sql);
         auto query = std::make_shared<builder::query_builder>();
         auto items = values_array.items();
+
+        if(delete_is_exists){
+            if(where_values.is_object()){
+                //удалить все записи удовлетворяющие условиям
+                sql << query->remove().from(table_name).where(where_values, true).prepare();
+            }else if(where_values.is_array()){
+                //удалить выбранные записи удовлетворяющие условиям
+                for (auto itr = items.begin(); itr != items.end(); ++itr) {
+                    if (!itr.value().is_object())
+                        throw std::exception("Не верная запись в массиве.");
+                    query->clear();
+                    nlohmann::json where{};
+                    for (auto itr_ = where_values.begin();  itr_ != where_values.end() ; ++itr_) {
+                        where += {
+                                {itr, itr.value().value(*itr_, "")}
+                        };
+                    }
+                    sql << query->remove().from(table_name).where(where, true).prepare();
+                }
+            }
+        }
 
         for (auto itr = items.begin(); itr != items.end(); ++itr) {
             if (!itr.value().is_object())

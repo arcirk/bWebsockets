@@ -387,6 +387,22 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
             std::string tbl_json = to_string(pre::json::to_json(tbl));
             return tbl_json;
         }
+        case tbDocumentsTable: {
+            auto tbl = document_table();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.price = 0;
+            tbl.quantity = 0;
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
+        case tbDocuments: {
+            auto tbl = documents();
+            tbl.ref = arcirk::uuids::nil_string_uuid();
+            tbl.device_id = arcirk::uuids::nil_string_uuid();
+            tbl.date = date_to_seconds();
+            std::string tbl_json = to_string(pre::json::to_json(tbl));
+            return tbl_json;
+        }
         case tables_INVALID:{
             break;
         }

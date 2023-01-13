@@ -104,6 +104,28 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, organization)
 );
 
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), documents,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (int, date)
+        (std::string, device_id)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), document_table,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, parent)
+        (std::string, barcode)
+        (double, quantity)
+        (double, price)
+);
+
 namespace arcirk::database{
 
     enum roles{
@@ -162,6 +184,8 @@ namespace arcirk::database{
         tbWorkplaces,
         tbDevices,
         tbDevicesType,
+        tbDocuments,
+        tbDocumentsTable,
         tables_INVALID=-1,
     };
 
@@ -176,6 +200,8 @@ namespace arcirk::database{
         {tbWorkplaces, "Workplaces"}  ,
         {tbDevices, "Devices"}  ,
         {tbDevicesType, "DevicesType"}  ,
+        {tbDocuments, "Documents"}  ,
+        {tbDocumentsTable, "DocumentsTable"}  ,
     })
 
     enum views{
@@ -303,6 +329,30 @@ namespace arcirk::database{
                                          "           PriceTypes ON Devices.price = PriceTypes.ref\n"
                                          "           LEFT JOIN\n"
                                          "           Workplaces ON Devices.workplace = Workplaces.ref;";
+
+    const std::string documents_table_ddl = "CREATE TABLE Documents (\n"
+                                          "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                          "    [first]         TEXT,\n"
+                                          "    second          TEXT,\n"
+                                          "    ref             TEXT (36) UNIQUE\n"
+                                          "                             NOT NULL,\n"
+                                          "    cache           TEXT      DEFAULT \"\",\n"
+                                          "    date            INTEGER,\n"
+                                          "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                          ");";
+
+    const std::string document_table_table_ddl = "CREATE TABLE DocumentTable (\n"
+                                          "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                          "    [first]         TEXT,\n"
+                                          "    second          TEXT,\n"
+                                          "    ref             TEXT (36) UNIQUE\n"
+                                          "                             NOT NULL,\n"
+                                          "    cache           TEXT      DEFAULT \"\",\n"
+                                          "    price           DOUBLE DEFAULT (0),\n"
+                                          "    quantity        DOUBLE DEFAULT (0),\n"
+                                          "    barcode         TEXT      DEFAULT \"\",\n"
+                                          "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                          ");";
 }
 
 #endif

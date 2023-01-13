@@ -141,32 +141,32 @@ void get_online_users(const std::shared_ptr<websocket_client>& client){
 int
 main(int argc, char* argv[]){
 
-    //setlocale(LC_ALL, "Russian");
+    setlocale(LC_ALL, "Russian");
 
-    std::string t = "/2abcdef";//"/23&@@а тестовая строка"; //;
-    int m = 0;
-    for (auto e:t) {
-        m = std::min(m, static_cast<int>(e));
-    }
-    std::cout << m << std::endl;
-    std::string a = arcirk::local_8bit(t);
-    m = 0;
-    for (auto e:a) {
-        m = std::min(m, static_cast<int>(e));
-    }
-    std::cout << m << std::endl;
-    std::string b = arcirk::to_utf(t);
-    m = 0;
-    for (auto e:b) {
-        m = std::min(m, static_cast<int>(e));
-    }
-    std::cout << m << std::endl;
+//    std::string t = "/2abcdef";//"/23&@@а тестовая строка"; //;
+//    int m = 0;
+//    for (auto e:t) {
+//        m = std::min(m, static_cast<int>(e));
+//    }
+//    std::cout << m << std::endl;
+//    std::string a = arcirk::local_8bit(t);
+//    m = 0;
+//    for (auto e:a) {
+//        m = std::min(m, static_cast<int>(e));
+//    }
+//    std::cout << m << std::endl;
+//    std::string b = arcirk::to_utf(t);
+//    m = 0;
+//    for (auto e:b) {
+//        m = std::min(m, static_cast<int>(e));
+//    }
+//    std::cout << m << std::endl;
 //    std::string a = arcirk::local_8bit(t);
 //    std::cout << static_cast<int>(a[0]) << " " << a << std::endl;
 //    std::string b = arcirk::to_utf(t);
 //    std::cout << static_cast<int>(b[0]) << " " << b << std::endl;
 //    std::cout << static_cast<int>(t[0]) << " " << t << std::endl;
-    return 0;
+    //return 0;
 
     InputParser input(argc, argv);
 
