@@ -1068,7 +1068,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query_text = query->prepare(not_exists, true);
                     }
                 }
-                //std::cout << query_text << std::endl;
+                std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
                 else{

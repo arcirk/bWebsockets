@@ -447,7 +447,7 @@ namespace arcirk::database::builder {
                     else if(itr->second.is_number_float())
                         value = std::to_string(itr->second.get<double>());
                     else if(itr->second.is_number_integer())
-                        value = std::to_string(itr->second.get<int>());
+                        value = std::to_string(itr->second.get<long long>());
 
                     if(value.empty())
                         result.append("=''");
