@@ -25,8 +25,6 @@ if (UNIX)
     SET(CMAKE_CXX_FLAGS -pthread)
 endif()
 
-add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
-
 if(WIN32)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
@@ -55,6 +53,7 @@ if (WIN32)
 
 endif()
 
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 add_definitions (-DBOOST_ALL_STATIC_LINK=1)
 
 if (MSVC)

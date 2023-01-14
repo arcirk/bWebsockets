@@ -355,4 +355,14 @@ namespace arcirk::database{
                                           ");";
 }
 
+class native_exception : public std::exception
+{
+public:
+    explicit native_exception(const char *msg) : message(msg) {}
+    virtual ~native_exception() throw() {}
+    virtual const char *what() const throw() { return message.c_str(); }
+protected:
+    const std::string message;
+};
+
 #endif

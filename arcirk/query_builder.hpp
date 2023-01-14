@@ -223,7 +223,7 @@ namespace arcirk::database::builder {
         query_builder& join(const std::string& table_name, const json& fields, std::string, sql_join_type join_type, const json& join_options = {}){
 
             if(table_name_.empty())
-                throw std::exception("Используйте 'from' сначала для первой таблицы.");
+                throw native_exception("Используйте 'from' сначала для первой таблицы.");
 
             std::string table_first_alias = table_name_ + "First";
             std::string table_second_alias = table_name + "Second";
@@ -258,7 +258,7 @@ namespace arcirk::database::builder {
             result.append(" join " + table_name + " as " + table_second_alias);
 
             if(join_type != sql_join_type::joinCross && join_options.empty()){
-                throw std::exception("Не заданы параметры соединения таблиц!");
+                throw native_exception("Не заданы параметры соединения таблиц!");
             }
 
             std::vector<std::pair<std::string, std::string>> inner_join;
@@ -273,7 +273,7 @@ namespace arcirk::database::builder {
                     inner_join.emplace_back(key, key);
                 }
             }else
-                throw std::exception("Не верный тип массива параметров соединения!");
+                throw native_exception("Не верный тип массива параметров соединения!");
 
             result.append(" on ");
             for (auto itr = inner_join.begin(); itr != inner_join.end(); ++itr) {

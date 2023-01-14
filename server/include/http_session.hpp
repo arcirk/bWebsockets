@@ -171,7 +171,8 @@ public:
         bool http_authorization = false;
 
         if(state_->use_authorization()){
-            std::string auth = req[http::field::authorization].to_string();
+            //std::string auth = req[http::field::authorization].to_string();
+            std::string auth = static_cast<std::string>(req[http::field::authorization]);
             http_authorization = state_->verify_connection(auth);
             if(!http_authorization){
                 fail(ec, "failed http authorization");
