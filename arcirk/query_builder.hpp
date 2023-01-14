@@ -133,7 +133,7 @@ namespace arcirk::database::builder {
                 std::string s_val = quotation_marks ? "'%1%'" : "%1%";
                 std::string v;
                 if(value.is_number_integer()){
-                    v = std::to_string(get<int>(value));
+                    v = std::to_string(get<long long>(value));
                 }else if(value.is_number_float()){
                     v = std::to_string(get<double>(value));
                 }else if(value.is_string()){
@@ -479,7 +479,7 @@ namespace arcirk::database::builder {
                     else if(itr->second.is_number_float())
                         value = std::to_string(itr->second.get<double>());
                     else if(itr->second.is_number_integer())
-                        value = std::to_string(itr->second.get<int>());
+                        value = std::to_string(itr->second.get<long long>());
 
                     if(value.empty())
                         string_values.append("''");
