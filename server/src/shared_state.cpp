@@ -1068,7 +1068,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query_text = query->prepare(not_exists, true);
                     }
                 }
-                std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
+                //std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
                 else{
@@ -1385,16 +1385,30 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
             query->use(itr.value());
             query->insert(table_name, true);
             std::string query_text;
-            if (!where_is_exists_field.empty()) {
-                std::string is_exists_val = itr.value().value(where_is_exists_field, "");
-                if (is_exists_val.empty())
-                    throw native_exception("Не верная запись в поле сравнения.");
-                query_text = query->prepare({
-                                                    {where_is_exists_field, is_exists_val}
-                                            }, true);
-
-                sql << query_text;
+            if(where_values.is_object()) {
+                query_text = query->prepare(where_values, true);
+            }else if(where_values.is_array()){
+                nlohmann::json where{};
+                for (auto itr_ = where_values.begin();  itr_ != where_values.end() ; ++itr_) {
+                    where += {
+                            {*itr_, itr.value().value(*itr_, "")}
+                    };
+                }
+                query_text = query->prepare(where, true);
             }
+
+            sql << query_text;
+
+//            if (!where_is_exists_field.empty()) {
+//                std::string is_exists_val = itr.value().value(where_is_exists_field, "");
+//                if (is_exists_val.empty())
+//                    throw native_exception("Не верная запись в поле сравнения.");
+//                query_text = query->prepare({
+//                                                    {where_is_exists_field, is_exists_val}
+//                                            }, true);
+//
+//                sql << query_text;
+//            }
         }
         tr.commit();
     }else
