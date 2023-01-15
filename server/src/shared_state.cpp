@@ -30,7 +30,8 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::HttpServiceConfiguration), this, &shared_state::get_http_service_configuration);
     add_method(enum_synonym(server::server_commands::InsertToDatabaseFromArray), this, &shared_state::insert_to_database_from_array);
     add_method(enum_synonym(server::server_commands::SetNewDeviceId), this, &shared_state::set_new_device_id);
-
+    add_method(enum_synonym(server::server_commands::ObjectSetToDatabase), this, &shared_state::object_set_to_database);
+    add_method(enum_synonym(server::server_commands::ObjectGetFromDatabase), this, &shared_state::object_get_from_database);
 }
 
 void shared_state::join(subscriber *session) {
@@ -1413,6 +1414,136 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         tr.commit();
     }else
         throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
+
+    result.message = "OK";
+    result.result = "success";
+
+    return result;
+}
+
+bool shared_state::edit_table_only_admin(const std::string &table_name) {
+
+    std::vector<std::string> vec;
+    vec.emplace_back("Users");
+    vec.emplace_back("Organizations");
+    vec.emplace_back("Subdivisions");
+    vec.emplace_back("Warehouses");
+    vec.emplace_back("PriceTypes");
+    vec.emplace_back("Workplaces");
+    vec.emplace_back("DevicesType");
+
+    return std::find(vec.begin(), vec.end(), table_name) != vec.end();
+}
+
+arcirk::server::server_command_result shared_state::object_set_to_database(const variant_t &param,
+                                                                           const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::ObjectSetToDatabase);
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string base64_object = param_.value("base64_object", "");
+
+    if(!base64_object.empty()) {
+        auto object_struct = nlohmann::json::parse(base64_to_string(base64_object));
+        std::string table_name = object_struct.value("table_name", "");
+
+        if(edit_table_only_admin(table_name) ){
+            bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+            if (!operation_available)
+                throw native_exception("Не достаточно прав доступа!");
+        }else{
+            bool operation_available = is_operation_available(uuid, roles::dbUser);
+            if (!operation_available)
+                throw native_exception("Не достаточно прав доступа!");
+
+        }
+
+        auto object = object_struct.value("object", nlohmann::json{});
+
+        if(object.empty() || !object.is_object())
+            throw native_exception("Не верная структура объекта!");
+
+        auto standard_attributes = object.value("StandardAttributes", nlohmann::json{});
+        nlohmann::json enm_json = table_name;
+        auto enm_val = enm_json.get<arcirk::database::tables>();
+        auto table_json = table_default_json(enm_val);
+        auto items = table_json.items();
+        for (auto itr = items.begin();  itr != items.end() ; ++itr) {
+            table_json[itr.key()] = standard_attributes.value(itr.key(), itr.value());
+        }
+
+        auto query = std::make_shared<builder::query_builder>();
+        query->use(table_json);
+        std::string ref = query->ref();
+
+        if(ref.empty())
+            throw native_exception("Не указан идентификатор объекта!");
+
+        auto sql = soci_initialize();
+        int count = -1;
+        sql << query->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+
+        query->clear();
+        query->use(table_json);
+
+        if(count > 0)
+            sql << query->update(table_name, true).prepare();
+        else
+            sql << query->insert(table_name, true).prepare();
+
+        if(enm_val == tbDocuments){
+            query->clear();
+            sql << query->remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
+        }
+
+        auto tabular_sections = object.value("TabularSections", nlohmann::json{});
+        if(tabular_sections.is_array()){
+            for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
+                nlohmann::json table_section = *itr;
+                if(table_section.is_object()){
+                    std::string name = table_section.value("name", "");
+                    auto rows = table_section.value("strings", nlohmann::json{});
+                    if(rows.is_array()){
+                        auto rows_items = tabular_sections.items();
+                        for (auto itr_row = rows_items.begin();  itr_row != rows_items.end() ; ++itr_row) {
+                            nlohmann::json row_ = *itr_row;
+                            if(row_.is_object()){
+                                query->clear();
+                                query->use(row_);
+                                if(enm_val == tbDocuments)
+                                    sql << query->insert("DocumentsTables", true).prepare();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        sql.commit();
+    }
+
+
+    result.message = "OK";
+    result.result = "success";
+
+    return result;
+
+}
+
+arcirk::server::server_command_result shared_state::object_get_from_database(const variant_t &param,
+                                                                             const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::ObjectSetToDatabase);
 
     result.message = "OK";
     result.result = "success";

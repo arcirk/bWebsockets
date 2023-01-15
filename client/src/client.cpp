@@ -326,89 +326,13 @@ void websocket_client::start_reconnect(bool* is_run) {
 std::string websocket_client::get_table_default_struct(arcirk::database::tables table) {
 
     using namespace arcirk::database;
-    switch (table) {
-        case tbUsers:{
-            auto usr_info = user_info();
-            usr_info.ref = arcirk::uuids::nil_string_uuid();
-            usr_info.parent = arcirk::uuids::nil_string_uuid();
-            usr_info.is_group = 0;
-            usr_info.deletion_mark = 0;
-            std::string usr_info_json = to_string(pre::json::to_json(usr_info));
-            return usr_info_json;
-        }
-        case tbMessages:{
-            auto tbl = messages();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            tbl.content_type ="Text";
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbOrganizations:{
-            auto tbl = organizations();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbSubdivisions:{
-            auto tbl = subdivisions();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbWarehouses:{
-            auto tbl = warehouses();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbPriceTypes:{
-            auto tbl = price_types();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbWorkplaces:{
-            auto tbl = workplaces();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            tbl.server = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbDevices:{
-            auto tbl = devices();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            tbl.deviceType = "Desktop";
-            tbl.address = "127.0.0.1";
-            tbl.workplace = arcirk::uuids::nil_string_uuid();
-            tbl.price = arcirk::uuids::nil_string_uuid();
-            tbl.warehouse = arcirk::uuids::nil_string_uuid();
-            tbl.subdivision = arcirk::uuids::nil_string_uuid();
-            tbl.organization = arcirk::uuids::nil_string_uuid();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbDocumentsTable: {
-            auto tbl = document_table();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            tbl.price = 0;
-            tbl.quantity = 0;
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tbDocuments: {
-            auto tbl = documents();
-            tbl.ref = arcirk::uuids::nil_string_uuid();
-            tbl.device_id = arcirk::uuids::nil_string_uuid();
-            tbl.date = date_to_seconds();
-            std::string tbl_json = to_string(pre::json::to_json(tbl));
-            return tbl_json;
-        }
-        case tables_INVALID:{
-            break;
-        }
-    }
 
-    return {};
+    auto result = table_default_json(table);
+
+    user_info info = table_default_struct<user_info>(table);
+
+    return result.dump();
+
 }
 
 void websocket_client::on_successful_authorization() {

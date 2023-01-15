@@ -88,7 +88,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, deviceType)
         (std::string, address)
         (std::string, workplace)
-        (std::string, price)
+        (std::string, price_type)
         (std::string, warehouse)
         (std::string, subdivision)
         (std::string, organization)
@@ -110,8 +110,12 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, first)
         (std::string, second)
         (std::string, ref)
+        (std::string, cache)
+        (std::string, number)
         (int, date)
+        (std::string, xml_type)
         (std::string, device_id)
+
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -120,6 +124,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, first)
         (std::string, second)
         (std::string, ref)
+        (std::string, cache)
         (std::string, parent)
         (std::string, barcode)
         (double, quantity)
@@ -185,7 +190,7 @@ namespace arcirk::database{
         tbDevices,
         tbDevicesType,
         tbDocuments,
-        tbDocumentsTable,
+        tbDocumentsTables,
         tables_INVALID=-1,
     };
 
@@ -201,7 +206,7 @@ namespace arcirk::database{
         {tbDevices, "Devices"}  ,
         {tbDevicesType, "DevicesType"}  ,
         {tbDocuments, "Documents"}  ,
-        {tbDocumentsTable, "DocumentsTable"}  ,
+        {tbDocumentsTables, "DocumentsTables"}  ,
     })
 
     enum views{
@@ -302,10 +307,10 @@ namespace arcirk::database{
                                           "    ref             TEXT (36) UNIQUE\n"
                                           "                             NOT NULL,\n"
                                           "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    deviceType      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    deviceType      TEXT      DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    address         TEXT      DEFAULT \"127.0.0.1\",\n"
                                           "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                          "    price           TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    price_type      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
@@ -337,11 +342,13 @@ namespace arcirk::database{
                                           "    ref             TEXT (36) UNIQUE\n"
                                           "                             NOT NULL,\n"
                                           "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    date            INTEGER,\n"
+                                          "    number          TEXT      DEFAULT \"\",\n"
+                                          "    date            INTEGER NOT NULL DEFAULT(0),\n"
+                                          "    xml_type        TEXT      DEFAULT \"\",\n"
                                           "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
 
-    const std::string document_table_table_ddl = "CREATE TABLE DocumentTable (\n"
+    const std::string document_table_table_ddl = "CREATE TABLE DocumentsTables (\n"
                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                           "    [first]         TEXT,\n"
                                           "    second          TEXT,\n"
@@ -353,6 +360,114 @@ namespace arcirk::database{
                                           "    barcode         TEXT      DEFAULT \"\",\n"
                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
+
+    static inline nlohmann::json table_default_json(arcirk::database::tables table) {
+
+        //using namespace arcirk::database;
+        switch (table) {
+            case tbUsers:{
+                auto usr_info = user_info();
+                usr_info.ref = arcirk::uuids::nil_string_uuid();
+                usr_info.parent = arcirk::uuids::nil_string_uuid();
+                usr_info.is_group = 0;
+                usr_info.deletion_mark = 0;
+                return pre::json::to_json(usr_info);
+                //std::string usr_info_json = to_string(pre::json::to_json(usr_info));
+                //return usr_info_json;
+            }
+            case tbMessages:{
+                auto tbl = messages();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.content_type ="Text";
+                return pre::json::to_json(tbl);
+                //std::string tbl_json = to_string(pre::json::to_json(tbl));
+                //return tbl_json;
+            }
+            case tbOrganizations:{
+                auto tbl = organizations();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbSubdivisions:{
+                auto tbl = subdivisions();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbWarehouses:{
+                auto tbl = warehouses();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbPriceTypes:{
+                auto tbl = price_types();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbWorkplaces:{
+                auto tbl = workplaces();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.server = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbDevices:{
+                auto tbl = devices();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.deviceType = "Desktop";
+                tbl.address = "127.0.0.1";
+                tbl.workplace = arcirk::uuids::nil_string_uuid();
+                tbl.price_type = arcirk::uuids::nil_string_uuid();
+                tbl.warehouse = arcirk::uuids::nil_string_uuid();
+                tbl.subdivision = arcirk::uuids::nil_string_uuid();
+                tbl.organization = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbDocumentsTables: {
+                auto tbl = document_table();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.price = 0;
+                tbl.quantity = 0;
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tbDocuments: {
+                auto tbl = documents();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.device_id = arcirk::uuids::nil_string_uuid();
+                tbl.date = date_to_seconds();
+                return pre::json::to_json(tbl);
+//                std::string tbl_json = to_string(pre::json::to_json(tbl));
+//                return tbl_json;
+            }
+            case tables_INVALID:{
+                break;
+            }
+            case tbDevicesType:
+                break;
+        }
+
+        return {};
+    }
+
+    template<typename T>
+    static inline T table_default_struct(arcirk::database::tables table){
+        auto j = table_default_json(table);
+        auto result = pre::json::from_json<T>(j);
+        return result;
+    }
+
 }
 
 class native_exception : public std::exception

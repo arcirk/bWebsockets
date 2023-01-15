@@ -152,8 +152,10 @@ namespace arcirk::server{
         GetMessages, //Список сообщений
         UpdateServerConfiguration, //Обновить конфигурацию сервера
         HttpServiceConfiguration, //Получить конфигурацию http сервиса 1С
-        InsertToDatabaseFromArray, //Добавить массив записей в базу
+        InsertToDatabaseFromArray, //Добавить массив записей в базу //устарела удалить
         SetNewDeviceId, //Явная установка идентификатора на устройствах где не возможно его получить
+        ObjectSetToDatabase, //Синхронизация объекта 1С с базой
+        ObjectGetFromDatabase, //Получить объект типа 1С из базы данных для десериализации
         CMD_INVALID=-1,
     };
 
@@ -173,6 +175,8 @@ namespace arcirk::server{
         {HttpServiceConfiguration, "HttpServiceConfiguration"}    ,
         {InsertToDatabaseFromArray, "InsertToDatabaseFromArray"}    ,
         {SetNewDeviceId, "SetNewDeviceId"}    ,
+        {ObjectSetToDatabase, "ObjectSetToDatabase"}    ,
+        {ObjectGetFromDatabase, "ObjectGetFromDatabase"}    ,
     })
 
 }

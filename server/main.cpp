@@ -253,7 +253,7 @@ void verify_database(){
         t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
         t_ddl.emplace(arcirk::enum_synonym(tables::tbDocuments), documents_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTable), document_table_table_ddl);
+        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTables), document_table_table_ddl);
 
         //проверка таблиц
         verify_tables(sql, m_tables, t_ddl);

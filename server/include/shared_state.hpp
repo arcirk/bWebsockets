@@ -157,6 +157,8 @@ public:
     arcirk::server::server_command_result get_http_service_configuration(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result insert_to_database_from_array(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result set_new_device_id(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result object_set_to_database(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result object_get_from_database(const variant_t& param, const variant_t& session_id);
 
     static std::string execute_random_sql_query(soci::session& sql, const std::string& query_text) ;
 
@@ -173,6 +175,8 @@ public:
     [[nodiscard]] std::string get_method_name(const long& num) const;
 
     [[nodiscard]] static std::string base64_to_string(const std::string& base64str) ;
+
+    bool edit_table_only_admin(const std::string& table_name);
 
 private:
     subscriber* get_session(const boost::uuids::uuid &uuid);
