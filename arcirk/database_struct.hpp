@@ -331,7 +331,7 @@ namespace arcirk::database{
                                          "           LEFT JOIN\n"
                                          "           Warehouses ON Devices.warehouse = Warehouses.ref\n"
                                          "           LEFT JOIN\n"
-                                         "           PriceTypes ON Devices.price = PriceTypes.ref\n"
+                                         "           PriceTypes ON Devices.price_type = PriceTypes.ref\n"
                                          "           LEFT JOIN\n"
                                          "           Workplaces ON Devices.workplace = Workplaces.ref;";
 
