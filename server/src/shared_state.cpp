@@ -1489,6 +1489,8 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
         int count = -1;
         sql << query->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
 
+        auto tr = soci::transaction(sql);
+
         query->clear();
         query->use(table_json);
 
@@ -1510,14 +1512,17 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
                     std::string name = table_section.value("name", "");
                     auto rows = table_section.value("strings", nlohmann::json{});
                     if(rows.is_array()){
-                        auto rows_items = tabular_sections.items();
-                        for (auto itr_row = rows_items.begin();  itr_row != rows_items.end() ; ++itr_row) {
+                        //auto rows_items = rows.items();
+                        for (auto itr_row = rows.begin();  itr_row != rows.end() ; ++itr_row) {
                             nlohmann::json row_ = *itr_row;
                             if(row_.is_object()){
                                 query->clear();
                                 query->use(row_);
-                                if(enm_val == tbDocuments)
-                                    sql << query->insert("DocumentsTables", true).prepare();
+                                if(enm_val == tbDocuments){
+                                    std::string query_text = query->insert("DocumentsTables", true).prepare();
+                                    sql << query_text;
+                                }
+
                             }
                         }
                     }
@@ -1525,7 +1530,7 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
             }
         }
 
-        sql.commit();
+        tr.commit();
     }
 
 
