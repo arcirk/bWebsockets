@@ -143,6 +143,8 @@ main(int argc, char* argv[]){
 
     setlocale(LC_ALL, "Russian");
 
+    std::cout << sizeof(arcirk::database::tables) << std::endl;
+    return 0;
 //    std::string t = "/2abcdef";//"/23&@@а тестовая строка"; //;
 //    int m = 0;
 //    for (auto e:t) {

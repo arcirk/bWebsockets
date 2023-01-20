@@ -572,6 +572,19 @@ namespace arcirk::database::builder {
             }
         }
 
+        template<typename T>
+        std::vector<T> to_rows_array(soci::session& sql){
+            if(!is_valid())
+                return std::vector<T>{};
+            soci::rowset<T> rs = (sql.prepare << result);
+            std::vector<T> m_vec;
+            for (auto it = rs.begin(); it != rs.end(); it++) {
+                T user_data = *it;
+                m_vec.emplace_back(user_data);
+            }
+            return m_vec;
+        }
+
         static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}){
 
             soci::rowset<soci::row> rs = (sql.prepare << query_text);

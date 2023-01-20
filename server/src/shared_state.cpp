@@ -1548,10 +1548,105 @@ arcirk::server::server_command_result shared_state::object_get_from_database(con
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     server::server_command_result result;
-    result.command = enum_synonym(server::server_commands::ObjectSetToDatabase);
+    result.command = enum_synonym(server::server_commands::ObjectGetFromDatabase);
 
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string ref = param_.value("object_ref", "");
+    std::string table_name = param_.value("table_name", "");
+
+    if(ref.empty() || table_name.empty())
+        throw native_exception("Не заданы параметры запроса!");
+
+
+    auto sql = soci_initialize();
+    auto query = std::make_shared<builder::query_builder>();
+
+    nlohmann::json j_table = table_name;
+    nlohmann::json j_object{};
+    auto o_table = j_table.get<database::tables>();
+    if(o_table == database::tbDocuments){
+        std::vector<database::documents> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::documents>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
+
+            query->clear();
+            std::vector<database::document_table> m_vec_table = query->select({"*"}).from(arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}}, true).to_rows_array<database::document_table>(sql);
+            nlohmann::json n_json_table{};
+            for (const auto itr : m_vec_table) {
+                n_json_table += pre::json::to_json<database::document_table>(itr);
+            }
+            j_object["object"]["TabularSections"] = n_json_table;
+//            j_object["object"] += {
+//                    {"TabularSections", n_json_table}
+//            };
+        }
+    }else if(o_table == database::tbDevices){
+        std::vector<database::devices> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::devices>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes", pre::json::to_json<database::devices>(r)}}
+            };
+        }
+    }else if(o_table == database::tbMessages){
+        std::vector<database::messages> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::messages>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::messages>(r)}}
+            };
+        }
+    }else if(o_table == database::tbOrganizations){
+        std::vector<database::organizations> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::organizations>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::organizations>(r)}}
+            };
+        }
+    }else if(o_table == database::tbPriceTypes){
+        std::vector<database::price_types> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::price_types>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::price_types>(r)}}
+            };
+        }
+    }else if(o_table == database::tbSubdivisions){
+        std::vector<database::subdivisions> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::subdivisions>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::subdivisions>(r)}}
+            };
+        }
+    }else if(o_table == database::tbWarehouses){
+        std::vector<database::warehouses> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::warehouses>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::warehouses>(r)}}
+            };
+        }
+    }else if(o_table == database::tbWorkplaces){
+        std::vector<database::workplaces> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::workplaces>(sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::workplaces>(r)}}
+            };
+        }
+    }else
+        throw native_exception("Сериализация выбранной таблицы не поддерживается");
+
+
+    j_object["table_name"] = table_name;;
+
+    result.result = base64::base64_encode(j_object.dump());
     result.message = "OK";
-    result.result = "success";
 
     return result;
 }

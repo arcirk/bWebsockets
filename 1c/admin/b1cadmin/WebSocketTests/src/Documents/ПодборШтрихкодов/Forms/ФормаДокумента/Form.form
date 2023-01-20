@@ -594,6 +594,10 @@
       <value>Выгрузить на сервер</value>
     </title>
     <id>1</id>
+    <toolTip>
+      <key>ru</key>
+      <value>Выгрузить на сервер</value>
+    </toolTip>
     <use>
       <common>true</common>
     </use>
@@ -614,6 +618,10 @@
       <value>Обновить с сервера</value>
     </title>
     <id>2</id>
+    <toolTip>
+      <key>ru</key>
+      <value>Обновить с сервера</value>
+    </toolTip>
     <use>
       <common>true</common>
     </use>

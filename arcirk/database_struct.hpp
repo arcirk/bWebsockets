@@ -3,6 +3,8 @@
 
 #include "includes.hpp"
 
+#define TABLES_COUNT 11
+
 BOOST_FUSION_DEFINE_STRUCT(
     (arcirk::database), user_info,
     (int, _id)
@@ -125,10 +127,10 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, second)
         (std::string, ref)
         (std::string, cache)
-        (std::string, parent)
-        (std::string, barcode)
-        (double, quantity)
         (double, price)
+        (double, quantity)
+        (std::string, barcode)
+        (std::string, parent)
 );
 
 namespace arcirk::database{
