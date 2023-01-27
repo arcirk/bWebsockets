@@ -1495,7 +1495,7 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
         query->use(table_json);
 
         if(count > 0)
-            sql << query->update(table_name, true).prepare();
+            sql << query->update(table_name, true).where({{"ref", ref}}, true).prepare();
         else
             sql << query->insert(table_name, true).prepare();
 
