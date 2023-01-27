@@ -1009,7 +1009,10 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
 
             if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert" || query_type == "delete"){
                 if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbDevices) &&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)){
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)
+                   &&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocuments)&&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables)){
                     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
                     if (!operation_available)
                         throw native_exception("Не достаточно прав доступа!");
