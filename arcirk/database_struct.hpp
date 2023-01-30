@@ -133,6 +133,16 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, parent)
 );
 
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), nomenclature,
+        (int, _id)
+        (std::string, first) // Наименование
+        (std::string, second) // Артикул
+        (std::string, ref)
+        (std::string, cache) // Все остальные реквизиты
+        (std::string, parent)
+);
+
 namespace arcirk::database{
 
     enum roles{
@@ -193,6 +203,7 @@ namespace arcirk::database{
         tbDevicesType,
         tbDocuments,
         tbDocumentsTables,
+        tbNomenclature,
         tables_INVALID=-1,
     };
 
@@ -209,6 +220,7 @@ namespace arcirk::database{
         {tbDevicesType, "DevicesType"}  ,
         {tbDocuments, "Documents"}  ,
         {tbDocumentsTables, "DocumentsTables"}  ,
+        {tbNomenclature, "Nomenclature"}  ,
     })
 
     enum views{
@@ -362,6 +374,16 @@ namespace arcirk::database{
                                           "    barcode         TEXT      DEFAULT \"\",\n"
                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
+
+    const std::string nomenclature_table_ddl = "CREATE TABLE DocumentsTables (\n"
+                                                 "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                 "    [first]         TEXT,\n"
+                                                 "    second          TEXT,\n"
+                                                 "    ref             TEXT (36) UNIQUE\n"
+                                                 "                             NOT NULL,\n"
+                                                 "    cache           TEXT      DEFAULT \"\",\n"
+                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                                 ");";
 
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
