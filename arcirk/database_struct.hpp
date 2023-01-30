@@ -375,7 +375,7 @@ namespace arcirk::database{
                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                           ");";
 
-    const std::string nomenclature_table_ddl = "CREATE TABLE DocumentsTables (\n"
+    const std::string nomenclature_table_ddl = "CREATE TABLE Nomenclature (\n"
                                                  "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                  "    [first]         TEXT,\n"
                                                  "    second          TEXT,\n"

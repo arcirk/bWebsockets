@@ -143,8 +143,59 @@ main(int argc, char* argv[]){
 
     setlocale(LC_ALL, "Russian");
 
-    std::cout << sizeof(arcirk::database::tables) << std::endl;
+    try {
+        //http тест
+        const std::string host_1 = "http://192.168.43.25/trade";
+        const std::string target = "/hs/http_trade/info";
+
+        std::string concatenated = "IIS_1C:LbyFvj1";
+        std::string data = arcirk::base64::base64_encode(concatenated);
+        std::string headerData = "Basic " + data;
+        //request.setRawHeader("Authorization", headerData.toLocal8Bit());
+
+        nlohmann::json param = {
+                {"command", "Ping"}
+        };
+
+        // I/O контекст, необходимый для всех I/O операций
+        boost::asio::io_context ioc;
+
+        // Resolver для определения endpoint'ов
+        boost::asio::ip::tcp::resolver resolver(ioc);
+        // Tcp сокет, использующейся для соединения
+        boost::asio::ip::tcp::socket socket(ioc);
+
+        // Резолвим адрес и устанавливаем соединение
+        boost::asio::connect(socket, resolver.resolve(host_1, "80"));
+
+        // Дальше необходимо создать HTTP GET реквест с указанием таргета
+        http::request<http::string_body> req(http::verb::post, target, 11, param.dump());
+        // Задаём поля HTTP заголовка
+        req.set(http::field::host, host_1);
+        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        req.set(http::field::authorization, headerData);
+        req.set(http::field::content_type, "application/json");
+
+        // Отправляем реквест через приконекченный сокет
+        http::write(socket, req);
+
+        // Часть, отвечающая за чтение респонса
+        {
+            boost::beast::flat_buffer buffer;
+            http::response<http::dynamic_body> res;
+            http::read(socket, buffer, res);
+
+            std::cout << res << std::endl;
+        }
+        // Закрываем соединение
+        socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+    }catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
     return 0;
+
+//    std::cout << sizeof(arcirk::database::tables) << std::endl;
+//    return 0;
 //    std::string t = "/2abcdef";//"/23&@@а тестовая строка"; //;
 //    int m = 0;
 //    for (auto e:t) {
