@@ -286,6 +286,12 @@ void verify_database(){
         std::cerr << e.what() << std::endl;
     }
 
+    //try {
+        arcirk::database::rebase(sql, tables::tbDocuments);
+    //} catch (std::exception &e) {
+    //    std::cerr << e.what() << std::endl;
+    //}
+
 }
 
 void read_command_line(const command_line_parser::cmd_parser& parser, server::server_config& conf){
@@ -350,6 +356,7 @@ int main(int argc, char* argv[])
         conf.ServerWorkingDirectory = program_data().string();
     //проверяем доступность базы данных
     verify_database();
+
     //читаем командную строку
     read_command_line(input, conf);
 

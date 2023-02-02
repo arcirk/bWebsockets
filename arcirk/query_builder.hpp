@@ -432,12 +432,12 @@ namespace arcirk::database::builder {
             return *this;
         }
 
-        query_builder& update(const std::string& table_name, bool use_values){
+        query_builder& update(const std::string& table_name, bool use_values, bool skip_id = true){
             queryType = Update;
             table_name_ = table_name;
             result = str_sample("update %1% set ", table_name);
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
-                if(itr->first == "_id")
+                if(itr->first == "_id" && skip_id)
                     continue;
                 result.append("[" + itr->first + "]");
                 if(use_values){
@@ -463,13 +463,13 @@ namespace arcirk::database::builder {
             return *this;
         }
 
-        query_builder& insert(const std::string& table_name, bool use_values){
+        query_builder& insert(const std::string& table_name, bool use_values, bool skip_id = true){
             queryType = Insert;
             table_name_ = table_name;
             result = str_sample("insert into %1% (", table_name);
             std::string string_values;
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
-                if(itr->first == "_id")
+                if(itr->first == "_id" && skip_id)
                     continue;
                 result.append("[" + itr->first + "]");
                 if(use_values){
