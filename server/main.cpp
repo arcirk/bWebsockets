@@ -137,97 +137,97 @@ void load_certs(boost::asio::ssl::context& ctx, const std::string& cert, const s
     load_server_certificate(ctx, _cert, _key);
 }
 
-std::vector<std::string> get_tables(soci::session& sql){
+//std::vector<std::string> get_tables(soci::session& sql){
+//
+//    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
+//    std::vector<std::string> result;
+//    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+//    {
+//        soci::row const& row = *it;
+//        result.push_back(row.get<std::string>(0));
+//    }
+//
+//    return result;
+//}
+//
+//std::vector<std::string> get_views(soci::session& sql){
+//
+//    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
+//    std::vector<std::string> result;
+//    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+//    {
+//        soci::row const& row = *it;
+//        result.push_back(row.get<std::string>(0));
+//    }
+//
+//    return result;
+//}
+//
+//void verify_table_users(soci::session& sql, const std::vector<std::string>& tables_arr){
+//
+//    using namespace soci;
+//
+//    if(std::find(tables_arr.begin(), tables_arr.end(), "Users") == tables_arr.end()){
+//        try {
+//            sql << database::users_table_ddl;
+//        } catch (std::exception &e) {
+//            std::cerr << e.what() << std::endl;
+//            return;
+//        }
+//
+//        database::user_info u;
+//        u.ref = to_string(uuids::random_uuid());
+//        u.first = "admin";
+//        u.hash = arcirk::get_hash("admin", "admin");
+//        u.parent = arcirk::uuids::nil_string_uuid();
+//        u.role = enum_synonym(database::dbAdministrator);
+//
+//        try {
+//            //Хотя бы одна учетная запись с ролью 'admin' должна быть
+//            int count = -1;
+//            sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
+//            if(count <= 0){
+//                //Добавить учетную запись по умолчанию
+//                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
+//            }
+//        } catch (std::exception &e) {
+//            std::cerr << e.what() << std::endl;
+//        }
+//    }
+//
+//}
+//
+//void verify_table_messages(soci::session& sql, const std::vector<std::string>& tables_arr){
+//    using namespace soci;
+//
+//    if(std::find(tables_arr.begin(), tables_arr.end(), "Messages") == tables_arr.end()) {
+//        try {
+//            sql << database::messages_table_ddl;
+//        } catch (std::exception &e) {
+//            std::cerr << e.what() << std::endl;
+//            return;
+//        }
+//    }
+//}
+//
+//void verify_tables(soci::session& sql, const std::vector<std::string>& tables_arr, std::map<std::string, std::string>& t_ddl){
+//    using namespace soci;
+//
+//    for (auto itr = t_ddl.begin(); itr != t_ddl.end() ; ++itr) {
+//        if(std::find(tables_arr.begin(), tables_arr.end(), itr->first) == tables_arr.end()) {
+//            try {
+//                sql << itr->second;
+//            } catch (std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                continue;
+//            }
+//        }
+//    }
+//
+//}
 
-    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
-    std::vector<std::string> result;
-    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
-    {
-        soci::row const& row = *it;
-        result.push_back(row.get<std::string>(0));
-    }
+void verify_database_structure(){
 
-    return result;
-}
-
-std::vector<std::string> get_views(soci::session& sql){
-
-    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
-    std::vector<std::string> result;
-    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
-    {
-        soci::row const& row = *it;
-        result.push_back(row.get<std::string>(0));
-    }
-
-    return result;
-}
-
-void verify_table_users(soci::session& sql, const std::vector<std::string>& tables_arr){
-
-    using namespace soci;
-
-    if(std::find(tables_arr.begin(), tables_arr.end(), "Users") == tables_arr.end()){
-        try {
-            sql << database::users_table_ddl;
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            return;
-        }
-
-        database::user_info u;
-        u.ref = to_string(uuids::random_uuid());
-        u.first = "admin";
-        u.hash = arcirk::get_hash("admin", "admin");
-        u.parent = arcirk::uuids::nil_string_uuid();
-        u.role = enum_synonym(database::dbAdministrator);
-
-        try {
-            //Хотя бы одна учетная запись с ролью 'admin' должна быть
-            int count = -1;
-            sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
-            if(count <= 0){
-                //Добавить учетную запись по умолчанию
-                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
-            }
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-        }
-    }
-
-}
-
-void verify_table_messages(soci::session& sql, const std::vector<std::string>& tables_arr){
-    using namespace soci;
-
-    if(std::find(tables_arr.begin(), tables_arr.end(), "Messages") == tables_arr.end()) {
-        try {
-            sql << database::messages_table_ddl;
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            return;
-        }
-    }
-}
-
-void verify_tables(soci::session& sql, const std::vector<std::string>& tables_arr, std::map<std::string, std::string>& t_ddl){
-    using namespace soci;
-
-    for (auto itr = t_ddl.begin(); itr != t_ddl.end() ; ++itr) {
-        if(std::find(tables_arr.begin(), tables_arr.end(), itr->first) == tables_arr.end()) {
-            try {
-                sql << itr->second;
-            } catch (std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                continue;
-            }
-        }
-    }
-
-
-}
-
-void verify_database(){
 
     using namespace boost::filesystem;
     using namespace soci;
@@ -239,58 +239,65 @@ void verify_database(){
     session sql(soci::sqlite3, connection_string);
 
     try {
-        auto m_tables = get_tables(sql);
-        auto m_views = get_views(sql);
-        verify_table_users(sql, m_tables);
-        verify_table_messages(sql, m_tables);
-
-        std::map<std::string, std::string> t_ddl;
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbOrganizations), organizations_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbPriceTypes), price_types_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbSubdivisions), subdivisions_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbWarehouses), warehouses_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbWorkplaces), workplaces_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocuments), documents_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTables), document_table_table_ddl);
-        t_ddl.emplace(arcirk::enum_synonym(tables::tbNomenclature), nomenclature_table_ddl);
-
-        //проверка таблиц
-        verify_tables(sql, m_tables, t_ddl);
-
-        //заполняем перечисления
-        int count = -1;
-        sql << "select count(*) from DevicesType", into(count);
-        auto query = std::make_shared<builder::query_builder>();
-        if(count <= 0){
-            for (int l = 0; l < 5; ++l) {
-                auto val = (devices_type)l;
-                std::string ref = to_string(arcirk::uuids::random_uuid());
-                std::string enum_name = arcirk::enum_synonym(val);
-                query->clear();
-                query->use({
-                       {"first", enum_name},
-                       {"ref", ref}
-                });
-                query->insert("DevicesType", true).execute(sql, {}, true);
-            }
-        }
-
-        t_ddl.clear();
-        t_ddl.emplace(arcirk::enum_synonym(views::dvDevicesView), devises_view_ddl);
-        //проверка представлений
-        verify_tables(sql, m_views, t_ddl);
-
-    } catch (std::exception &e) {
+        verify_database(sql);
+    }catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 
-    //try {
-        arcirk::database::rebase(sql, tables::tbDocuments);
-    //} catch (std::exception &e) {
-    //    std::cerr << e.what() << std::endl;
-    //}
+//
+//    try {
+//        auto m_tables = get_tables(sql);
+//        auto m_views = get_views(sql);
+//        verify_table_users(sql, m_tables);
+//        verify_table_messages(sql, m_tables);
+//
+//        std::map<std::string, std::string> t_ddl;
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbOrganizations), organizations_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbPriceTypes), price_types_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbSubdivisions), subdivisions_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbWarehouses), warehouses_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbWorkplaces), workplaces_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocuments), documents_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTables), document_table_table_ddl);
+//        t_ddl.emplace(arcirk::enum_synonym(tables::tbNomenclature), nomenclature_table_ddl);
+//
+//        //проверка таблиц
+//        verify_tables(sql, m_tables, t_ddl);
+//
+//        //заполняем перечисления
+//        int count = -1;
+//        sql << "select count(*) from DevicesType", into(count);
+//        auto query = std::make_shared<builder::query_builder>();
+//        if(count <= 0){
+//            for (int l = 0; l < 5; ++l) {
+//                auto val = (devices_type)l;
+//                std::string ref = to_string(arcirk::uuids::random_uuid());
+//                std::string enum_name = arcirk::enum_synonym(val);
+//                query->clear();
+//                query->use({
+//                       {"first", enum_name},
+//                       {"ref", ref}
+//                });
+//                query->insert("DevicesType", true).execute(sql, {}, true);
+//            }
+//        }
+//
+//        t_ddl.clear();
+//        t_ddl.emplace(arcirk::enum_synonym(views::dvDevicesView), devises_view_ddl);
+//        //проверка представлений
+//        verify_tables(sql, m_views, t_ddl);
+//
+//    } catch (std::exception &e) {
+//        std::cerr << e.what() << std::endl;
+//    }
+//
+//    //try {
+//    //    arcirk::database::rebase(sql, tables::tbDocuments);
+//    //} catch (std::exception &e) {
+//    //    std::cerr << e.what() << std::endl;
+//    //}
 
 }
 
@@ -354,8 +361,8 @@ int main(int argc, char* argv[])
     //если рабочий каталог не задан используем каталог по умолчанию
     if(conf.ServerWorkingDirectory.empty())
         conf.ServerWorkingDirectory = program_data().string();
-    //проверяем доступность базы данных
-    verify_database();
+    //проверяем структуру базы данных
+    verify_database_structure();
 
     //читаем командную строку
     read_command_line(input, conf);

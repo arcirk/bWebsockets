@@ -3,7 +3,16 @@
 
 #include "includes.hpp"
 
-#define TABLES_COUNT 11
+#define DATABASE_VERSION 1
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), database_config,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (int, version)
+);
 
 BOOST_FUSION_DEFINE_STRUCT(
     (arcirk::database), user_info,
@@ -215,6 +224,7 @@ namespace arcirk::database{
         tbDocuments,
         tbDocumentsTables,
         tbNomenclature,
+        tbDatabaseConfig,
         tables_INVALID=-1,
     };
 
@@ -232,6 +242,7 @@ namespace arcirk::database{
         {tbDocuments, "Documents"}  ,
         {tbDocumentsTables, "DocumentsTables"}  ,
         {tbNomenclature, "Nomenclature"}  ,
+        {tbDatabaseConfig, "DatabaseConfig"}  ,
     })
 
     enum views{
@@ -397,6 +408,15 @@ namespace arcirk::database{
                                                  "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
                                                  ");";
 
+    const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
+                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]         TEXT,\n"
+                                               "    second          TEXT,\n"
+                                               "    ref             TEXT (36) UNIQUE\n"
+                                               "                             NOT NULL,\n"
+                                               "    version         INTEGER  DEFAULT(0)  NOT NULL\n"
+                                               ");";
+
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
         //using namespace arcirk::database;
@@ -493,11 +513,17 @@ namespace arcirk::database{
                 tbl.parent = arcirk::uuids::nil_string_uuid();
                 return pre::json::to_json(tbl);
             }
+            case tbDatabaseConfig: {
+                auto tbl = database_config();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.version = 0;
+                return pre::json::to_json(tbl);
+            }
             case tables_INVALID:{
                 break;
             }
             case tbDevicesType:
-                break;
+                return devices_type();
         }
 
         return {};
@@ -523,10 +549,22 @@ namespace arcirk::database{
             case tbDocumentsTables: return document_table_table_ddl;
             case tbDocuments: return documents_table_ddl;
             case tbNomenclature: return nomenclature_table_ddl;
+            case tbDatabaseConfig: return database_config_table_ddl;
+            case tbDevicesType:  return devices_type_table_ddl;
             case tables_INVALID:{
                 break;
             }
-            case tbDevicesType:  return devices_type_table_ddl;
+        }
+
+        return {};
+    }
+
+    static inline std::string get_ddl(views table){
+        switch (table) {
+            case dvDevicesView: return devises_view_ddl;
+            case views_INVALID:{
+                break;
+            }
         }
 
         return {};
@@ -672,13 +710,211 @@ namespace arcirk::database{
 
         sql << arcirk::str_sample("drop table if exists %1%_temp;", table_name);
 
-        //if(count > 0)
         tr_.commit();
 
-//        soci::statement st = (sql.prepare << arcirk::str_sample("drop table if exists %1%_temp;", table_name));
-//        st.execute(true);
-        //tr.commit();
     }
+
+    static inline std::map<tables, int> get_release_tables_versions(){
+        std::map<tables, int> result;
+        result.emplace(tables::tbDatabaseConfig, 1);
+        result.emplace(tables::tbNomenclature, 1);
+        result.emplace(tables::tbDocuments, 1);
+        result.emplace(tables::tbDevices, 1);
+        result.emplace(tables::tbMessages, 1);
+        result.emplace(tables::tbUsers, 1);
+        result.emplace(tables::tbDevicesType, 1);
+        result.emplace(tables::tbDocumentsTables, 1);
+        result.emplace(tables::tbOrganizations, 1);
+        result.emplace(tables::tbPriceTypes, 1);
+        result.emplace(tables::tbSubdivisions, 1);
+        result.emplace(tables::tbWarehouses, 1);
+        result.emplace(tables::tbWorkplaces, 1);
+        return result;
+    }
+
+    static inline std::vector<tables> tables_name_array(){
+        std::vector<tables> result = {
+            tbUsers,
+            tbMessages,
+            tbOrganizations,
+            tbSubdivisions,
+            tbWarehouses,
+            tbPriceTypes,
+            tbWorkplaces,
+            tbDevices,
+            tbDevicesType,
+            tbDocuments,
+            tbDocumentsTables,
+            tbNomenclature,
+            tbDatabaseConfig
+        };
+        return result;
+    }
+
+    static inline std::vector<views> views_name_array(){
+        std::vector<views> result = {
+                dvDevicesView
+        };
+        return result;
+    }
+
+    static inline std::vector<std::string> get_database_tables(soci::session& sql){
+
+        soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
+        std::vector<std::string> result;
+        for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+        {
+            soci::row const& row = *it;
+            result.push_back(row.get<std::string>(0));
+        }
+
+        return result;
+    }
+
+    static inline std::vector<std::string> get_database_views(soci::session& sql){
+
+        soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
+        std::vector<std::string> result;
+        for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+        {
+            soci::row const& row = *it;
+            result.push_back(row.get<std::string>(0));
+        }
+
+        return result;
+    }
+
+    static inline void set_admin_default(soci::session& sql){
+        using namespace soci;
+        database::user_info u;
+        u.ref = to_string(uuids::random_uuid());
+        u.first = "admin";
+        u.hash = arcirk::get_hash("admin", "admin");
+        u.parent = arcirk::uuids::nil_string_uuid();
+        u.role = enum_synonym(database::dbAdministrator);
+
+        try {
+            //Хотя бы одна учетная запись с ролью 'admin' должна быть
+            int count = -1;
+            sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
+            if(count <= 0){
+                //Добавить учетную запись по умолчанию
+                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
+            }
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
+
+    static inline void set_enums_devices_types(soci::session& sql){
+        using namespace soci;
+        //заполняем перечисления
+        int count = -1;
+        sql << "select count(*) from DevicesType", into(count);
+        if(count <= 0){
+            auto tr = soci::transaction(sql);
+            for (int l = 0; l < 5; ++l) {
+                auto val = (devices_type)l;
+                std::string ref = to_string(arcirk::uuids::random_uuid());
+                std::string enum_name = arcirk::enum_synonym(val);
+                sql << query_insert("DevicesType", nlohmann::json {
+                                   {"first", enum_name},
+                                   {"ref", ref}
+                           });
+            }
+            tr.commit();
+        }
+    }
+
+    static inline void verify_database_views(soci::session& sql, const std::vector<std::string>& db_views, const std::string& view_name,  const std::string& t_ddl, bool is_rebase = false){
+        using namespace soci;
+
+            if(std::find(db_views.begin(), db_views.end(), view_name) == db_views.end()) {
+                sql << t_ddl;
+            }else{
+                if(is_rebase){
+                    auto tr = soci::transaction(sql);
+                    sql << arcirk::str_sample("drop view %1%", view_name);
+                    sql << t_ddl;
+                    tr.commit();
+                }
+            }
+    }
+
+    static inline void verify_database(soci::session& sql){
+
+        using namespace soci;
+
+        auto release_table_versions = get_release_tables_versions(); //Текущие версии релиза
+        auto database_tables = get_database_tables(sql); //Массив существующих таблиц
+        auto database_views = get_database_views(sql); //Массив существующих представлений
+        auto tables_arr = tables_name_array(); //Массив имен таблиц
+        bool is_rebase = false;
+
+        //Сначала проверим, существует ли таблица версий
+        if(std::find(database_tables.begin(), database_tables.end(), arcirk::enum_synonym(tables::tbDatabaseConfig)) == database_tables.end()) {
+            auto ddl = get_ddl(tables::tbDatabaseConfig);
+            sql << ddl;
+        }
+
+        //Заполним массив версий для сравнения
+        std::map<tables, int> current_table_versions;
+        soci::rowset<soci::row> rs = (sql.prepare << arcirk::str_sample("select * from %1%;", arcirk::enum_synonym(tables::tbDatabaseConfig)));
+        for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+        {
+            row const& row_ = *it;
+            nlohmann::json t_name = row_.get<std::string>("first");
+            auto t_ver = row_.get<int>("version");
+            current_table_versions.emplace(t_name.get<tables>(), t_ver);
+        }
+
+        //Выполним реструктуризацию
+        for (auto t_name : tables_arr) {
+            if(t_name == tables::tbDatabaseConfig)
+                continue;
+            if(std::find(database_tables.begin(), database_tables.end(), arcirk::enum_synonym(t_name)) == database_tables.end()){
+                //Таблицы не существует, просто создаем новую
+                auto tr = soci::transaction(sql);
+                sql << get_ddl(t_name);
+                sql << query_insert(arcirk::enum_synonym(tables::tbDatabaseConfig), nlohmann::json{
+                        {"first", arcirk::enum_synonym(t_name)},
+                        {"version", release_table_versions[t_name]},
+                        {"ref", arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid())}
+                });
+                tr.commit();
+            }else{
+                //Если существует, проверяем версию таблицы если не совпадает запускаем реструктуризацию
+                int current_ver = 0;
+                auto itr_ver = current_table_versions.find(t_name);
+                if(itr_ver != current_table_versions.end())
+                    current_ver = itr_ver->second;
+                if(release_table_versions[t_name] != current_ver){
+                    rebase(sql, t_name);
+                    auto tr = soci::transaction(sql);
+
+                    if(current_ver == 0)
+                        sql << query_insert(arcirk::enum_synonym(tables::tbDatabaseConfig), nlohmann::json{
+                                {"first", arcirk::enum_synonym(t_name)},
+                                {"version", release_table_versions[t_name]},
+                                {"ref", arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid())}
+                        });
+                    else
+                        sql << arcirk::str_sample("update %1% set version='%2%' where [first]='%3%'", arcirk::enum_synonym(tables::tbDatabaseConfig), std::to_string(release_table_versions[t_name]), arcirk::enum_synonym(t_name));
+                    tr.commit();
+                }
+                is_rebase = true; //пересоздадим представления
+            }
+        }
+        //Прочие действия
+        set_admin_default(sql);  //проверка на существование пользователя с правами администратора
+        set_enums_devices_types(sql); //Заполняем перечисления
+        //Проверка представлений
+        for (auto view : views_name_array()) {
+            verify_database_views(sql, database_views,  arcirk::enum_synonym(view), get_ddl(view), is_rebase);
+        }
+
+    }
+
 }
 
 class native_exception : public std::exception
