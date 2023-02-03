@@ -3,8 +3,6 @@
 
 #include "includes.hpp"
 
-#define DATABASE_VERSION 1
-
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), database_config,
         (int, _id)
@@ -651,7 +649,7 @@ namespace arcirk::database{
 
         auto tr_ = soci::transaction(sql);
         soci::rowset<soci::row> rs = (sql.prepare << arcirk::str_sample("select * from %1%_temp;", table_name));
-        std::vector<std::string> columns{};
+        //std::vector<std::string> columns{};
         auto t_info = table_info(sql, table);
         int count = 0;
         for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
