@@ -159,6 +159,11 @@ public:
     arcirk::server::server_command_result set_new_device_id(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result object_set_to_database(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result object_get_from_database(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result sync_get_discrepancy_in_data(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
+
+    void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name) const;
+    [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref) const;
 
     static std::string execute_random_sql_query(soci::session& sql, const std::string& query_text) ;
 
@@ -166,7 +171,7 @@ public:
 
     template<typename T, typename C, typename ... Ts>
     void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
-                   std::map<long, variant_t> &&def_args = {});
+                    std::map<long, variant_t> &&def_args = {});
 
     //bool call_as_proc(const long& method_num, std::vector<variant_t> params);
     void call_as_func(const long& method_num, arcirk::server::server_command_result *ret_value, std::vector<variant_t> params);
@@ -255,7 +260,7 @@ auto shared_state::ref_tuple_gen(std::vector<variant_t> &v, std::index_sequence<
 
 template<typename T, typename C, typename ... Ts>
 void shared_state::add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
-                             std::map<long, variant_t> &&def_args) {
+                              std::map<long, variant_t> &&def_args) {
 
 //    MethodMeta meta{alias, sizeof...(Ts), !std::is_same<T, void>::value, std::move(def_args),
 //                    [f, c](std::vector<variant_t> &params) -> variant_t {

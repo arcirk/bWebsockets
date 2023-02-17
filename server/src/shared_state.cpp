@@ -32,6 +32,9 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::SetNewDeviceId), this, &shared_state::set_new_device_id);
     add_method(enum_synonym(server::server_commands::ObjectSetToDatabase), this, &shared_state::object_set_to_database);
     add_method(enum_synonym(server::server_commands::ObjectGetFromDatabase), this, &shared_state::object_get_from_database);
+    add_method(enum_synonym(server::server_commands::SyncGetDiscrepancyInData), this, &shared_state::sync_get_discrepancy_in_data);
+    add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
+
 }
 
 void shared_state::join(subscriber *session) {
@@ -43,8 +46,8 @@ void shared_state::join(subscriber *session) {
     if(use_authorization())
         if(session->authorized())
             send_notify("Client Join", session, "ClientJoin");
-    else
-        send_notify("Client Join", session, "ClientJoin");
+        else
+            send_notify("Client Join", session, "ClientJoin");
 }
 
 void shared_state::send_notify(const std::string &message, subscriber *sender, const std::string& notify_command, const boost::uuids::uuid& sender_uuid) {
@@ -182,9 +185,9 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
                 fail("shared_state::forward_message", "Ошибка генерации токена!");
                 return;
             }
-            auto query = std::make_shared<database::builder::query_builder>();
-            query->use(pre::json::to_json(msg_struct));
-            query->insert("Messages", true).execute(sql);
+            auto query = database::builder::query_builder();
+            query.use(pre::json::to_json(msg_struct));
+            query.insert("Messages", true).execute(sql);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
         }
@@ -205,7 +208,7 @@ std::string shared_state::get_channel_token(soci::session& sql, const std::strin
     using namespace arcirk::database::builder;
     using namespace soci;
 
-    auto builder = std::make_shared<query_builder>();
+    auto builder = query_builder();
     std::vector<std::string> refs;
 
     try {
@@ -214,7 +217,7 @@ std::string shared_state::get_channel_token(soci::session& sql, const std::strin
                         first,
                         second}, sql_type_of_comparison::On_List).to_object()}
         };
-        auto result = builder->select({"_id","ref"}).from("Users").where(ref, true).order_by({"_id"}).exec(sql,{}, true);
+        auto result = builder.select({"_id","ref"}).from("Users").where(ref, true).order_by({"_id"}).exec(sql,{}, true);
 
 
         for (rowset<row>::const_iterator itr = result.begin(); itr != result.end(); ++itr) {
@@ -1030,53 +1033,53 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
 
             if(!table_name.empty()){
                 bool return_table = false;
-                auto query = std::make_shared<database::builder::query_builder>();
+                auto query = database::builder::query_builder();
                 if(query_type == "select"){
                     if(!values.empty())
-                        query->select(values).from(table_name);
+                        query.select(values).from(table_name);
                     else
-                        query->select({"*"}).from(table_name);
+                        query.select({"*"}).from(table_name);
                     return_table = true;
                 }else if(query_type == "insert"){
-                    query->use(values);
-                    query->insert(table_name, true);
+                    query.use(values);
+                    query.insert(table_name, true);
                 }else if(query_type == "update"){
-                    query->use(values);
-                    query->update(table_name, true);
+                    query.use(values);
+                    query.update(table_name, true);
                 }else if(query_type == "update_or_insert"){
-                    query->use(values);
-                    std::string ref = query->ref();
+                    query.use(values);
+                    std::string ref = query.ref();
                     if(ref.empty())
                         throw native_exception("Не найдено значение идентификатора для сравнения!");
                     int count = 0;
-                    auto query_temp = std::make_shared<database::builder::query_builder>();
-                    sql << query_temp->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+                    auto query_temp = database::builder::query_builder();
+                    sql << query_temp.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
                     if(count <= 0){
-                        query->insert(table_name, true);
+                        query.insert(table_name, true);
                     }else{
-                        query->update(table_name, true).where({{"ref", ref}}, true);
+                        query.update(table_name, true).where({{"ref", ref}}, true);
                     }
                 }else if(query_type == "delete"){
-                    query->remove().from(table_name);
+                    query.remove().from(table_name);
                 }
-                if(query->is_valid()){
+                if(query.is_valid()){
                     if(!where_values.empty()){
-                        query->where(where_values, true);
+                        query.where(where_values, true);
                     }
                     if(!order_by.empty()){
-                        query->order_by(order_by);
+                        query.order_by(order_by);
                     }
                     if(not_exists.empty())
-                         query_text = query->prepare();
+                        query_text = query.prepare();
                     else{
-                        query_text = query->prepare(not_exists, true);
+                        query_text = query.prepare(not_exists, true);
                     }
                 }
                 //std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
                 else{
-                    query->execute(sql, {}, true);
+                    query.execute(sql, {}, true);
                     result.result = "{}";
                 }
             }
@@ -1135,20 +1138,20 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
     }
 
     auto p_info = values_from_param<user_info>(values);
-    auto query = std::make_shared<builder::query_builder>();
+    auto query = builder::query_builder();
 
     path db_path = sqlite_database_path();
     std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
     session sql(soci::sqlite3, connection_string);
 
     int count = -1;
-    sql << query->select({"count(*)"}).from("Users").where({{"ref", ref}}, true).prepare(), into(count);
+    sql << query.select({"count(*)"}).from("Users").where({{"ref", ref}}, true).prepare(), into(count);
 
-    query->use(p_info);
+    query.use(p_info);
     if(count <= 0){
-        query->insert("Users", true).execute(sql);
+        query.insert("Users", true).execute(sql);
     }else{
-        query->update("Users", true).where({{"ref", ref}}, true).execute(sql);
+        query.update("Users", true).where({{"ref", ref}}, true).execute(sql);
     }
 
     result.result = "success";
@@ -1157,7 +1160,7 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
     return result;
 }
 
-soci::session shared_state::soci_initialize() const {
+soci::session shared_state::soci_initialize() const{
     using namespace boost::filesystem;
     using namespace soci;
 
@@ -1184,7 +1187,6 @@ soci::session shared_state::soci_initialize() const {
         } catch (native_exception &e) {
             fail("shared_state::soci_initialize:error", e.what(), false);
         }
-
     }
     return {};
 }
@@ -1223,11 +1225,11 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     auto sql = soci_initialize();
     std::string token = get_channel_token(sql, sender, recipient);
 
-    auto query = std::make_shared<database::builder::query_builder>();
+    auto query = database::builder::query_builder();
     nlohmann::json table = {};
 
-    query->select({"*"}).from("Messages").where({{"token", token}}, true).order_by({"date"});
-    query->execute(query->prepare(), sql, table);
+    query.select({"*"}).from("Messages").where({{"token", token}}, true).order_by({"date"});
+    query.execute(query.prepare(), sql, table);
 
     result.message = base64::base64_encode(table.dump());
 
@@ -1298,8 +1300,8 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
     nlohmann::json remote_param = {
             {"command", enum_synonym(server::server_commands::SetNewDeviceId)},
             {"param", base64::base64_encode(nlohmann::json({
-                {"device_id", new_uuid_device}
-            }).dump())},
+                                                                   {"device_id", new_uuid_device}
+                                                           }).dump())},
     };
 
     nlohmann::json cmd_param = {
@@ -1308,7 +1310,7 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
 
     //эмитируем команду клиенту
     execute_command_handler("cmd " + enum_synonym(server::server_commands::CommandToClient) + " " + remote_session_ + " " +
-                                    base64::base64_encode(cmd_param.dump()), get_session(uuid));
+                            base64::base64_encode(cmd_param.dump()), get_session(uuid));
 
     result.message = "OK";
     result.result = "success";
@@ -1357,26 +1359,26 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
 
         auto sql = soci_initialize();
         auto tr = soci::transaction(sql);
-        auto query = std::make_shared<builder::query_builder>();
+        auto query = builder::query_builder();
         auto items = values_array.items();
 
         if(delete_is_exists){
             if(where_values.is_object()){
                 //удалить все записи удовлетворяющие условиям
-                sql << query->remove().from(table_name).where(where_values, true).prepare();
+                sql << query.remove().from(table_name).where(where_values, true).prepare();
             }else if(where_values.is_array()){
                 //удалить выбранные записи удовлетворяющие условиям
                 for (auto itr = items.begin(); itr != items.end(); ++itr) {
                     if (!itr.value().is_object())
                         throw native_exception("Не верная запись в массиве.");
-                    query->clear();
+                    query.clear();
                     nlohmann::json where{};
                     for (auto itr_ = where_values.begin();  itr_ != where_values.end() ; ++itr_) {
                         where += {
                                 {itr, itr.value().value(*itr_, "")}
                         };
                     }
-                    sql << query->remove().from(table_name).where(where, true).prepare();
+                    sql << query.remove().from(table_name).where(where, true).prepare();
                 }
             }
         }
@@ -1385,12 +1387,12 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
             if (!itr.value().is_object())
                 throw native_exception("Не верная запись в массиве.");
 
-            query->clear();
-            query->use(itr.value());
-            query->insert(table_name, true);
+            query.clear();
+            query.use(itr.value());
+            query.insert(table_name, true);
             std::string query_text;
             if(where_values.is_object()) {
-                query_text = query->prepare(where_values, true);
+                query_text = query.prepare(where_values, true);
             }else if(where_values.is_array()){
                 nlohmann::json where{};
                 for (auto itr_ = where_values.begin();  itr_ != where_values.end() ; ++itr_) {
@@ -1398,7 +1400,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
                             {*itr_, itr.value().value(*itr_, "")}
                     };
                 }
-                query_text = query->prepare(where, true);
+                query_text = query.prepare(where, true);
             }
 
             sql << query_text;
@@ -1438,10 +1440,79 @@ bool shared_state::edit_table_only_admin(const std::string &table_name) {
     return std::find(vec.begin(), vec.end(), table_name) != vec.end();
 }
 
+void shared_state::data_synchronization_set_object(const nlohmann::json &object, const std::string& table_name) const {
+
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto standard_attributes = object.value("StandardAttributes", nlohmann::json{});
+    nlohmann::json enm_json = table_name;
+    auto enm_val = enm_json.get<arcirk::database::tables>();
+    auto table_json = table_default_json(enm_val);
+    auto items = table_json.items();
+    for (auto itr = items.begin();  itr != items.end() ; ++itr) {
+        table_json[itr.key()] = standard_attributes[itr.key()];
+    }
+
+    auto query = builder::query_builder();
+    query.use(table_json);
+    std::string ref = query.ref();
+
+    if(ref.empty())
+        throw native_exception("Не указан идентификатор объекта!");
+
+    auto sql = soci_initialize();
+    int count = -1;
+    sql << query.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+
+    auto tr = soci::transaction(sql);
+
+    query.clear();
+    query.use(table_json);
+
+    if(count > 0)
+        sql << query.update(table_name, true).where({{"ref", ref}}, true).prepare();
+    else
+        sql << query.insert(table_name, true).prepare();
+
+    if(enm_val == tbDocuments){
+        query.clear();
+        sql << query.remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
+    }
+
+    auto tabular_sections = object.value("TabularSections", nlohmann::json{});
+    if(tabular_sections.is_array()){
+        for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
+            nlohmann::json table_section = *itr;
+            if(table_section.is_object()){
+                std::string name = table_section.value("name", "");
+                auto rows = table_section.value("strings", nlohmann::json{});
+                if(rows.is_array()){
+                    //auto rows_items = rows.items();
+                    for (auto itr_row = rows.begin();  itr_row != rows.end() ; ++itr_row) {
+                        nlohmann::json row_ = *itr_row;
+                        if(row_.is_object()){
+                            query.clear();
+                            query.use(row_);
+                            if(enm_val == tbDocuments){
+                                std::string query_text = query.insert("DocumentsTables", true).prepare();
+                                sql << query_text;
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    tr.commit();
+}
+
 arcirk::server::server_command_result shared_state::object_set_to_database(const variant_t &param,
                                                                            const variant_t &session_id) {
     using namespace arcirk::database;
-    using namespace soci;
+//    using namespace soci;
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     server::server_command_result result;
@@ -1472,68 +1543,70 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
         if(object.empty() || !object.is_object())
             throw native_exception("Не верная структура объекта!");
 
-        auto standard_attributes = object.value("StandardAttributes", nlohmann::json{});
-        nlohmann::json enm_json = table_name;
-        auto enm_val = enm_json.get<arcirk::database::tables>();
-        auto table_json = table_default_json(enm_val);
-        auto items = table_json.items();
-        for (auto itr = items.begin();  itr != items.end() ; ++itr) {
-            table_json[itr.key()] = standard_attributes.value(itr.key(), itr.value());
-        }
-
-        auto query = std::make_shared<builder::query_builder>();
-        query->use(table_json);
-        std::string ref = query->ref();
-
-        if(ref.empty())
-            throw native_exception("Не указан идентификатор объекта!");
-
-        auto sql = soci_initialize();
-        int count = -1;
-        sql << query->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
-
-        auto tr = soci::transaction(sql);
-
-        query->clear();
-        query->use(table_json);
-
-        if(count > 0)
-            sql << query->update(table_name, true).where({{"ref", ref}}, true).prepare();
-        else
-            sql << query->insert(table_name, true).prepare();
-
-        if(enm_val == tbDocuments){
-            query->clear();
-            sql << query->remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
-        }
-
-        auto tabular_sections = object.value("TabularSections", nlohmann::json{});
-        if(tabular_sections.is_array()){
-            for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
-                nlohmann::json table_section = *itr;
-                if(table_section.is_object()){
-                    std::string name = table_section.value("name", "");
-                    auto rows = table_section.value("strings", nlohmann::json{});
-                    if(rows.is_array()){
-                        //auto rows_items = rows.items();
-                        for (auto itr_row = rows.begin();  itr_row != rows.end() ; ++itr_row) {
-                            nlohmann::json row_ = *itr_row;
-                            if(row_.is_object()){
-                                query->clear();
-                                query->use(row_);
-                                if(enm_val == tbDocuments){
-                                    std::string query_text = query->insert("DocumentsTables", true).prepare();
-                                    sql << query_text;
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        tr.commit();
+        data_synchronization_set_object(object, table_name);
+//
+//        auto standard_attributes = object.value("StandardAttributes", nlohmann::json{});
+//        nlohmann::json enm_json = table_name;
+//        auto enm_val = enm_json.get<arcirk::database::tables>();
+//        auto table_json = table_default_json(enm_val);
+//        auto items = table_json.items();
+//        for (auto itr = items.begin();  itr != items.end() ; ++itr) {
+//            table_json[itr.key()] = standard_attributes.value(itr.key(), itr.value());
+//        }
+//
+//        auto query = std::make_shared<builder::query_builder>();
+//        query->use(table_json);
+//        std::string ref = query->ref();
+//
+//        if(ref.empty())
+//            throw native_exception("Не указан идентификатор объекта!");
+//
+//        auto sql = soci_initialize();
+//        int count = -1;
+//        sql << query->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+//
+//        auto tr = soci::transaction(sql);
+//
+//        query->clear();
+//        query->use(table_json);
+//
+//        if(count > 0)
+//            sql << query->update(table_name, true).where({{"ref", ref}}, true).prepare();
+//        else
+//            sql << query->insert(table_name, true).prepare();
+//
+//        if(enm_val == tbDocuments){
+//            query->clear();
+//            sql << query->remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
+//        }
+//
+//        auto tabular_sections = object.value("TabularSections", nlohmann::json{});
+//        if(tabular_sections.is_array()){
+//            for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
+//                nlohmann::json table_section = *itr;
+//                if(table_section.is_object()){
+//                    std::string name = table_section.value("name", "");
+//                    auto rows = table_section.value("strings", nlohmann::json{});
+//                    if(rows.is_array()){
+//                        //auto rows_items = rows.items();
+//                        for (auto itr_row = rows.begin();  itr_row != rows.end() ; ++itr_row) {
+//                            nlohmann::json row_ = *itr_row;
+//                            if(row_.is_object()){
+//                                query->clear();
+//                                query->use(row_);
+//                                if(enm_val == tbDocuments){
+//                                    std::string query_text = query->insert("DocumentsTables", true).prepare();
+//                                    sql << query_text;
+//                                }
+//
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        tr.commit();
     }
 
 
@@ -1542,6 +1615,117 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
 
     return result;
 
+}
+
+nlohmann::json shared_state::data_synchronization_get_object(const std::string& table_name, const std::string& ref) const{
+
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto sql = soci_initialize();
+    auto query = builder::query_builder();
+
+    nlohmann::json j_table = table_name;
+    nlohmann::json j_object{};
+    auto o_table = j_table.get<database::tables>();
+    if(o_table == database::tbDocuments){
+        std::vector<database::documents> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                            true).rows_to_array<database::documents>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
+
+            query.clear();
+            std::vector<database::document_table> m_vec_table = query.select({"*"}).from(
+                    arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}},
+                                                                                     true).rows_to_array<database::document_table>(
+                    sql);
+            nlohmann::json n_json_table{};
+            for (const auto itr : m_vec_table) {
+                n_json_table += pre::json::to_json<database::document_table>(itr);
+            }
+            j_object["object"]["TabularSections"] = n_json_table;
+//            j_object["object"] += {
+//                    {"TabularSections", n_json_table}
+//            };
+        }
+    }else if(o_table == database::tbDevices){
+        std::vector<database::devices> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                          true).rows_to_array<database::devices>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes", pre::json::to_json<database::devices>(r)}}
+            };
+        }
+    }else if(o_table == database::tbMessages){
+        std::vector<database::messages> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                           true).rows_to_array<database::messages>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::messages>(r)}}
+            };
+        }
+    }else if(o_table == database::tbOrganizations){
+        std::vector<database::organizations> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                                true).rows_to_array<database::organizations>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::organizations>(r)}}
+            };
+        }
+    }else if(o_table == database::tbPriceTypes){
+        std::vector<database::price_types> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                              true).rows_to_array<database::price_types>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::price_types>(r)}}
+            };
+        }
+    }else if(o_table == database::tbSubdivisions){
+        std::vector<database::subdivisions> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                               true).rows_to_array<database::subdivisions>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::subdivisions>(r)}}
+            };
+        }
+    }else if(o_table == database::tbWarehouses){
+        std::vector<database::warehouses> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                             true).rows_to_array<database::warehouses>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::warehouses>(r)}}
+            };
+        }
+    }else if(o_table == database::tbWorkplaces){
+        std::vector<database::workplaces> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
+                                                                                             true).rows_to_array<database::workplaces>(
+                sql);
+        if(!m_vec.empty()){
+            auto r = m_vec[0];
+            j_object ={
+                    {"object", {"StandardAttributes" ,pre::json::to_json<database::workplaces>(r)}}
+            };
+        }
+    }else
+        throw native_exception("Сериализация выбранной таблицы не поддерживается");
+
+    j_object["table_name"] = table_name;
+
+    return j_object;
 }
 
 arcirk::server::server_command_result shared_state::object_get_from_database(const variant_t &param,
@@ -1563,92 +1747,296 @@ arcirk::server::server_command_result shared_state::object_get_from_database(con
         throw native_exception("Не заданы параметры запроса!");
 
 
-    auto sql = soci_initialize();
-    auto query = std::make_shared<builder::query_builder>();
-
-    nlohmann::json j_table = table_name;
-    nlohmann::json j_object{};
-    auto o_table = j_table.get<database::tables>();
-    if(o_table == database::tbDocuments){
-        std::vector<database::documents> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::documents>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
-
-            query->clear();
-            std::vector<database::document_table> m_vec_table = query->select({"*"}).from(arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}}, true).to_rows_array<database::document_table>(sql);
-            nlohmann::json n_json_table{};
-            for (const auto itr : m_vec_table) {
-                n_json_table += pre::json::to_json<database::document_table>(itr);
-            }
-            j_object["object"]["TabularSections"] = n_json_table;
-//            j_object["object"] += {
-//                    {"TabularSections", n_json_table}
+//    auto sql = soci_initialize();
+//    auto query = std::make_shared<builder::query_builder>();
+//
+//    nlohmann::json j_table = table_name;
+//    nlohmann::json j_object{};
+//    auto o_table = j_table.get<database::tables>();
+//    if(o_table == database::tbDocuments){
+//        std::vector<database::documents> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::documents>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
+//
+//            query->clear();
+//            std::vector<database::document_table> m_vec_table = query->select({"*"}).from(arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}}, true).to_rows_array<database::document_table>(sql);
+//            nlohmann::json n_json_table{};
+//            for (const auto itr : m_vec_table) {
+//                n_json_table += pre::json::to_json<database::document_table>(itr);
+//            }
+//            j_object["object"]["TabularSections"] = n_json_table;
+////            j_object["object"] += {
+////                    {"TabularSections", n_json_table}
+////            };
+//        }
+//    }else if(o_table == database::tbDevices){
+//        std::vector<database::devices> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::devices>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes", pre::json::to_json<database::devices>(r)}}
 //            };
-        }
-    }else if(o_table == database::tbDevices){
-        std::vector<database::devices> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::devices>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes", pre::json::to_json<database::devices>(r)}}
-            };
-        }
-    }else if(o_table == database::tbMessages){
-        std::vector<database::messages> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::messages>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::messages>(r)}}
-            };
-        }
-    }else if(o_table == database::tbOrganizations){
-        std::vector<database::organizations> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::organizations>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::organizations>(r)}}
-            };
-        }
-    }else if(o_table == database::tbPriceTypes){
-        std::vector<database::price_types> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::price_types>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::price_types>(r)}}
-            };
-        }
-    }else if(o_table == database::tbSubdivisions){
-        std::vector<database::subdivisions> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::subdivisions>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::subdivisions>(r)}}
-            };
-        }
-    }else if(o_table == database::tbWarehouses){
-        std::vector<database::warehouses> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::warehouses>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::warehouses>(r)}}
-            };
-        }
-    }else if(o_table == database::tbWorkplaces){
-        std::vector<database::workplaces> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::workplaces>(sql);
-        if(!m_vec.empty()){
-            auto r = m_vec[0];
-            j_object ={
-                    {"object", {"StandardAttributes" ,pre::json::to_json<database::workplaces>(r)}}
-            };
-        }
-    }else
-        throw native_exception("Сериализация выбранной таблицы не поддерживается");
+//        }
+//    }else if(o_table == database::tbMessages){
+//        std::vector<database::messages> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::messages>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::messages>(r)}}
+//            };
+//        }
+//    }else if(o_table == database::tbOrganizations){
+//        std::vector<database::organizations> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::organizations>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::organizations>(r)}}
+//            };
+//        }
+//    }else if(o_table == database::tbPriceTypes){
+//        std::vector<database::price_types> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::price_types>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::price_types>(r)}}
+//            };
+//        }
+//    }else if(o_table == database::tbSubdivisions){
+//        std::vector<database::subdivisions> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::subdivisions>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::subdivisions>(r)}}
+//            };
+//        }
+//    }else if(o_table == database::tbWarehouses){
+//        std::vector<database::warehouses> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::warehouses>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::warehouses>(r)}}
+//            };
+//        }
+//    }else if(o_table == database::tbWorkplaces){
+//        std::vector<database::workplaces> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::workplaces>(sql);
+//        if(!m_vec.empty()){
+//            auto r = m_vec[0];
+//            j_object ={
+//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::workplaces>(r)}}
+//            };
+//        }
+//    }else
+//        throw native_exception("Сериализация выбранной таблицы не поддерживается");
+//
+//
+//    j_object["table_name"] = table_name;
 
-
-    j_object["table_name"] = table_name;;
+    auto j_object = data_synchronization_get_object(table_name, ref);
 
     result.result = base64::base64_encode(j_object.dump());
+    result.message = "OK";
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data(const variant_t &param,
+                                                                                 const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::SyncGetDiscrepancyInData);
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string device_id = param_.value("device_id", "");
+    std::string table_name = param_.value("table_name", "");
+    std::string workplace = param_.value("workplace", "");
+    std::string parent = param_.value("parent", "");
+    std::string base64_param = param_.value("base64_param", ""); //упакованная таблица с локального устройства
+    nlohmann::json ext_table{};
+
+    if (table_name.empty() || device_id.empty())
+        throw native_exception("Не достаточно параметров для выполнения запроса!");
+
+    if (table_name == arcirk::enum_synonym(tables::tbDocumentsTables) && parent.empty())
+        throw native_exception("Не достаточно параметров для выполнения запроса!");
+
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        throw native_exception("Не достаточно прав доступа!");
+
+    auto sql = soci_initialize();
+
+    //nlohmann::json result_table{};
+    //nlohmann::json t = table_name;
+    //auto table_type = t.get<tables>();
+    auto query = builder::query_builder();
+
+    int count = -1;
+    //Проверим зарегистрировано ли устройство
+    query.row_count().from(enum_synonym(tables::tbDevices)).where(nlohmann::json{
+            {"ref", device_id}
+    }, true);
+    sql << query.prepare(), into(count);
+
+    if (count <= 0)
+        throw native_exception(str_sample("Устройство с идентификатором %1% не зарегистрировано!", device_id).c_str());
+
+    query.clear();
+
+    if (!base64_param.empty()) {
+        ext_table = nlohmann::json::parse(arcirk::base64::base64_decode(base64_param));
+    }
+
+    //if(table_type == tables::tbDocuments){
+
+    auto tr = soci::transaction(sql);
+    //Заполняем временную таблицу данными с клиента
+    std::string temp_table = table_name + "_temp";
+    std::string sql_ddl = str_sample("CREATE TEMP TABLE IF NOT EXISTS  %1% (\n"
+                                     "ref TEXT,\n"
+                                     "version INTEGER\n"
+                                     ");\n", temp_table);
+    sql << sql_ddl;
+
+    if (ext_table.is_array() && !ext_table.empty()) {
+        for (auto itr = ext_table.begin(); itr != ext_table.end(); ++itr) {
+            nlohmann::json r = *itr;
+            query.clear();
+            query.use(r);
+            sql_ddl = query.insert(temp_table, true).prepare();
+            sql << sql_ddl;
+        }
+    }
+
+    //std::cout << sql_ddl << std::endl;
+    sql << sql_ddl;
+    tr.commit();
+
+    sql_ddl = "";
+
+    nlohmann::json where_values = {
+            {"device_id", device_id}
+    };
+    if (!workplace.empty())
+        where_values["workplace"] = workplace;
+
+    auto q = builder::query_builder();
+
+    q.select(nlohmann::json{
+            {"ref", "ref"},
+            {"ver1", "max(Ver1)"},
+            {"ver2", "max(Ver2)"}
+    }).from(builder::query_builder().select(nlohmann::json{
+                    {"ref",  "ref"},
+                    {"ver1", "version"},
+                    {"ver2", "-1"}}).from(table_name).where(where_values, true).union_all(
+                    builder::query_builder().select(nlohmann::json{
+                            {"ref",  "ref"},
+                            {"ver1", "-1"},
+                            {"ver2", "version"}
+                    }).from(table_name + "_temp")
+            )
+    ).group_by("ref");
+
+    sql_ddl.append(q.prepare());
+
+    //std::cout << sql_ddl << std::endl;
+
+//        sql_ddl.append("SELECT ref,\n"
+//                       "       max(Ver1) AS ver1,\n"
+//                       "       max(Ver2) AS ver2\n"
+//                       "  FROM (\n"
+//                       "           SELECT ref,\n"
+//                       "                  version AS Ver1,\n"
+//                       "                  -1 AS Ver2\n"
+//                       "             FROM Documents\n"
+//                       "           UNION ALL\n"
+//                       "           SELECT ref,\n"
+//                       "                  -1,\n"
+//                       "                  version\n"
+//                       "             FROM Documents_temp\n"
+//                       "       )\n"
+//                       " GROUP BY ref;");
+
+    nlohmann::json result_j{};
+    //std::cout << sql_ddl << std::endl;
+    soci::rowset<soci::row> rs = (sql.prepare << sql_ddl);
+    for (auto it = rs.begin(); it != rs.end(); it++) {
+        const soci::row& row_ = *it;
+        std::string ref = builder::query_builder::get_value<std::string>(row_, 0);
+        int ver1 = std::stoi(builder::query_builder::get_value<std::string>(row_, 1)) ; //версия сервера
+        int ver2 = std::stoi(builder::query_builder::get_value<std::string>(row_, 2)); //версия клиента
+        if (ver1 > ver2) {
+            result_j["objects"] += {
+                    {ref, data_synchronization_get_object(table_name, ref)}
+            };
+        }
+        result_j["comparison_table"] += nlohmann::json{
+                {"ref",  ref},
+                {"ver1", ver1},
+                {"ver2", ver2}
+        };
+    }
+
+    sql.close();
+
+    result.result = base64::base64_encode(result_j.dump());
+    result.message = "OK";
+
+    return result;
+
+}
+
+arcirk::server::server_command_result shared_state::sync_update_data_on_the_server(const variant_t &param,
+                                                                                   const variant_t &session_id) {
+
+
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::SyncUpdateDataOnTheServer);
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+    std::string device_id = param_.value("device_id", "");
+    std::string table_name = param_.value("table_name", "");
+//    std::string workplace = param_.value("workplace", "");
+//    std::string parent = param_.value("parent", "");
+    std::string base64_param = param_.value("base64_param", ""); //упакованная таблица с локального устройства
+    nlohmann::json ext_objects{};
+
+    if (table_name.empty() || device_id.empty())
+        throw native_exception("Не достаточно параметров для выполнения запроса!");
+
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        throw native_exception("Не достаточно прав доступа!");
+
+    auto sql = soci_initialize();
+
+    if (!base64_param.empty()) {
+        ext_objects = nlohmann::json::parse(arcirk::base64::base64_decode(base64_param));
+        if(ext_objects.is_array()){
+            for (auto itr = ext_objects.begin(); itr != ext_objects.end(); ++itr) {
+                if(itr->is_object()){
+                    nlohmann::json obj = *itr;
+                    data_synchronization_set_object(obj["object"], table_name);
+                }
+            }
+        }
+    }
+
+
+
+    result.result = "success";
     result.message = "OK";
 
     return result;

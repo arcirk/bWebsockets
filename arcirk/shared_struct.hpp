@@ -17,40 +17,40 @@ typedef std::function<void()> callback_successful_authorization;
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::client), client_param,
         (std::string, app_name)
-        (std::string, user_uuid)
-        (std::string, user_name)
-        (std::string, hash)
-        (std::string, host_name)
-        (std::string, password)
-        (std::string, session_uuid)
-        (std::string, system_user)
-        (std::string, device_id)
+                (std::string, user_uuid)
+                (std::string, user_name)
+                (std::string, hash)
+                (std::string, host_name)
+                (std::string, password)
+                (std::string, session_uuid)
+                (std::string, system_user)
+                (std::string, device_id)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_response,
         (std::string, command)
-        (std::string, message)
-        (std::string, param)
-        (std::string, result)
-        (std::string, sender)
-        (std::string, receiver)
-        (std::string, uuid_form)
-        (std::string, app_name)
-        (std::string, sender_name)
-        (std::string, sender_uuid)
-        (std::string, receiver_name)
-        (std::string, receiver_uuid)
-        (std::string, version)
+                (std::string, message)
+                (std::string, param)
+                (std::string, result)
+                (std::string, sender)
+                (std::string, receiver)
+                (std::string, uuid_form)
+                (std::string, app_name)
+                (std::string, sender_name)
+                (std::string, sender_uuid)
+                (std::string, receiver_name)
+                (std::string, receiver_uuid)
+                (std::string, version)
 )
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_command_result,
         (std::string, command)
-        (std::string, uuid_form)
-        (std::string, result)
-        (std::string, message)
-        (std::string, error_description)
-        (std::string, param)
+                (std::string, uuid_form)
+                (std::string, result)
+                (std::string, message)
+                (std::string, error_description)
+                (std::string, param)
 
 )
 
@@ -156,6 +156,8 @@ namespace arcirk::server{
         SetNewDeviceId, //Явная установка идентификатора на устройствах где не возможно его получить
         ObjectSetToDatabase, //Синхронизация объекта 1С с базой
         ObjectGetFromDatabase, //Получить объект типа 1С из базы данных для десериализации
+        SyncGetDiscrepancyInData, //Получить расхождения в данных между базами на клиенте и на Сервере
+        SyncUpdateDataOnTheServer, //Обновляет данные на сервере по запросу клиента
         CMD_INVALID=-1,
     };
 
@@ -177,6 +179,8 @@ namespace arcirk::server{
         {SetNewDeviceId, "SetNewDeviceId"}    ,
         {ObjectSetToDatabase, "ObjectSetToDatabase"}    ,
         {ObjectGetFromDatabase, "ObjectGetFromDatabase"}    ,
+        {SyncGetDiscrepancyInData, "SyncGetDiscrepancyInData"}    ,
+        {SyncUpdateDataOnTheServer, "SyncUpdateDataOnTheServer"}    ,
     })
 
 }
@@ -184,36 +188,36 @@ namespace arcirk::server{
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_config,
         (std::string, ServerHost)
-        (int, ServerPort)
-        (std::string, ServerUser)
-        (std::string, ServerUserHash)
-        (std::string, ServerName)
-        (std::string, ServerHttpRoot)
-        (std::string, ServerWorkingDirectory)
-        (bool, AutoConnect)
-        (bool, UseLocalWebDavDirectory)
-        (std::string, LocalWebDavDirectory)
-        (std::string, WebDavHost)
-        (std::string, WebDavUser)
-        (std::string, WebDavPwd)
-        (bool, WebDavSSL)
-        (int, SQLFormat)
-        (std::string, SQLHost)
-        (std::string, SQLUser)
-        (std::string, SQLPassword)
-        (std::string, HSHost)
-        (std::string, HSUser)
-        (std::string, HSPassword)
-        (bool, ServerSSL)
-        (std::string, SSL_crt_file)
-        (std::string, SSL_key_file)
-        (bool, UseAuthorization)
-        (std::string, ApplicationProfile)
-        (int, ThreadsCount)
-        (std::string, Version)
-        (bool, ResponseTransferToBase64)
-        (bool, AllowDelayedAuthorization)
-        (bool, AllowHistoryMessages)
+                (int, ServerPort)
+                (std::string, ServerUser)
+                (std::string, ServerUserHash)
+                (std::string, ServerName)
+                (std::string, ServerHttpRoot)
+                (std::string, ServerWorkingDirectory)
+                (bool, AutoConnect)
+                (bool, UseLocalWebDavDirectory)
+                (std::string, LocalWebDavDirectory)
+                (std::string, WebDavHost)
+                (std::string, WebDavUser)
+                (std::string, WebDavPwd)
+                (bool, WebDavSSL)
+                (int, SQLFormat)
+                (std::string, SQLHost)
+                (std::string, SQLUser)
+                (std::string, SQLPassword)
+                (std::string, HSHost)
+                (std::string, HSUser)
+                (std::string, HSPassword)
+                (bool, ServerSSL)
+                (std::string, SSL_crt_file)
+                (std::string, SSL_key_file)
+                (bool, UseAuthorization)
+                (std::string, ApplicationProfile)
+                (int, ThreadsCount)
+                (std::string, Version)
+                (bool, ResponseTransferToBase64)
+                (bool, AllowDelayedAuthorization)
+                (bool, AllowHistoryMessages)
 );
 
 #endif

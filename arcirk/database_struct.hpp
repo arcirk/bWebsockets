@@ -6,159 +6,169 @@
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), database_config,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (int, version)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-    (arcirk::database), user_info,
-    (int, _id)
-    (std::string, first)
-    (std::string, second)
-    (std::string, ref)
-    (std::string, hash)
-    (std::string, role)
-    (std::string, performance)
-    (std::string, parent)
-    (std::string, cache)
-    (int, is_group)
-    (int, deletion_mark)
-    );
+        (arcirk::database), user_info,
+        (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, hash)
+                (std::string, role)
+                (std::string, performance)
+                (std::string, parent)
+                (std::string, cache)
+                (int, is_group)
+                (int, deletion_mark)
+                (int, version)
+);
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), messages,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, message)
-        (std::string, token)
-        (int, date)
-        (std::string, content_type)
-        (int, unread_messages)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, message)
+                (std::string, token)
+                (int, date)
+                (std::string, content_type)
+                (int, unread_messages)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), organizations,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), subdivisions,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), warehouses,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), price_types,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), workplaces,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
-        (std::string, server)
-
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (std::string, server)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), devices,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
-        (std::string, deviceType)
-        (std::string, address)
-        (std::string, workplace)
-        (std::string, price_type)
-        (std::string, warehouse)
-        (std::string, subdivision)
-        (std::string, organization)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (std::string, deviceType)
+                (std::string, address)
+                (std::string, workplace)
+                (std::string, price_type)
+                (std::string, warehouse)
+                (std::string, subdivision)
+                (std::string, organization)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), devices_view,
         (std::string, ref)
-        (std::string, workplace)
-        (std::string, price)
-        (std::string, warehouse)
-        (std::string, subdivision)
-        (std::string, organization)
+                (std::string, workplace)
+                (std::string, price)
+                (std::string, warehouse)
+                (std::string, subdivision)
+                (std::string, organization)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), documents,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
-        (std::string, number)
-        (int, date)
-        (std::string, xml_type)
-        (int, version)
-        (std::string, device_id)
-
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (std::string, number)
+                (int, date)
+                (std::string, xml_type)
+                (int, version)
+                (std::string, device_id)
+                (std::string, workplace)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), document_table,
         (int, _id)
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
-        (std::string, cache)
-        (double, price)
-        (double, quantity)
-        (std::string, barcode)
-        (std::string, parent)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (double, price)
+                (double, quantity)
+                (std::string, barcode)
+                (std::string, parent)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), nomenclature,
         (int, _id)
-        (std::string, first) // Наименование
-        (std::string, second) // Артикул
-        (std::string, ref)
-        (std::string, cache) // Все остальные реквизиты
-        (std::string, parent)
+                (std::string, first) // Наименование
+                (std::string, second) // Артикул
+                (std::string, ref)
+                (std::string, cache) // Все остальные реквизиты
+                (std::string, parent)
+                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), table_info_sqlite,
         (int, cid)
-        (std::string, name)
-        (std::string, type)
-        (int, notnull)
-        (std::string, dflt_value)
-        (int, bk)
+                (std::string, name)
+                (std::string, type)
+                (int, notnull)
+                (std::string, dflt_value)
+                (int, bk)
 );
 
 namespace arcirk::database{
@@ -170,9 +180,9 @@ namespace arcirk::database{
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(roles, {
-            {roles_INVALID, nullptr}    ,
-            {dbAdministrator, "admin"}  ,
-            {dbUser, "user"}  ,
+        {roles_INVALID, nullptr}    ,
+        {dbAdministrator, "admin"}  ,
+        {dbUser, "user"}  ,
     })
 
     enum text_type{
@@ -253,87 +263,95 @@ namespace arcirk::database{
     });
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
-                                         "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                         "    [first]         TEXT,\n"
-                                         "    second          TEXT,\n"
-                                         "    ref             TEXT (36) UNIQUE\n"
-                                         "                             NOT NULL,\n"
-                                         "    message         TEXT,\n"
-                                         "    token           TEXT      NOT NULL,\n"
-                                         "    date            INTEGER,\n"
-                                         "    content_type    TEXT      DEFAULT HTML,\n"
-                                         "    unread_messages INTEGER   DEFAULT (0) \n"
-                                         ");";
-
-    const std::string users_table_ddl = "CREATE TABLE Users (\n"
-                                      "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                      "    [first]       TEXT      DEFAULT \"\"\n"
-                                      "                            NOT NULL,\n"
-                                      "    second        TEXT      DEFAULT \"\",\n"
-                                      "    ref           TEXT (36) UNIQUE\n"
-                                      "                            NOT NULL,\n"
-                                      "    hash          TEXT      UNIQUE\n"
-                                      "                            NOT NULL,\n"
-                                      "    role          TEXT      DEFAULT user\n"
-                                      "                            NOT NULL,\n"
-                                      "    performance   TEXT      DEFAULT \"\",\n"
-                                      "    parent        TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                      "    cache         TEXT      DEFAULT \"\",\n"
-                                      "    is_group      INTEGER   NOT NULL\n"
-                                      "                            DEFAULT (0),\n"
-                                      "    deletion_mark INTEGER   NOT NULL\n"
-                                      "                            DEFAULT (0) \n"
-                                      ");";
-
-    const std::string organizations_table_ddl = "CREATE TABLE Organizations (\n"
                                            "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                            "    [first]         TEXT,\n"
                                            "    second          TEXT,\n"
                                            "    ref             TEXT (36) UNIQUE\n"
                                            "                             NOT NULL,\n"
-                                           "    cache           TEXT      DEFAULT \"\"\n"
+                                           "    message         TEXT,\n"
+                                           "    token           TEXT      NOT NULL,\n"
+                                           "    date            INTEGER,\n"
+                                           "    content_type    TEXT      DEFAULT HTML,\n"
+                                           "    unread_messages INTEGER   DEFAULT (0),\n"
+                                           "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                            ");";
+
+    const std::string users_table_ddl = "CREATE TABLE Users (\n"
+                                        "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                        "    [first]       TEXT      DEFAULT \"\"\n"
+                                        "                            NOT NULL,\n"
+                                        "    second        TEXT      DEFAULT \"\",\n"
+                                        "    ref           TEXT (36) UNIQUE\n"
+                                        "                            NOT NULL,\n"
+                                        "    hash          TEXT      UNIQUE\n"
+                                        "                            NOT NULL,\n"
+                                        "    role          TEXT      DEFAULT user\n"
+                                        "                            NOT NULL,\n"
+                                        "    performance   TEXT      DEFAULT \"\",\n"
+                                        "    parent        TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                        "    cache         TEXT      DEFAULT \"\",\n"
+                                        "    is_group      INTEGER   NOT NULL\n"
+                                        "                            DEFAULT (0),\n"
+                                        "    deletion_mark INTEGER   NOT NULL\n"
+                                        "                            DEFAULT (0),\n"
+                                        "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
+                                        ");";
+
+    const std::string organizations_table_ddl = "CREATE TABLE Organizations (\n"
+                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                "    [first]         TEXT,\n"
+                                                "    second          TEXT,\n"
+                                                "    ref             TEXT (36) UNIQUE\n"
+                                                "                             NOT NULL,\n"
+                                                "    cache           TEXT      DEFAULT \"\",\n"
+                                                "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
+                                                ");";
     const std::string subdivisions_table_ddl = "CREATE TABLE Subdivisions (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
                                                "    second          TEXT,\n"
                                                "    ref             TEXT (36) UNIQUE\n"
                                                "                             NOT NULL,\n"
-                                               "    cache           TEXT      DEFAULT \"\"\n"
+                                               "    cache           TEXT      DEFAULT \"\",\n"
+                                               "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                ");";
     const std::string warehouses_table_ddl = "CREATE TABLE Warehouses (\n"
-                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                               "    [first]         TEXT,\n"
-                                               "    second          TEXT,\n"
-                                               "    ref             TEXT (36) UNIQUE\n"
-                                               "                             NOT NULL,\n"
-                                               "    cache           TEXT      DEFAULT \"\"\n"
-                                               ");";
-    const std::string price_types_table_ddl = "CREATE TABLE PriceTypes (\n"
                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                              "    [first]         TEXT,\n"
                                              "    second          TEXT,\n"
                                              "    ref             TEXT (36) UNIQUE\n"
                                              "                             NOT NULL,\n"
-                                             "    cache           TEXT      DEFAULT \"\"\n"
+                                             "    cache           TEXT      DEFAULT \"\",\n"
+                                             "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                              ");";
-    const std::string devices_type_table_ddl = "CREATE TABLE DevicesType (\n"
-                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                              "    [first]         TEXT,\n"
-                                              "    second          TEXT,\n"
-                                              "    ref             TEXT (36) UNIQUE\n"
-                                              "                             NOT NULL\n"
-                                              ");";
-
-    const std::string workplaces_table_ddl = "CREATE TABLE Workplaces (\n"
+    const std::string price_types_table_ddl = "CREATE TABLE PriceTypes (\n"
                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                               "    [first]         TEXT,\n"
                                               "    second          TEXT,\n"
                                               "    ref             TEXT (36) UNIQUE\n"
                                               "                             NOT NULL,\n"
                                               "    cache           TEXT      DEFAULT \"\",\n"
-                                              "    server          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                              "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                               ");";
+    const std::string devices_type_table_ddl = "CREATE TABLE DevicesType (\n"
+                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]         TEXT,\n"
+                                               "    second          TEXT,\n"
+                                               "    ref             TEXT (36) UNIQUE\n"
+                                               "                             NOT NULL,\n"
+                                               "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
+                                               ");";
+
+    const std::string workplaces_table_ddl = "CREATE TABLE Workplaces (\n"
+                                             "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                             "    [first]         TEXT,\n"
+                                             "    second          TEXT,\n"
+                                             "    ref             TEXT (36) UNIQUE\n"
+                                             "                             NOT NULL,\n"
+                                             "    cache           TEXT      DEFAULT \"\",\n"
+                                             "    server          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
+                                             ");";
     const std::string devices_table_ddl = "CREATE TABLE Devices (\n"
                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                           "    [first]         TEXT,\n"
@@ -347,7 +365,8 @@ namespace arcirk::database{
                                           "    price_type      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                          "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                          "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                           ");";
 
     const std::string devises_view_ddl = "CREATE VIEW DevicesView AS\n"
@@ -370,50 +389,53 @@ namespace arcirk::database{
                                          "           Workplaces ON Devices.workplace = Workplaces.ref;";
 
     const std::string documents_table_ddl = "CREATE TABLE Documents (\n"
-                                          "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                          "    [first]         TEXT,\n"
-                                          "    second          TEXT,\n"
-                                          "    ref             TEXT (36) UNIQUE\n"
-                                          "                             NOT NULL,\n"
-                                          "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    number          TEXT      DEFAULT \"\",\n"
-                                          "    date            INTEGER NOT NULL DEFAULT(0),\n"
-                                          "    xml_type        TEXT      DEFAULT \"\",\n"
-                                          "    version         INTEGER NOT NULL DEFAULT(0),\n"
-                                          "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
-                                          ");";
+                                            "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                            "    [first]         TEXT,\n"
+                                            "    second          TEXT,\n"
+                                            "    ref             TEXT (36) UNIQUE\n"
+                                            "                             NOT NULL,\n"
+                                            "    cache           TEXT      DEFAULT \"\",\n"
+                                            "    number          TEXT      DEFAULT \"\",\n"
+                                            "    date            INTEGER NOT NULL DEFAULT(0),\n"
+                                            "    xml_type        TEXT      DEFAULT \"\",\n"
+                                            "    version         INTEGER NOT NULL DEFAULT(0),\n"
+                                            "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                            "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                            ");";
 
     const std::string document_table_table_ddl = "CREATE TABLE DocumentsTables (\n"
-                                          "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                          "    [first]         TEXT,\n"
-                                          "    second          TEXT,\n"
-                                          "    ref             TEXT (36) UNIQUE\n"
-                                          "                             NOT NULL,\n"
-                                          "    cache           TEXT      DEFAULT \"\",\n"
-                                          "    price           DOUBLE DEFAULT (0),\n"
-                                          "    quantity        DOUBLE DEFAULT (0),\n"
-                                          "    barcode         TEXT      DEFAULT \"\",\n"
-                                          "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
-                                          ");";
-
-    const std::string nomenclature_table_ddl = "CREATE TABLE Nomenclature (\n"
                                                  "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                  "    [first]         TEXT,\n"
                                                  "    second          TEXT,\n"
                                                  "    ref             TEXT (36) UNIQUE\n"
                                                  "                             NOT NULL,\n"
                                                  "    cache           TEXT      DEFAULT \"\",\n"
-                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                                 "    price           DOUBLE DEFAULT (0),\n"
+                                                 "    quantity        DOUBLE DEFAULT (0),\n"
+                                                 "    barcode         TEXT      DEFAULT \"\",\n"
+                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                 "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                  ");";
 
-    const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
+    const std::string nomenclature_table_ddl = "CREATE TABLE Nomenclature (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
                                                "    second          TEXT,\n"
                                                "    ref             TEXT (36) UNIQUE\n"
                                                "                             NOT NULL,\n"
-                                               "    version         INTEGER  DEFAULT(0)  NOT NULL\n"
+                                               "    cache           TEXT      DEFAULT \"\",\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
+
+    const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
+                                                  "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                  "    [first]         TEXT,\n"
+                                                  "    second          TEXT,\n"
+                                                  "    ref             TEXT (36) UNIQUE\n"
+                                                  "                             NOT NULL,\n"
+                                                  "    version         INTEGER  DEFAULT(0)  NOT NULL\n" //Это версия структуры таблицы, во всех остальных поле версия - это версия объекта
+                                                  ");";
 
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
@@ -714,37 +736,37 @@ namespace arcirk::database{
 
     static inline std::map<tables, int> get_release_tables_versions(){
         std::map<tables, int> result;
-        result.emplace(tables::tbDatabaseConfig, 1);
-        result.emplace(tables::tbNomenclature, 1);
-        result.emplace(tables::tbDocuments, 1);
-        result.emplace(tables::tbDevices, 1);
-        result.emplace(tables::tbMessages, 1);
-        result.emplace(tables::tbUsers, 1);
-        result.emplace(tables::tbDevicesType, 1);
-        result.emplace(tables::tbDocumentsTables, 1);
-        result.emplace(tables::tbOrganizations, 1);
-        result.emplace(tables::tbPriceTypes, 1);
-        result.emplace(tables::tbSubdivisions, 1);
-        result.emplace(tables::tbWarehouses, 1);
-        result.emplace(tables::tbWorkplaces, 1);
+        result.emplace(tables::tbDatabaseConfig, 2);
+        result.emplace(tables::tbNomenclature, 2);
+        result.emplace(tables::tbDocuments, 2);
+        result.emplace(tables::tbDevices, 2);
+        result.emplace(tables::tbMessages, 2);
+        result.emplace(tables::tbUsers, 2);
+        result.emplace(tables::tbDevicesType, 2);
+        result.emplace(tables::tbDocumentsTables, 2);
+        result.emplace(tables::tbOrganizations, 2);
+        result.emplace(tables::tbPriceTypes, 2);
+        result.emplace(tables::tbSubdivisions, 2);
+        result.emplace(tables::tbWarehouses, 2);
+        result.emplace(tables::tbWorkplaces, 2);
         return result;
     }
 
     static inline std::vector<tables> tables_name_array(){
         std::vector<tables> result = {
-            tbUsers,
-            tbMessages,
-            tbOrganizations,
-            tbSubdivisions,
-            tbWarehouses,
-            tbPriceTypes,
-            tbWorkplaces,
-            tbDevices,
-            tbDevicesType,
-            tbDocuments,
-            tbDocumentsTables,
-            tbNomenclature,
-            tbDatabaseConfig
+                tbUsers,
+                tbMessages,
+                tbOrganizations,
+                tbSubdivisions,
+                tbWarehouses,
+                tbPriceTypes,
+                tbWorkplaces,
+                tbDevices,
+                tbDevicesType,
+                tbDocuments,
+                tbDocumentsTables,
+                tbNomenclature,
+                tbDatabaseConfig
         };
         return result;
     }
@@ -816,9 +838,9 @@ namespace arcirk::database{
                 std::string ref = to_string(arcirk::uuids::random_uuid());
                 std::string enum_name = arcirk::enum_synonym(val);
                 sql << query_insert("DevicesType", nlohmann::json {
-                                   {"first", enum_name},
-                                   {"ref", ref}
-                           });
+                        {"first", enum_name},
+                        {"ref", ref}
+                });
             }
             tr.commit();
         }
@@ -827,16 +849,16 @@ namespace arcirk::database{
     static inline void verify_database_views(soci::session& sql, const std::vector<std::string>& db_views, const std::string& view_name,  const std::string& t_ddl, bool is_rebase = false){
         using namespace soci;
 
-            if(std::find(db_views.begin(), db_views.end(), view_name) == db_views.end()) {
+        if(std::find(db_views.begin(), db_views.end(), view_name) == db_views.end()) {
+            sql << t_ddl;
+        }else{
+            if(is_rebase){
+                auto tr = soci::transaction(sql);
+                sql << arcirk::str_sample("drop view %1%", view_name);
                 sql << t_ddl;
-            }else{
-                if(is_rebase){
-                    auto tr = soci::transaction(sql);
-                    sql << arcirk::str_sample("drop view %1%", view_name);
-                    sql << t_ddl;
-                    tr.commit();
-                }
+                tr.commit();
             }
+        }
     }
 
     static inline void verify_database(soci::session& sql){
