@@ -122,8 +122,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), documents,
-        (int, _id)
+                (arcirk::database), documents,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -134,11 +134,12 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, version)
                 (std::string, device_id)
                 (std::string, workplace)
+                (int, deleted_mark)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), document_table,
-        (int, _id)
+                (arcirk::database), document_table,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -151,8 +152,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), nomenclature,
-        (int, _id)
+                (arcirk::database), nomenclature,
+                (int, _id)
                 (std::string, first) // Наименование
                 (std::string, second) // Артикул
                 (std::string, ref)
@@ -162,8 +163,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), table_info_sqlite,
-        (int, cid)
+                (arcirk::database), table_info_sqlite,
+                (int, cid)
                 (std::string, name)
                 (std::string, type)
                 (int, notnull)
@@ -400,7 +401,8 @@ namespace arcirk::database{
                                             "    xml_type        TEXT      DEFAULT \"\",\n"
                                             "    version         INTEGER NOT NULL DEFAULT(0),\n"
                                             "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                            "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000]\n"
+                                            "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                            "    deleted_mark    INTEGER NOT NULL DEFAULT(0)\n"
                                             ");";
 
     const std::string document_table_table_ddl = "CREATE TABLE DocumentsTables (\n"
@@ -738,7 +740,7 @@ namespace arcirk::database{
         std::map<tables, int> result;
         result.emplace(tables::tbDatabaseConfig, 2);
         result.emplace(tables::tbNomenclature, 2);
-        result.emplace(tables::tbDocuments, 2);
+        result.emplace(tables::tbDocuments, 3);
         result.emplace(tables::tbDevices, 2);
         result.emplace(tables::tbMessages, 2);
         result.emplace(tables::tbUsers, 2);
@@ -903,7 +905,7 @@ namespace arcirk::database{
                 });
                 tr.commit();
             }else{
-                //Если существует, проверяем версию таблицы если не совпадает запускаем реструктуризацию
+                //Если существует, проверяем версию таблицы, если не совпадает запускаем реструктуризацию
                 int current_ver = 0;
                 auto itr_ver = current_table_versions.find(t_name);
                 if(itr_ver != current_table_versions.end())
