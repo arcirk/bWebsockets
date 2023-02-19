@@ -171,23 +171,15 @@ public:
         bool http_authorization = false;
 
         if(state_->use_authorization()){
-            //std::string auth = req[http::field::authorization].to_string();
             std::string auth = static_cast<std::string>(req[http::field::authorization]);
             http_authorization = state_->verify_connection(auth);
-            if(!http_authorization){
-                fail(ec, "failed http authorization");
-//                if(!state_->allow_delayed_authorization()){
-//                    return handle_request(*doc_root_, parser_->release(), queue_, true);
-//                }
-
-            }else
+            if(http_authorization)
                 info("on_read", "Authorization passed successfully");
         }
 
         // See if it is a WebSocket Upgrade
         if(websocket::is_upgrade(req))
         {
-
             // Disable the timeout.
             // The websocket::stream uses its own timeout settings.
             beast::get_lowest_layer(derived().stream()).expires_never();
@@ -199,13 +191,54 @@ public:
                     parser_->release(), state_, http_authorization);
         }else{
             if(state_->use_authorization() && !http_authorization){
+                //auto const post_body = boost::make_shared<std::string const>(req.body());
                 return handle_request(*doc_root_, parser_->release(), queue_, true);
             }
         }
 
-        // Send the response
-        handle_request(*doc_root_, parser_->release(), queue_);
+        auto req_ = parser_->release();
 
+        if(!http_authorization){
+            http::response<http::string_body> res{http::status::unauthorized, req_.version()};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+            res.set(http::field::content_type, "text/html");
+            res.keep_alive(req_.keep_alive());
+            res.body() = "An error occurred: Incorrect username or password.";
+            res.prepare_payload();
+            return queue_(std::move(res));
+        }else{
+            auto const bad_request =
+                    [&req](beast::string_view why)
+                    {
+                        http::response<http::string_body> res{http::status::bad_request, req.version()};
+                        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                        res.set(http::field::content_type, "text/html");
+                        res.keep_alive(req.keep_alive());
+                        res.body() = std::string(why);
+                        res.prepare_payload();
+                        return res;
+                    };
+            if(req_.method() == http::verb::post){
+                const auto body = req_.body();
+                std::string result;
+                try{
+                    result = state_->handle_request(body, static_cast<std::string>(req_[http::field::authorization]));
+                }catch (std::exception &e) {
+                    return queue_(bad_request(e.what()));
+                }
+                if(result.c_str() == "error")
+                    return queue_(bad_request("Ошибка в параметрах запроса"));
+                http::response<http::string_body> res{http::status::ok, req_.version()};
+                res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                res.set(http::field::content_type, "application/json");
+                res.keep_alive(req_.keep_alive());
+                res.body() = result;
+                res.prepare_payload();
+                queue_(std::move(res));
+            }else{
+                handle_request(*doc_root_, parser_->release(), queue_);
+            }
+        }
         // If we aren't at the queue limit, try to pipeline another request
         if(! queue_.is_full())
             do_read();

@@ -99,6 +99,10 @@ public:
         return _device_id;
     }
 
+    bool is_template_http_client(){
+        return _is_template_http_client;
+    }
+
 protected:
     std::string _user_name = UnknownUser;
     boost::uuids::uuid _user_uuid{};
@@ -110,7 +114,11 @@ protected:
     std::string _full_name;
     std::string _address;
     boost::uuids::uuid _device_id{};
+    bool _is_template_http_client = false;
 
+    void set_template_http_client(bool value){
+        _is_template_http_client = value;
+    }
 };
 
 template<class Derived>
@@ -522,5 +530,26 @@ make_websocket_session(
             std::move(stream), std::move(sharedPtr), is_http_authorization)->run(std::move(req));
 }
 
+
+class http_client : public subscriber{
+public:
+    explicit
+    http_client(){
+        set_template_http_client(true);
+    };
+
+    bool is_ssl() override{
+        return false;
+    }
+    void send(boost::shared_ptr<std::string const> const& ss) override{
+        ss_ = ss;
+    }
+    boost::shared_ptr<std::string const> get_result(){
+        return ss_;
+    }
+private:
+    boost::shared_ptr<std::string const> ss_;
+
+};
 
 #endif

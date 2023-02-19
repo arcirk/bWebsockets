@@ -23,7 +23,9 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 #include <boost/variant.hpp>
+#include <boost/config.hpp>
 
 class shared_state;
 class plain_websocket_session;
@@ -92,6 +94,34 @@ path_cat(
     result.append(path.data(), path.size());
 #endif
     return result;
+}
+
+template<class Send>
+static void
+handle_request_post(
+        beast::string_view doc_root,
+        Send&& send,
+        const std::string& result,
+        const std::string& target){
+
+    std::string path = path_cat(doc_root, target);
+
+//        boost::beast::string_view content_type = req[http::field::content_type];
+//        if (content_type != "multipart/form-data" && content_type != "application/x-www-form-urlencoded")
+//        {
+//            return send(bad_request("Bad request"));
+//        }
+        unsigned int version = 0;
+        http::response<http::file_body> res{
+                std::piecewise_construct,
+                std::make_tuple(std::move(result)),
+                std::make_tuple(http::status::ok, version) };
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, mime_type(path));
+        res.content_length(result.size());
+        res.keep_alive(false);
+        return send(std::move(res));
+
 }
 
 // This function produces an HTTP response for the given
@@ -163,7 +193,8 @@ handle_request(
 
     // Make sure we can handle the method
     if( req.method() != http::verb::get &&
-        req.method() != http::verb::head)
+        req.method() != http::verb::head &&
+        req.method() != http::verb::post)
         return send(bad_request("Unknown HTTP-method"));
 
     // Request path must be absolute and not contain "..".
@@ -176,44 +207,94 @@ handle_request(
     std::string path = path_cat(doc_root, req.target());
     if(req.target().back() == '/')
         path.append("index.html");
-
-    // Attempt to open the file
-    beast::error_code ec;
-    http::file_body::value_type body;
-    body.open(path.c_str(), beast::file_mode::scan, ec);
-
-    // Handle the case where the file doesn't exist
-    if(ec == beast::errc::no_such_file_or_directory)
-        return send(not_found(req.target()));
-
-    // Handle an unknown error
-    if(ec)
-        return send(server_error(ec.message()));
-
-    // Cache the size since we need it after the move
-    auto const size = body.size();
-
-    // Respond to HEAD request
-    if(req.method() == http::verb::head)
+    else if (req.target().front() == '/' && req.target().size() > 1)
     {
-        http::response<http::empty_body> res{http::status::ok, req.version()};
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, mime_type(path));
-        res.content_length(size);
-        res.keep_alive(req.keep_alive());
-        return send(std::move(res));
+//        using boost::beast::iequals;
+//        bool r = false;
+//        const auto ext = [&path, &r]
+//        {
+//            const auto pos = path.rfind(".");
+//            if (pos == boost::beast::string_view::npos)
+//            {
+//                //return send(bad_request("Illegal request-target"));
+//                r = true;
+//            }
+//            const auto pos2 = path.find(" ");
+//            if (pos != boost::beast::string_view::npos)
+//            {
+//                //return send(bad_request("Illegal request-target"));
+//                r = true;
+//            }
+//        }();
+//        if (!iequals(ext, ".cgi") && !iequals(ext, ".exe") || r)
+//        {
+//            return send(bad_request("Illegal request-target"));
+//        }
+
     }
 
-    // Respond to GET request
-    http::response<http::file_body> res{
-            std::piecewise_construct,
-            std::make_tuple(std::move(body)),
-            std::make_tuple(http::status::ok, req.version())};
-    res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-    res.set(http::field::content_type, mime_type(path));
-    res.content_length(size);
-    res.keep_alive(req.keep_alive());
-    return send(std::move(res));
+    if(req.method() == http::verb::head || req.method() == http::verb::get) {
+        // Attempt to open the file
+        beast::error_code ec;
+        http::file_body::value_type body;
+        body.open(path.c_str(), beast::file_mode::scan, ec);
+
+        // Handle the case where the file doesn't exist
+        if(ec == beast::errc::no_such_file_or_directory)
+            return send(not_found(req.target()));
+
+        // Handle an unknown error
+        if(ec)
+            return send(server_error(ec.message()));
+
+        // Cache the size since we need it after the move
+        auto const size = body.size();
+
+        // Respond to HEAD request
+        if(req.method() == http::verb::head)
+        {
+            http::response<http::empty_body> res{http::status::ok, req.version()};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+            res.set(http::field::content_type, mime_type(path));
+            res.content_length(size);
+            res.keep_alive(req.keep_alive());
+            return send(std::move(res));
+        }
+        else if (req.method() == http::verb::get) {
+            // Respond to GET request
+            http::response<http::file_body> res{
+                    std::piecewise_construct,
+                    std::make_tuple(std::move(body)),
+                    std::make_tuple(http::status::ok, req.version())};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+            res.set(http::field::content_type, mime_type(path));
+            res.content_length(size);
+            res.keep_alive(req.keep_alive());
+            return send(std::move(res));
+        }
+    }
+
+////    else if (req.method() == http::verb::post)
+////    {
+//        //post
+//        //auto const body = state.handle_request(req.body(), "");
+//
+//        boost::beast::string_view content_type = req[http::field::content_type];
+//        if (content_type != "multipart/form-data" && content_type != "application/x-www-form-urlencoded")
+//        {
+//            return send(bad_request("Bad request"));
+//        }
+//        http::response<http::file_body> res{
+//                std::piecewise_construct,
+//                std::make_tuple(std::move(body)),
+//                std::make_tuple(http::status::ok, req.version()) };
+//        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+//        res.set(http::field::content_type, mime_type(path));
+//        res.content_length(body.size());
+//        res.keep_alive(req.keep_alive());
+//        return send(std::move(res));
+// //   }
+
 }
 
 //------------------------------------------------------------------------------

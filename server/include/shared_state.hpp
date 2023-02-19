@@ -142,6 +142,8 @@ public:
 
     bool verify_connection(const std::string& basic_auth);
 
+    [[nodiscard]] std::string handle_request(const std::string& body, const std::string& basic_auth);
+
     //команды сервера
     arcirk::server::server_command_result get_clients_list(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_users_list(const variant_t& param, const variant_t& session_id);
@@ -161,6 +163,8 @@ public:
     arcirk::server::server_command_result object_get_from_database(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_get_discrepancy_in_data(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
+
+
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name) const;
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref) const;

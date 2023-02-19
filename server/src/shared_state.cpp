@@ -430,8 +430,13 @@ bool shared_state::verify_auth_from_hash(const std::string &usr, const std::stri
         try {
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             session sql(soci::sqlite3, connection_string);
-            int count = -1;
-            sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
+            int count = 0;
+            //sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
+            soci::rowset<soci::row> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+            for (auto it = rs.begin(); it != rs.end(); it++) {
+                const soci::row &row_ = *it;
+                count++;
+            }
             return count > 0;
         } catch (std::exception &e) {
             fail("shared_state::verify_auth:error", e.what(), false);
@@ -441,7 +446,7 @@ bool shared_state::verify_auth_from_hash(const std::string &usr, const std::stri
     return false;
 }
 
-bool shared_state::verify_auth(const std::string& usr, const std::string& pwd) const {
+bool shared_state::verify_auth(const std::string& usr, const std::string& pwd ) const {
 
     using namespace boost::filesystem;
     using namespace soci;
@@ -1544,69 +1549,6 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
             throw native_exception("Не верная структура объекта!");
 
         data_synchronization_set_object(object, table_name);
-//
-//        auto standard_attributes = object.value("StandardAttributes", nlohmann::json{});
-//        nlohmann::json enm_json = table_name;
-//        auto enm_val = enm_json.get<arcirk::database::tables>();
-//        auto table_json = table_default_json(enm_val);
-//        auto items = table_json.items();
-//        for (auto itr = items.begin();  itr != items.end() ; ++itr) {
-//            table_json[itr.key()] = standard_attributes.value(itr.key(), itr.value());
-//        }
-//
-//        auto query = std::make_shared<builder::query_builder>();
-//        query->use(table_json);
-//        std::string ref = query->ref();
-//
-//        if(ref.empty())
-//            throw native_exception("Не указан идентификатор объекта!");
-//
-//        auto sql = soci_initialize();
-//        int count = -1;
-//        sql << query->select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
-//
-//        auto tr = soci::transaction(sql);
-//
-//        query->clear();
-//        query->use(table_json);
-//
-//        if(count > 0)
-//            sql << query->update(table_name, true).where({{"ref", ref}}, true).prepare();
-//        else
-//            sql << query->insert(table_name, true).prepare();
-//
-//        if(enm_val == tbDocuments){
-//            query->clear();
-//            sql << query->remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
-//        }
-//
-//        auto tabular_sections = object.value("TabularSections", nlohmann::json{});
-//        if(tabular_sections.is_array()){
-//            for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
-//                nlohmann::json table_section = *itr;
-//                if(table_section.is_object()){
-//                    std::string name = table_section.value("name", "");
-//                    auto rows = table_section.value("strings", nlohmann::json{});
-//                    if(rows.is_array()){
-//                        //auto rows_items = rows.items();
-//                        for (auto itr_row = rows.begin();  itr_row != rows.end() ; ++itr_row) {
-//                            nlohmann::json row_ = *itr_row;
-//                            if(row_.is_object()){
-//                                query->clear();
-//                                query->use(row_);
-//                                if(enm_val == tbDocuments){
-//                                    std::string query_text = query->insert("DocumentsTables", true).prepare();
-//                                    sql << query_text;
-//                                }
-//
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        tr.commit();
     }
 
 
@@ -1746,91 +1688,6 @@ arcirk::server::server_command_result shared_state::object_get_from_database(con
     if(ref.empty() || table_name.empty())
         throw native_exception("Не заданы параметры запроса!");
 
-
-//    auto sql = soci_initialize();
-//    auto query = std::make_shared<builder::query_builder>();
-//
-//    nlohmann::json j_table = table_name;
-//    nlohmann::json j_object{};
-//    auto o_table = j_table.get<database::tables>();
-//    if(o_table == database::tbDocuments){
-//        std::vector<database::documents> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::documents>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
-//
-//            query->clear();
-//            std::vector<database::document_table> m_vec_table = query->select({"*"}).from(arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}}, true).to_rows_array<database::document_table>(sql);
-//            nlohmann::json n_json_table{};
-//            for (const auto itr : m_vec_table) {
-//                n_json_table += pre::json::to_json<database::document_table>(itr);
-//            }
-//            j_object["object"]["TabularSections"] = n_json_table;
-////            j_object["object"] += {
-////                    {"TabularSections", n_json_table}
-////            };
-//        }
-//    }else if(o_table == database::tbDevices){
-//        std::vector<database::devices> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::devices>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes", pre::json::to_json<database::devices>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbMessages){
-//        std::vector<database::messages> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::messages>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::messages>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbOrganizations){
-//        std::vector<database::organizations> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::organizations>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::organizations>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbPriceTypes){
-//        std::vector<database::price_types> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::price_types>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::price_types>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbSubdivisions){
-//        std::vector<database::subdivisions> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::subdivisions>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::subdivisions>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbWarehouses){
-//        std::vector<database::warehouses> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::warehouses>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::warehouses>(r)}}
-//            };
-//        }
-//    }else if(o_table == database::tbWorkplaces){
-//        std::vector<database::workplaces> m_vec = query->select({"*"}).from(table_name).where({{"ref", ref}}, true).to_rows_array<database::workplaces>(sql);
-//        if(!m_vec.empty()){
-//            auto r = m_vec[0];
-//            j_object ={
-//                    {"object", {"StandardAttributes" ,pre::json::to_json<database::workplaces>(r)}}
-//            };
-//        }
-//    }else
-//        throw native_exception("Сериализация выбранной таблицы не поддерживается");
-//
-//
-//    j_object["table_name"] = table_name;
 
     auto j_object = data_synchronization_get_object(table_name, ref);
 
@@ -2040,4 +1897,84 @@ arcirk::server::server_command_result shared_state::sync_update_data_on_the_serv
     result.message = "OK";
 
     return result;
+}
+
+std::string shared_state::handle_request(const std::string &body, const std::string &basic_auth) {
+
+    using namespace boost::filesystem;
+    using namespace soci;
+
+    info("handle_request", "Request from http client");
+
+    auto http_session = std::make_shared<http_client>() ;
+    http_session->set_uuid_session(arcirk::uuids::random_uuid());
+
+    arcirk::T_vec v = split(basic_auth, " ");
+//    try {
+        if(v.size() == 2){
+            const std::string base64 = v[1];
+            std::string auth = arcirk::base64::base64_decode(base64);
+            arcirk::T_vec m_auth = split(auth, ":");
+            if(m_auth.size() != 2)
+                return "fail authorization";
+
+            std::string hash = arcirk::get_hash(m_auth[0], m_auth[1]);
+
+            if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+                if(sett.ServerWorkingDirectory.empty())
+                {
+                    return std::string("shared_state::verify_auth:error ") + "Ошибки в параметрах сервера!";
+                }
+
+                path database(sett.ServerWorkingDirectory);
+                database /= sett.Version;
+                database /= "data";
+                database /= "arcirk.sqlite";
+
+                if(!exists(database)){
+                    return std::string("shared_state::verify_auth:error ") + "Файл базы данных не найден!";
+                }
+
+ //               try {
+                    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+                    session sql(soci::sqlite3, connection_string);
+                    soci::rowset<soci::row> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+                    for (auto it = rs.begin(); it != rs.end(); it++) {
+                        const soci::row &row_ = *it;
+                        http_session->set_role(row_.get<std::string>("role"));
+                        http_session->set_user_name(row_.get<std::string>("first"));
+                        http_session->set_authorized(true);
+                        http_session->set_app_name("http_client");
+                    }
+//                } catch (std::exception &e) {
+//                    return std::string("shared_state::verify_auth:error ") + e.what();
+//                }
+
+            }
+        }
+//    } catch (std::exception &e) {
+//        return std::string("shared_state::verify_auth:error ") + e.what();
+//    }
+
+    sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(http_session->uuid_session(), http_session.get()));
+
+//    try {
+        auto http_body = nlohmann::json::parse(body);
+        std::string command = http_body["command"];
+        std::string param = http_body["param"];
+        execute_command_handler("cmd " + command + " " + param, http_session.get());
+//    } catch (std::exception &e) {
+//        return std::string("shared_state::verify_auth:error ") + e.what();
+//    }
+
+    sessions_.erase(http_session->uuid_session());
+
+    info("handle_request", "Close http client");
+
+    auto result = http_session->get_result();
+
+    if(result->empty())
+        return "error";
+
+    return result->c_str();
 }
