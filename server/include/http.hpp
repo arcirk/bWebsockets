@@ -158,6 +158,9 @@ handle_request(
                 return res;
             };
 
+    if(unauthorized)
+        return send(server_authorization_error("Incorrect username or password"));
+
     // Make sure we can handle the method
     if( req.method() != http::verb::get &&
         req.method() != http::verb::head)
@@ -186,9 +189,6 @@ handle_request(
     // Handle an unknown error
     if(ec)
         return send(server_error(ec.message()));
-
-    if(unauthorized)
-        return send(server_authorization_error("Incorrect username or password"));
 
     // Cache the size since we need it after the move
     auto const size = body.size();
