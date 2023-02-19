@@ -329,8 +329,6 @@ std::string websocket_client::get_table_default_struct(arcirk::database::tables 
 
     auto result = table_default_json(table);
 
-    user_info info = table_default_struct<user_info>(table);
-
     return result.dump();
 
 }
