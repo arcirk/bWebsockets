@@ -1962,7 +1962,17 @@ std::string shared_state::handle_request(const std::string &body, const std::str
         auto http_body = nlohmann::json::parse(body);
         std::string command = http_body["command"];
         std::string param = http_body["param"];
-        execute_command_handler("cmd " + command + " " + param, http_session.get());
+        std::string recipient = http_body.value("recipient", "");
+
+        nlohmann::json parameters = {
+                {"parameters", param}
+        };
+
+        if(recipient.empty())
+            execute_command_handler("cmd " + command + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
+        else
+            execute_command_handler("cmd " + command + " " + recipient + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
+
 //    } catch (std::exception &e) {
 //        return std::string("shared_state::verify_auth:error ") + e.what();
 //    }
