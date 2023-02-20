@@ -66,11 +66,14 @@
   <constants>Constant.РабочийКаталогСервера</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаАктивныеПользователи</commonForms>
+  <commonForms>CommonForm.ФормаДокументСписокHttpТест</commonForms>
+  <commonForms>CommonForm.ФормаЗаполнениеДокумента</commonForms>
   <commonForms>CommonForm.ФормаНастройкиСервера</commonForms>
   <commonForms>CommonForm.ФормаОбменСообщениями</commonForms>
   <commonForms>CommonForm.ФормаОборудование</commonForms>
   <commonForms>CommonForm.ФормаПользователиСервера</commonForms>
   <catalogs>Catalog.ВнешниеПользователи</catalogs>
+  <catalogs>Catalog.Номенклатура</catalogs>
   <catalogs>Catalog.Организации</catalogs>
   <catalogs>Catalog.Подразделения</catalogs>
   <catalogs>Catalog.Пользователи</catalogs>
@@ -80,4 +83,6 @@
   <catalogs>Catalog.ТипыЦенНоменклатуры</catalogs>
   <catalogs>Catalog.УстройстваИКомпьютеры</catalogs>
   <documents>Document.ПодборШтрихкодов</documents>
+  <documents>Document.ПоступлениеТоваровУслуг</documents>
+  <informationRegisters>InformationRegister.Штрихкоды</informationRegisters>
 </mdclass:Configuration>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:InformationRegister xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="26cff727-1b93-4c24-9914-814355609413">
+  <producedTypes>
+    <selectionType typeId="506cba5b-b4cf-4ecd-96d6-e7d28edd7660" valueTypeId="bd1b953a-ee81-46af-8ce4-5e3c3fedcae5"/>
+    <listType typeId="a019c7e6-174d-41b9-8bd9-1e9bd3743cea" valueTypeId="9ac7d5e9-d12c-4757-9322-1ce42bd0bc22"/>
+    <managerType typeId="b48eb6b5-db8d-4c5a-953e-90035dda84b1" valueTypeId="4539f437-3014-46bb-ac43-292fa7e93122"/>
+    <recordSetType typeId="9026b558-3c8a-4ad2-b652-01963aac34e8" valueTypeId="6e5bdd03-ba96-4a0d-a0a9-9282a7b647a4"/>
+    <recordKeyType typeId="386271fe-0474-45a2-9cb1-0ef4322774b0" valueTypeId="e7db5e0b-3cac-4038-b6ae-dec8528775e4"/>
+    <recordType typeId="b78daafc-2ded-4261-bcd7-dcad3cea44ec" valueTypeId="b85d5c88-3325-4ae0-b020-b6701b028d79"/>
+    <recordManagerType typeId="13e67105-fbec-468d-a6e0-5610c1128fa0" valueTypeId="2234acbd-f9be-496f-97bd-330eb683b73f"/>
+  </producedTypes>
+  <name>Штрихкоды</name>
+  <synonym>
+    <key>ru</key>
+    <value>Штрихкоды</value>
+  </synonym>
+  <useStandardCommands>true</useStandardCommands>
+  <editType>InDialog</editType>
+  <dataLockControlMode>Managed</dataLockControlMode>
+  <dimensions uuid="c8bbd1d0-e011-4940-bd7a-a36833823ac9">
+    <name>Штрихкод</name>
+    <synonym>
+      <key>ru</key>
+      <value>Штрихкод</value>
+    </synonym>
+    <type>
+      <types>String</types>
+      <stringQualifiers>
+        <length>128</length>
+      </stringQualifiers>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <mainFilter>true</mainFilter>
+  </dimensions>
+  <dimensions uuid="ad4e7352-f160-4f4b-a9f2-89798bb336ff">
+    <name>Владелец</name>
+    <synonym>
+      <key>ru</key>
+      <value>Владелец</value>
+    </synonym>
+    <type>
+      <types>CatalogRef.Номенклатура</types>
+    </type>
+    <minValue xsi:type="core:UndefinedValue"/>
+    <maxValue xsi:type="core:UndefinedValue"/>
+    <fullTextSearch>Use</fullTextSearch>
+    <dataHistory>Use</dataHistory>
+    <fillValue xsi:type="core:UndefinedValue"/>
+    <mainFilter>true</mainFilter>
+  </dimensions>
+</mdclass:InformationRegister>

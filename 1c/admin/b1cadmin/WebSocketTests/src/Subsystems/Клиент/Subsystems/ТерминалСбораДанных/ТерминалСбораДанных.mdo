@@ -8,5 +8,8 @@
   <includeHelpInContents>true</includeHelpInContents>
   <includeInCommandInterface>true</includeInCommandInterface>
   <content>Document.ПодборШтрихкодов</content>
+  <content>Document.ПоступлениеТоваровУслуг</content>
+  <content>CommonForm.ФормаДокументСписокHttpТест</content>
+  <content>CommonForm.ФормаЗаполнениеДокумента</content>
   <parentSubsystem>Subsystem.Клиент</parentSubsystem>
 </mdclass:Subsystem>
