@@ -148,6 +148,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (double, quantity)
                 (std::string, barcode)
                 (std::string, parent)
+                (std::string, product)
                 (int, version)
 );
 
@@ -416,6 +417,7 @@ namespace arcirk::database{
                                                  "    quantity        DOUBLE DEFAULT (0),\n"
                                                  "    barcode         TEXT      DEFAULT \"\",\n"
                                                  "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                 "    product         TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                  "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                  ");";
 
@@ -745,7 +747,7 @@ namespace arcirk::database{
         result.emplace(tables::tbMessages, 2);
         result.emplace(tables::tbUsers, 2);
         result.emplace(tables::tbDevicesType, 2);
-        result.emplace(tables::tbDocumentsTables, 2);
+        result.emplace(tables::tbDocumentsTables, 3);
         result.emplace(tables::tbOrganizations, 2);
         result.emplace(tables::tbPriceTypes, 2);
         result.emplace(tables::tbSubdivisions, 2);

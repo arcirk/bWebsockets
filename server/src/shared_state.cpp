@@ -28,6 +28,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::GetMessages), this, &shared_state::get_messages);
     add_method(enum_synonym(server::server_commands::UpdateServerConfiguration), this, &shared_state::update_server_configuration);
     add_method(enum_synonym(server::server_commands::HttpServiceConfiguration), this, &shared_state::get_http_service_configuration);
+    add_method(enum_synonym(server::server_commands::WebDavServiceConfiguration), this, &shared_state::get_dav_service_configuration);
     add_method(enum_synonym(server::server_commands::InsertToDatabaseFromArray), this, &shared_state::insert_to_database_from_array);
     add_method(enum_synonym(server::server_commands::SetNewDeviceId), this, &shared_state::set_new_device_id);
     add_method(enum_synonym(server::server_commands::ObjectSetToDatabase), this, &shared_state::object_set_to_database);
@@ -1258,6 +1259,32 @@ arcirk::server::server_command_result shared_state::get_http_service_configurati
             {"HSHost", sett.HSHost},
             {"HSUser", sett.HSUser},
             {"HSPassword", sett.HSPassword}
+    };
+
+    result.result = arcirk::base64::base64_encode(res.dump());
+    result.message = "OK";
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::get_dav_service_configuration(const variant_t &param,
+                                                                                   const variant_t &session_id) {
+    using namespace arcirk::database;
+    using namespace boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::WebDavServiceConfiguration);
+
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        throw native_exception("Не достаточно прав доступа!");
+
+    nlohmann::json res = {
+            {"WebDavHost", sett.WebDavHost},
+            {"WebDavUser", sett.WebDavUser},
+            {"WebDavPwd", sett.WebDavPwd},
+            {"WebDavSSL", sett.WebDavSSL}
     };
 
     result.result = arcirk::base64::base64_encode(res.dump());
