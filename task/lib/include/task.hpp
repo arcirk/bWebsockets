@@ -90,7 +90,7 @@ namespace arcirk::services{
         {
             if (e != boost::asio::error::operation_aborted) {
                 //log_text("Execute PeriodicTask '" + name + "'");
-
+                count++;
                 task_(opt_);
 
                 timer.expires_at(timer.expires_at() + boost::posix_time::seconds(interval));
@@ -110,8 +110,8 @@ namespace arcirk::services{
            //task_();
             workers_->post([=]
              {
-                 auto guard = std::lock_guard(output_mutex);
-                 task_(opt_);
+                 //auto guard = std::lock_guard(output_mutex);
+                 //task_(opt_);
              });
 
             auto val = workers_->submit([]
@@ -145,6 +145,7 @@ namespace arcirk::services{
         int interval;
         std::shared_ptr<thread_pool> workers_;
         task_options opt_;
+        int count = 0;
     };
 
     class task_scheduler : boost::noncopyable
