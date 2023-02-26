@@ -106,8 +106,6 @@ namespace arcirk::services{
         {
             log_text("start task '" + opt_.synonum + "'");
 
-            // Uncomment if you want to call the handler on startup (i.e. at time 0)
-           //task_();
             workers_->post([=]
              {
                  //auto guard = std::lock_guard(output_mutex);
@@ -158,7 +156,6 @@ namespace arcirk::services{
             threads = 4;
             capacity = 8;
             workers_ = std::make_shared<thread_pool>(threads, capacity);
-            //io_service = io;
         }
         void run()
         {
