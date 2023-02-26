@@ -225,38 +225,19 @@ namespace arcirk::database::builder {
         query_builder& select(){
             queryType = Select;
             result = "select ";
-            for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
-                sql_value val = *itr;
-                result.append(val.key);
-                if(!val.alias.empty() && val.key != val.alias)
-                    result.append(" as " + val.alias);
-////                nlohmann::json second = itr->second;
-//                if(val.is_object()){
-////                    try {
-////                        auto val = pre::json::from_json<sql_value>(val_j);
-////                        if(!val.alias.empty())
-////                            result.append(val.key + " as " + val.alias);
-////                        else
-////                            result.append(val.key);
-////                    }catch (...){
-////                        result.append(itr->first);
-////                    }
-//                    result.append(val.keys()).;
-//                    std::string alias = second.value(first, "");
-//                    if(!alias.empty())
-//                        result.append(" as " + alias);
-//                }else{
-//                    result.append(itr->first);
-//                    std::string alias = second.get<std::string>();
-//                    if(!alias.empty())
-//                        result.append(" as " + alias);
-//                }
-
-
-                if(itr != (--m_list.cend())){
-                    result.append(",\n");
+            if(m_list.size() > 0){
+                for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
+                    sql_value val = *itr;
+                    result.append(val.key);
+                    if(!val.alias.empty() && val.key != val.alias)
+                        result.append(" as " + val.alias);
+                    if(itr != (--m_list.cend())){
+                        result.append(",\n");
+                    }
                 }
-            }
+            }else
+                result.append(" * ");
+
             return *this;
         }
 

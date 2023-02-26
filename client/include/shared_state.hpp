@@ -48,6 +48,7 @@ private:
     std::string basic_auth_string_;
     boost::uuids::uuid session_uuid_{};
     std::tm start_date_{};
+
 };
 
 #endif

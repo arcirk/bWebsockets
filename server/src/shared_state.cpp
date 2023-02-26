@@ -9,6 +9,7 @@
 #include <locale>
 
 #include <query_builder.hpp>
+#include <boost/thread.hpp>
 
 shared_state::shared_state(){
 
@@ -36,6 +37,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::SyncGetDiscrepancyInData), this, &shared_state::sync_get_discrepancy_in_data);
     add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
 
+    run_server_tasks();
 }
 
 void shared_state::join(subscriber *session) {
@@ -2006,7 +2008,7 @@ std::string shared_state::handle_request(const std::string &body, const std::str
 
     sessions_.erase(http_session->uuid_session());
 
-    info("handle_request", "Close http client");
+    info("handle_request", "close http client");
 
     auto result = http_session->get_result();
 
@@ -2014,4 +2016,90 @@ std::string shared_state::handle_request(const std::string &body, const std::str
         return "error";
 
     return result->c_str();
+}
+
+//Запуск планировщика задач
+void shared_state::run_server_tasks() {
+
+    if(task_manager){
+        task_manager->stop();
+        task_manager->clear();
+    }
+
+    task_manager = std::make_shared<arcirk::services::task_scheduler>();
+
+    using namespace boost::filesystem;
+
+    auto root_conf = app_directory();
+    path file_name = "server_tasks.json";
+    nlohmann::json result{};
+
+    path conf = root_conf /+ file_name.c_str();
+
+    try {
+        if(exists(conf)){
+            std::ifstream file(conf.string(), std::ios_base::in);
+            std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+            if(!str.empty()){
+                result = nlohmann::json::parse(str);
+            }
+        }
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    std::vector<arcirk::services::task_options> vec;
+    if(result.empty()){
+        arcirk::services::task_options opt{};
+        opt.end_task = 0;
+        opt.start_task = 0;
+        opt.interval = 600;
+        opt.name = "EraseDeletedMarkObjects";
+        opt.uuid = boost::to_string(arcirk::uuids::random_uuid());
+        opt.allowed = true;
+        opt.synonum = "Очистка помеченных на удаление объектов.";
+        vec.push_back(opt);
+    }else{
+        for (auto itr = result.begin(); itr != result.end(); ++itr) {
+            auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
+            vec.push_back(opt);
+        }
+    }
+    for (const auto& itr : vec) {
+        if(itr.allowed)
+            task_manager->add_task(itr, std::bind(&shared_state::exec_server_task, this, std::placeholders::_1));
+    }
+//    std::string threadId = boost::lexical_cast<std::string>(boost::this_thread::get_id());
+//    std::cout << threadId << std::endl;
+    // Запуск планировщика задач в отдельном потоке
+    auto tr = boost::thread([this](){
+//        std::string threadId = boost::lexical_cast<std::string>(boost::this_thread::get_id());
+//        std::cout << threadId << std::endl;
+        task_manager->run();
+    });
+
+    tr.detach();
+}
+
+void shared_state::exec_server_task(const arcirk::services::task_options &details) {
+
+    info("exec_server_task::exec", details.name);
+    if(details.name == "EraseDeletedMarkObjects"){
+        erase_deleted_mark_objects();
+    }
+
+}
+
+void shared_state::erase_deleted_mark_objects() {
+
+    using namespace soci;
+    using namespace arcirk::database;
+
+    auto sql = soci_initialize();
+    auto query = builder::query_builder();
+    auto tr = soci::transaction(sql);
+    sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deleted_mark = '1');";
+    sql << "delete from Documents where Documents.deleted_mark = '1';";
+    tr.commit();
+
 }

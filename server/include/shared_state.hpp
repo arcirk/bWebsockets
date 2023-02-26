@@ -21,7 +21,9 @@
 #include <ctime>
 
 #include "http.hpp"
+#include "http_sync_client.hpp"
 
+#include <task.hpp>
 
 template<class Derived>
 class websocket_session;
@@ -119,6 +121,8 @@ class shared_state
     std::map<boost::uuids::uuid, std::vector<subscriber*>> user_sessions;
     std::mutex mutex_;
 
+    //arcirk::services::service_task_scheduler server_task_ = arcirk::services::service_task_scheduler();
+
 public:
     explicit
     shared_state();
@@ -165,7 +169,8 @@ public:
     arcirk::server::server_command_result sync_get_discrepancy_in_data(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
 
-
+    //tasks
+    void erase_deleted_mark_objects();
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name) const;
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref) const;
@@ -189,6 +194,11 @@ public:
     bool edit_table_only_admin(const std::string& table_name);
 
 private:
+    std::shared_ptr<arcirk::services::task_scheduler> task_manager;
+
+    void run_server_tasks();
+    void exec_server_task(const arcirk::services::task_options& details);
+
     subscriber* get_session(const boost::uuids::uuid &uuid);
     std::vector<subscriber *> get_sessions(const boost::uuids::uuid &user_uuid);
     [[nodiscard]] arcirk::database::user_info get_user_info(const boost::uuids::uuid &user_uuid) const;

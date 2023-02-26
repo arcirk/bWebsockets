@@ -91,3 +91,11 @@
 /http_client/console/cmake-build-debug/
 /http_client/console/x64/
 /http_client/console/cmake-build-debug/
+/wdc/cmake-build-debug/
+/task/x64/
+/task/cmake-build-debug/
+/task/cmake-build-debug/
+/task/lib/cmake-build-debug/
+/task/x64/
+/task/lib/cmake-build-release/
+/task/cmake-build-release/

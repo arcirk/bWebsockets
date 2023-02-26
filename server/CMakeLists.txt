@@ -111,7 +111,9 @@ SET(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/x64/)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
 set(ARCIRK_INCLUDE ../arcirk)
-set(ARCIRK_LIB ../arcirk/cmake-build-debug)
+#set(ARCIRK_LIB ../arcirk/cmake-build-debug)
+set(TASK_INCLUDE ../task/lib/include)
+#set(TASK_LIB ../task/lib/cmake-build-debug)
 
 file(GLOB CPPS "src/*.cpp"
         CPPH "include/*hpp")
@@ -127,6 +129,7 @@ add_executable(${TARGET}
 target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
+        ${TASK_INCLUDE}
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
@@ -142,17 +145,11 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-#                Poco::Net
-#                Poco::XML
-#                Poco::Zip
-#                Poco::Data
-                SOCI::soci_core_static
-                SOCI::soci_empty_static
+        libtasks
+        SOCI::soci_core_static
+        SOCI::soci_empty_static
         SOCI::soci_sqlite3_static
         nlohmann_json::nlohmann_json
-#        unofficial::sqlite3::sqlite3
-#        soci_core
-#        soci_sqlite3
         )
 
 if (WIN32)

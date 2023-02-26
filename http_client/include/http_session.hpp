@@ -45,14 +45,30 @@ public:
             char const* host,
             char const* port,
             char const* target,
-            int version)
+            int version,
+            const http::verb& method,
+            char const* user,
+            char const* pwd,
+            char const* body)
     {
-        // Set up an HTTP GET request message
-        req_.version(version);
-        req_.method(http::verb::get);
-        req_.target(target);
-        req_.set(http::field::host, host);
-        req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+        if(method == http::verb::get){
+            // Set up an HTTP GET request message
+            req_.version(version);
+            req_.method(method);
+            req_.target(target);
+            req_.set(http::field::host, host);
+            req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        }else if(method == http::verb::post){
+
+        }
+
+
+        std::string usr_(user);
+        if(!usr_.empty()){
+            std::string auth = usr_ + ":" + std::string(pwd);
+            req_.set(http::field::authorization, "Basic " + arcirk::base64::base64_encode(auth));
+        }
 
         // Look up the domain name
         resolver_.async_resolve(

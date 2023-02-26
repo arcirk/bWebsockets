@@ -111,8 +111,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
 set(ARCIRK_INCLUDE ../../arcirk)
 set(ARCIRK_LIB ../../arcirk/cmake-build-debug)
-set(BCLIENT_INCLUDE ../../http_client/include)
-set(BCLIENT_LIB ../../http_client/cmake-build-debug)
+#set(BCLIENT_INCLUDE ../../http_client/include)
+#set(BCLIENT_LIB ../../http_client/cmake-build-debug)
 
 add_executable(${TARGET}
         main.cpp
@@ -123,7 +123,7 @@ add_executable(${TARGET}
 target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
-        ${BCLIENT_INCLUDE}
+        #${BCLIENT_INCLUDE}
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
@@ -138,7 +138,6 @@ target_link_libraries(${TARGET} PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk
-        http_client
         nlohmann_json::nlohmann_json
         )
 

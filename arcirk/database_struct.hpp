@@ -4,8 +4,8 @@
 #include "includes.hpp"
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), database_config,
-        (int, _id)
+                (arcirk::database), database_config,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -13,8 +13,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), user_info,
-        (int, _id)
+                (arcirk::database), user_info,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -29,8 +29,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), messages,
-        (int, _id)
+                (arcirk::database), messages,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -43,8 +43,8 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), organizations,
-        (int, _id)
+                (arcirk::database), organizations,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)

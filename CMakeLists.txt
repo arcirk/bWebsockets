@@ -8,4 +8,6 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/arcirk" "${PROJECT_SOURCE_DIR}/arcirk/cm
 add_subdirectory("${PROJECT_SOURCE_DIR}/client" "${PROJECT_SOURCE_DIR}/client/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/http_client" "${PROJECT_SOURCE_DIR}/http_client/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/http_client/console" "${PROJECT_SOURCE_DIR}/http_client/console/cmake-build-debug")
-
+add_subdirectory("${PROJECT_SOURCE_DIR}/wdc" "${PROJECT_SOURCE_DIR}/wdc/cmake-build-debug")
+add_subdirectory("${PROJECT_SOURCE_DIR}/task" "${PROJECT_SOURCE_DIR}/task/cmake-build-debug")
+add_subdirectory("${PROJECT_SOURCE_DIR}/task/lib" "${PROJECT_SOURCE_DIR}/task/lib/cmake-build-debug")
