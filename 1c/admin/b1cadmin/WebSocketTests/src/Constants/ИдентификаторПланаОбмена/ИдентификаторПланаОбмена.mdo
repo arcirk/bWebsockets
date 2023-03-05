@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mdclass:Constant xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:core="http://g5.1c.ru/v8/dt/mcore" xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass" uuid="10e7b2a1-b85b-43ed-8e02-ee8536071be7">
+  <producedTypes>
+    <managerType typeId="23a2597f-fbef-4420-a186-48ae132b3ffa" valueTypeId="b5d2693a-b6c0-4606-81b6-3b9cd40cd477"/>
+    <valueManagerType typeId="794240d1-0a68-44cd-9a61-61c609022ab7" valueTypeId="6a42054d-6c47-411e-873d-d021d7816d98"/>
+    <valueKeyType typeId="f0b706e2-aa3e-476f-936d-593f39cf8e91" valueTypeId="0569ad0c-a29f-4473-8244-906f4f39e135"/>
+  </producedTypes>
+  <name>ИдентификаторПланаОбмена</name>
+  <synonym>
+    <key>ru</key>
+    <value>Идентификатор плана обмена</value>
+  </synonym>
+  <type>
+    <types>String</types>
+    <stringQualifiers>
+      <length>50</length>
+    </stringQualifiers>
+  </type>
+  <useStandardCommands>true</useStandardCommands>
+  <minValue xsi:type="core:UndefinedValue"/>
+  <maxValue xsi:type="core:UndefinedValue"/>
+  <dataLockControlMode>Managed</dataLockControlMode>
+</mdclass:Constant>

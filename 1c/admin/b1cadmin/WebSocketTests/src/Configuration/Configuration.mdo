@@ -63,6 +63,7 @@
   <constants>Constant.HttpСервисПароль</constants>
   <constants>Constant.HttpСервисПользователь</constants>
   <constants>Constant.АдресСервера</constants>
+  <constants>Constant.ИдентификаторПланаОбмена</constants>
   <constants>Constant.РабочийКаталогСервера</constants>
   <constants>Constant.ТребуетсяАвторизацияНаСервере</constants>
   <commonForms>CommonForm.ФормаАктивныеПользователи</commonForms>
