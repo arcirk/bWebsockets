@@ -171,6 +171,7 @@ public:
 
     //tasks
     void erase_deleted_mark_objects();
+    void synchronize_objects_from_1c();
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name) const;
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref) const;
