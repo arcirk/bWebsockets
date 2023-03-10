@@ -2059,6 +2059,15 @@ void shared_state::run_server_tasks() {
         opt.allowed = true;
         opt.synonum = "Очистка помеченных на удаление объектов.";
         vec.push_back(opt);
+        arcirk::services::task_options opt1{};
+        opt1.end_task = 0;
+        opt1.start_task = 0;
+        opt1.interval = 180;
+        opt1.name = "ExchangePlan";
+        opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
+        opt1.allowed = true;
+        opt1.synonum = "Обмен по плану обмена.";
+        vec.push_back(opt1);
     }else{
         for (auto itr = result.begin(); itr != result.end(); ++itr) {
             auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
@@ -2072,13 +2081,14 @@ void shared_state::run_server_tasks() {
 //    std::string threadId = boost::lexical_cast<std::string>(boost::this_thread::get_id());
 //    std::cout << threadId << std::endl;
     // Запуск планировщика задач в отдельном потоке
-    auto tr = boost::thread([this](){
+
+    //    auto tr = boost::thread([this](){
 //        std::string threadId = boost::lexical_cast<std::string>(boost::this_thread::get_id());
 //        std::cout << threadId << std::endl;
         task_manager->run();
-    });
+    //});
 
-    tr.detach();
+    //tr.detach();
 }
 
 void shared_state::exec_server_task(const arcirk::services::task_options &details) {
@@ -2086,6 +2096,8 @@ void shared_state::exec_server_task(const arcirk::services::task_options &detail
     info("exec_server_task::exec", details.name);
     if(details.name == "EraseDeletedMarkObjects"){
         erase_deleted_mark_objects();
+    }else if(details.name == "ExchangePlan"){
+        synchronize_objects_from_1c();
     }
 
 }
@@ -2101,5 +2113,84 @@ void shared_state::erase_deleted_mark_objects() {
     sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deleted_mark = '1');";
     sql << "delete from Documents where Documents.deleted_mark = '1';";
     tr.commit();
+
+}
+
+void shared_state::synchronize_objects_from_1c() {
+
+    if(sett.ExchangePlan.empty())
+        return;
+
+    try {
+        auto url = arcirk::Uri::Parse(sett.HSHost);
+        auto const host = url.Host;
+        auto const port = url.Port;//"80";
+        auto const target = "/trade/hs/http_trade/info"; //url.QueryString + "/info";//;
+        std::cout << target << std::endl;
+        int version = 10;
+
+        // The io_context is required for all I/O
+        net::io_context ioc;
+
+        // These objects perform our I/O
+        tcp::resolver resolver(ioc);
+        beast::tcp_stream stream(ioc);
+
+        // Look up the domain name
+        auto const results = resolver.resolve(host, port);
+
+        // Make the connection on the IP address we get from a lookup
+        stream.connect(results);
+
+//        // Set up an HTTP GET request message
+//        http::request<http::string_body> req{http::verb::get, target, version};
+//        req.set(http::field::host, host);
+//        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+        http::request<http::string_body> req{http::verb::post, target, version};
+        req.set(http::field::host, host);
+        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+        std::string auth = "IIS_1C:LbyFvj1";
+        req.set(http::field::authorization, "Basic " + arcirk::base64::base64_encode(auth));
+        req.set(http::field::content_type, "application/json");
+
+        nlohmann::json body = {
+                {"command", "Version"}
+        };
+
+        req.body() = body.dump();
+        req.prepare_payload();
+        // Send the HTTP request to the remote host
+        http::write(stream, req);
+
+        // This buffer is used for reading and must be persisted
+        beast::flat_buffer buffer;
+
+        // Declare a container to hold the response
+        http::response<http::dynamic_body> res;
+
+        // Receive the HTTP response
+        http::read(stream, buffer, res);
+
+        // Write the message to standard out
+        std::cout << " shared_state::synchronize_objects_from_1c:" << " " << res << std::endl;
+
+        // Gracefully close the socket
+        beast::error_code ec;
+        stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+
+        // not_connected happens sometimes
+        // so don't bother reporting it.
+        //
+        if (ec && ec != beast::errc::not_connected)
+            throw beast::system_error{ec};
+
+        // If we get here then the connection is closed gracefully
+    }
+    catch(std::exception const& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        //return EXIT_FAILURE;
+    }
 
 }

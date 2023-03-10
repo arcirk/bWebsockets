@@ -266,6 +266,13 @@ namespace arcirk {
                 result.Port = std::string(hostEnd, portEnd);
             }
 
+            if(result.Port.empty()){
+                if(result.Protocol == "http")
+                    result.Port = "80";
+                else if(result.Protocol == "https")
+                    result.Port = "443";
+            }
+
             // path
             if (pathStart != uriEnd)
                 result.Path = std::string(pathStart, queryStart);
