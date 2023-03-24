@@ -105,6 +105,9 @@ private:
 
 //    void start_reconnect();
 //    void WebCore::check_connection();
+
+    //std::string crypt(const variant_t& source);
+
 };
 
 #endif //WS_SOLUTION_WEBCORE_H

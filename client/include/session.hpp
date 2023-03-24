@@ -89,7 +89,7 @@ public:
             std::cerr << ec.value() << std::endl;
         }
 
-        std::string err = ec.what();
+        std::string err = arcirk::to_utf(ec.what());
         std::string what = "on_write";
 
         if (ec == boost::asio::error::connection_reset
@@ -130,7 +130,7 @@ public:
     {
         boost::ignore_unused(bytes_transferred);
 
-        std::string err = ec.what();
+        std::string err = arcirk::to_utf(ec.what());
         std::string what = "on_read";
 
         if (ec == boost::asio::error::connection_reset
@@ -237,7 +237,7 @@ private:
     void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep){
 
         if (ec.value() == 111 || ec.value() == 10061) { //connection refused
-            derived().state()->on_error("on_connect", ec.message(), ec.value());
+            derived().state()->on_error("on_connect", arcirk::to_utf(ec.message()), ec.value());
             return;
         }
 

@@ -133,8 +133,16 @@ WebCore::WebCore(){
     AddMethod(L"GetServerCommands", L"ПолучитьСтруктуруКомандСервера", this, &WebCore::get_server_commands);
     AddMethod(L"GetMessages", L"ПолучитьИсториюСообщений", this, &WebCore::get_messages);
     AddMethod(L"SendMessage", L"ОтправитьСообщение", this, &WebCore::send_message);
+    //AddMethod(L"Crypt", L"Crypt", this, &WebCore::crypt);
 
 }
+
+//std::string WebCore::crypt(const variant_t &source) {
+//    const std::string c = std::get<std::string>(source);
+//    const std::string res = arcirk::crypt(c, "my_key");
+//    return crypt()
+//    //return res;
+//}
 
 std::string WebCore::get_server_commands() {
 
@@ -280,14 +288,19 @@ std::string WebCore::session_uuid() {
 }
 
 void WebCore::on_connect(){
-    auto response = arcirk::server::server_response();
-    response.command = "on_connect";
-    response.message = "ok";
-    response.result = "success";
-    response.uuid_form = uuids::uuid_to_string(default_form);
-    response.version = ARCIRK_VERSION;
-    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(enum_synonym(arcirk::client::client_events::wsConnect), msg);
+    try {
+        auto response = arcirk::server::server_response();
+        response.command = "on_connect";
+        response.message = "ok";
+        response.result = "success";
+        response.uuid_form = uuids::uuid_to_string(default_form);
+        response.version = ARCIRK_VERSION;
+        std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
+        emit(enum_synonym(arcirk::client::client_events::wsConnect), msg);
+    } catch (const std::exception &e) {
+        auto w = e.what();
+        error("WebCore::on_connect", w);
+    }
 }
 
 void WebCore::on_message(const std::string& message){
@@ -296,36 +309,53 @@ void WebCore::on_message(const std::string& message){
 }
 
 void WebCore::on_stop(){
-    auto response = arcirk::server::server_response();
-    response.command = "on_stop";
-    response.message = "ok";
-    response.result = "success";
-    response.uuid_form = uuids::uuid_to_string(default_form);
-    response.version = ARCIRK_VERSION;
-    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(enum_synonym(arcirk::client::client_events::wsClose), msg);
+    try {
+        auto response = arcirk::server::server_response();
+        response.command = "on_stop";
+        response.message = "ok";
+        response.result = "success";
+        response.uuid_form = uuids::uuid_to_string(default_form);
+        response.version = ARCIRK_VERSION;
+        std::string msg = arcirk::base64::base64_encode(pre::json::to_json(response).dump());
+        emit(enum_synonym(arcirk::client::client_events::wsClose), msg);
+    } catch (const std::exception &e) {
+        auto w = e.what();
+        error("WebCore::on_stop", w);
+    }
 }
 void
 WebCore::on_error(const std::string &what, const std::string &err, int code){
-    auto response = arcirk::server::server_response();
-    response.command = "on_error";
-    response.message = err;
-    response.result = "error";
-    response.uuid_form = uuids::uuid_to_string(default_form);
-    response.version = ARCIRK_VERSION;
-    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(enum_synonym(arcirk::client::client_events::wsError), msg);
+    try {
+        auto response = arcirk::server::server_response();
+        response.command = "on_error";
+        response.message = err;
+        response.result = "error";
+        response.uuid_form = uuids::uuid_to_string(default_form);
+        response.version = ARCIRK_VERSION;
+        auto d = pre::json::to_json(response).dump();
+        std::string msg = arcirk::base64::base64_encode(d);
+        emit(enum_synonym(arcirk::client::client_events::wsError), msg);
+    } catch (const std::exception &e) {
+        auto w = e.what();
+        error("WebCore::on_error", w);
+    }
+
 }
 
 void WebCore::on_status_changed(bool status){
-    auto response = arcirk::server::server_response();
-    response.command = "on_status_changed";
-    response.message = "ok";
-    response.result = status ? "true" : "false";
-    response.uuid_form = uuids::uuid_to_string(default_form);
-    response.version = ARCIRK_VERSION;
-    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(enum_synonym(arcirk::client::client_events::wsStatusChanged), msg);
+    try {
+        auto response = arcirk::server::server_response();
+        response.command = "on_status_changed";
+        response.message = "ok";
+        response.result = status ? "true" : "false";
+        response.uuid_form = uuids::uuid_to_string(default_form);
+        response.version = ARCIRK_VERSION;
+        std::string msg = arcirk::base64::base64_encode(pre::json::to_json(response).dump());
+        emit(enum_synonym(arcirk::client::client_events::wsStatusChanged), msg);
+    } catch (const std::exception &e) {
+        auto w = e.what();
+        error("WebCore::on_status_changed", w);
+    }
 }
 
 std::string WebCore::sha1_hash(const variant_t &source) {
@@ -356,12 +386,17 @@ void WebCore::get_messages(const variant_t &sender, const variant_t &recipient, 
 }
 
 void WebCore::on_successful_authorization() {
-    auto response = arcirk::server::server_response();
-    response.command = "on_successful_authorization";
-    response.message = "ok";
-    response.result = "success";
-    response.uuid_form = uuids::uuid_to_string(default_form);
-    response.version = ARCIRK_VERSION;
-    std::string msg = arcirk::base64::base64_encode(to_string(pre::json::to_json(response)));
-    emit(enum_synonym(arcirk::client::client_events::wsSuccessfulAuthorization), msg);
+    try {
+        auto response = arcirk::server::server_response();
+        response.command = "on_successful_authorization";
+        response.message = "ok";
+        response.result = "success";
+        response.uuid_form = uuids::uuid_to_string(default_form);
+        response.version = ARCIRK_VERSION;
+        std::string msg = arcirk::base64::base64_encode(pre::json::to_json(response).dump());
+        emit(enum_synonym(arcirk::client::client_events::wsSuccessfulAuthorization), msg);
+    } catch (const std::exception &e) {
+        auto w = e.what();
+        error("WebCore::on_successful_authorization", w);
+    }
 }

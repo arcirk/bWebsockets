@@ -123,8 +123,7 @@ add_executable(${TARGET}
         ../arcirk/beast.hpp
         ../arcirk/net.hpp
         ${CPPS}
-        ${CPPH}
-        )
+        ${CPPH})
 
 target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}

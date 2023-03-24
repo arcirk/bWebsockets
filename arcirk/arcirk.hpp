@@ -40,6 +40,8 @@
 
 static constexpr time_t const NULL_TIME = -1;
 
+#define CRYPT_KEY "my_key"
+
 namespace arcirk {
 
 #ifdef USE_RAPIDJSON
@@ -71,6 +73,9 @@ namespace arcirk {
     long int date_to_seconds(const tm& dt = {}, bool offset = false);
     long int tz_offset(time_t when = NULL_TIME);
     long int add_day(const long int dt, const int quantity);
+
+    std::string crypt(const std::string &source, const std::string& key);
+    //void* _crypt(void* data, unsigned data_size, void* key, unsigned key_size);
 
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);

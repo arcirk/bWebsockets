@@ -1,4 +1,7 @@
 #include "../arcirk.hpp"
+
+#define ARR_SIZE(x) (sizeof(x) / sizeof(x[0]))
+
 namespace arcirk{
 
     namespace uuids{
@@ -258,4 +261,31 @@ namespace arcirk{
     void trim(std::string& source){ boost::trim(source);};
     void to_upper(std::string& source){boost::to_upper(source);};
     void to_lower(std::string& source){boost::to_lower(source);};
+
+    void* _crypt(void* data, unsigned data_size, void* key, unsigned key_size)
+    {
+        assert(data && data_size);
+        if (!key || !key_size) return data;
+
+        auto* kptr = (uint8_t*)key; // начало ключа
+        uint8_t* eptr = kptr + key_size; // конец ключа
+
+        for (auto* dptr = (uint8_t*)data; data_size--; dptr++)
+        {
+            *dptr ^= *kptr++;
+            if (kptr == eptr) kptr = (uint8_t*)key; // переход на начало ключа
+        }
+        return data;
+    }
+
+    std::string crypt(const std::string &source, const std::string& key) {
+
+        void * text = (void *) source.c_str();
+        void * pass = (void *) key.c_str();
+        _crypt(text, ARR_SIZE(source.c_str()), pass, ARR_SIZE(key.c_str()));
+
+        std::string result((char*)text);
+
+        return result;
+    }
 }

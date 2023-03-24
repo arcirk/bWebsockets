@@ -50,11 +50,6 @@ typedef std::variant<
 using namespace arcirk;
 
 namespace arcirk{
-    enum DatabaseType{
-        dbTypeSQLite = 0,
-        dbTypeODBC
-    };
-
     static inline boost::filesystem::path program_data(){
         using namespace boost::filesystem;
 

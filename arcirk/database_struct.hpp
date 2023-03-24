@@ -3,6 +3,13 @@
 
 #include "includes.hpp"
 
+namespace arcirk{
+        enum DatabaseType{
+            dbTypeSQLite = 0,
+                    dbTypeODBC
+        };
+};
+
 BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), database_config,
                 (int, _id)
@@ -164,6 +171,17 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
+                (arcirk::database), barcodes,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, barcode)
+                (std::string, parent)
+                (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), table_info_sqlite,
                 (int, cid)
                 (std::string, name)
@@ -235,6 +253,7 @@ namespace arcirk::database{
         tbDocumentsTables,
         tbNomenclature,
         tbDatabaseConfig,
+        tbBarcodes,
         tables_INVALID=-1,
     };
 
@@ -253,6 +272,7 @@ namespace arcirk::database{
         {tbDocumentsTables, "DocumentsTables"}  ,
         {tbNomenclature, "Nomenclature"}  ,
         {tbDatabaseConfig, "DatabaseConfig"}  ,
+        {tbBarcodes, "Barcodes"}  ,
     })
 
     enum views{
@@ -432,6 +452,17 @@ namespace arcirk::database{
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
+    const std::string barcodes_table_ddl = "CREATE TABLE Barcodes (\n"
+                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]         TEXT,\n"
+                                               "    second          TEXT,\n"
+                                               "    ref             TEXT (36) UNIQUE\n"
+                                               "                             NOT NULL,\n"
+                                               "    barcode         TEXT (128) DEFAULT \"\",\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    version         INTEGER NOT NULL DEFAULT(0)\n"
+                                               ");";
+
     const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
                                                   "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                   "    [first]         TEXT,\n"
@@ -537,6 +568,12 @@ namespace arcirk::database{
                 tbl.parent = arcirk::uuids::nil_string_uuid();
                 return pre::json::to_json(tbl);
             }
+            case tbBarcodes: {
+                auto tbl = barcodes();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                return pre::json::to_json(tbl);
+            }
             case tbDatabaseConfig: {
                 auto tbl = database_config();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
@@ -575,6 +612,7 @@ namespace arcirk::database{
             case tbNomenclature: return nomenclature_table_ddl;
             case tbDatabaseConfig: return database_config_table_ddl;
             case tbDevicesType:  return devices_type_table_ddl;
+            case tbBarcodes:  return barcodes_table_ddl;
             case tables_INVALID:{
                 break;
             }
@@ -753,6 +791,7 @@ namespace arcirk::database{
         result.emplace(tables::tbSubdivisions, 2);
         result.emplace(tables::tbWarehouses, 2);
         result.emplace(tables::tbWorkplaces, 2);
+        result.emplace(tables::tbBarcodes, 1);
         return result;
     }
 
@@ -770,7 +809,8 @@ namespace arcirk::database{
                 tbDocuments,
                 tbDocumentsTables,
                 tbNomenclature,
-                tbDatabaseConfig
+                tbDatabaseConfig,
+                tbBarcodes
         };
         return result;
     }
