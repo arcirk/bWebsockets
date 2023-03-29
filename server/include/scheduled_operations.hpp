@@ -12,11 +12,10 @@ public:
     scheduled_operations(const arcirk::server::server_config& sett);
 
     bool perform_data_exchange();
+    nlohmann::json exec_http_query(const std::string& command, const nlohmann::json& param);
 
 private:
     arcirk::server::server_config sett_;
-
-    nlohmann::json exec_http_query(const std::string& command, const nlohmann::json& param);
 
     template<typename T>
     void add_query(const nlohmann::json& object, std::vector<std::string>& transaction_arr, soci::session& sql, const std::string& table_name);

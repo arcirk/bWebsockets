@@ -73,6 +73,14 @@ void verify_directories(const std::string& working_directory_dir = ""){
         path ssl_dir = m_root_conf;
         ssl_dir /= "ssl";
         arcirk::standard_paths::verify_directory(ssl_dir);
+
+        path api_dir = html;
+        api_dir /= "api/info";
+        arcirk::standard_paths::verify_directory(api_dir);
+
+        path _1c_dir = m_root_conf;
+        _1c_dir /= "1c/bsl";
+        arcirk::standard_paths::verify_directory(_1c_dir);
     }
 }
 
@@ -243,61 +251,6 @@ void verify_database_structure(){
     }catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
-
-//
-//    try {
-//        auto m_tables = get_tables(sql);
-//        auto m_views = get_views(sql);
-//        verify_table_users(sql, m_tables);
-//        verify_table_messages(sql, m_tables);
-//
-//        std::map<std::string, std::string> t_ddl;
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbOrganizations), organizations_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbPriceTypes), price_types_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbSubdivisions), subdivisions_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbWarehouses), warehouses_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbWorkplaces), workplaces_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevices), devices_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDevicesType), devices_type_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocuments), documents_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbDocumentsTables), document_table_table_ddl);
-//        t_ddl.emplace(arcirk::enum_synonym(tables::tbNomenclature), nomenclature_table_ddl);
-//
-//        //проверка таблиц
-//        verify_tables(sql, m_tables, t_ddl);
-//
-//        //заполняем перечисления
-//        int count = -1;
-//        sql << "select count(*) from DevicesType", into(count);
-//        auto query = std::make_shared<builder::query_builder>();
-//        if(count <= 0){
-//            for (int l = 0; l < 5; ++l) {
-//                auto val = (devices_type)l;
-//                std::string ref = to_string(arcirk::uuids::random_uuid());
-//                std::string enum_name = arcirk::enum_synonym(val);
-//                query->clear();
-//                query->use({
-//                       {"first", enum_name},
-//                       {"ref", ref}
-//                });
-//                query->insert("DevicesType", true).execute(sql, {}, true);
-//            }
-//        }
-//
-//        t_ddl.clear();
-//        t_ddl.emplace(arcirk::enum_synonym(views::dvDevicesView), devises_view_ddl);
-//        //проверка представлений
-//        verify_tables(sql, m_views, t_ddl);
-//
-//    } catch (std::exception &e) {
-//        std::cerr << e.what() << std::endl;
-//    }
-//
-//    //try {
-//    //    arcirk::database::rebase(sql, tables::tbDocuments);
-//    //} catch (std::exception &e) {
-//    //    std::cerr << e.what() << std::endl;
-//    //}
 
 }
 

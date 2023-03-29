@@ -163,6 +163,7 @@ public:
     arcirk::server::server_command_result object_get_from_database(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_get_discrepancy_in_data(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result sync_update_barcode(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
@@ -298,5 +299,31 @@ void shared_state::add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
     methods_meta.push_back(std::move(meta));
 };
 
+namespace arcirk::_1c::scripts{
 
+            enum local_1c_script{
+                barcode_information,
+                SCRIPT1C_INVALID=-1,
+            };
+
+            static std::string get_text(local_1c_script type, server::server_config& sett){
+
+                using namespace boost::filesystem;
+                path scripts_(sett.ServerWorkingDirectory);
+                scripts_ /= sett.Version;
+                if(type == barcode_information){
+                    scripts_ /= "1c/bsl/get_barcode_information.bsl";
+                }
+                if(!exists(scripts_)){
+                    return {};
+                }
+                std::ifstream in(scripts_.string());
+                std::stringstream ss;
+                ss << in.rdbuf();
+                in.close();
+                return ss.str();
+
+            }
+
+        }
 #endif //BWEBSOCKETS_SHARED_STATE_HPP

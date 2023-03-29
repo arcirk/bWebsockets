@@ -38,6 +38,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ObjectGetFromDatabase), this, &shared_state::object_get_from_database);
     add_method(enum_synonym(server::server_commands::SyncGetDiscrepancyInData), this, &shared_state::sync_get_discrepancy_in_data);
     add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
+    add_method(enum_synonym(server::server_commands::SyncUpdateBarcode), this, &shared_state::sync_update_barcode);
 
     run_server_tasks();
 }
@@ -2063,7 +2064,7 @@ void shared_state::run_server_tasks() {
         arcirk::services::task_options opt1{};
         opt1.end_task = 0;
         opt1.start_task = 0;
-        opt1.interval = 60;
+        opt1.interval = 1800;
         opt1.name = "ExchangePlan";
         opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt1.allowed = true;
@@ -2128,4 +2129,139 @@ void shared_state::synchronize_objects_from_1c() {
         fail("shared_state::synchronize_objects_from_1c", err.what());
     }
 
+}
+
+arcirk::server::server_command_result
+shared_state::sync_update_barcode(const variant_t &param, const variant_t &session_id) {
+
+    using namespace arcirk::database;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::SyncUpdateBarcode);
+
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        throw native_exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param));
+    auto param_ = nlohmann::json::parse(param_json);
+    result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
+    auto barcodes_j = param_["barcodes"];
+    std::vector<std::string> barcodes;
+    std::vector<std::string> queryas;
+
+    if(barcodes_j.is_string()){
+        barcodes.push_back(barcodes_j.get<std::string>());
+    }else if(barcodes_j.is_array()){
+        for (auto itr = barcodes_j.begin();  itr != barcodes_j.end() ; ++itr) {
+            barcodes.push_back(*itr);
+        }
+    }
+
+    if(barcodes.empty())
+        throw native_exception("Ошибка в параметрах команды!");
+
+    std::string table_name = arcirk::enum_synonym(tables::tbBarcodes);
+    auto sql = soci_initialize();
+    auto http_service = scheduled_operations(sett);
+
+    std::string script = arcirk::_1c::scripts::get_text(arcirk::_1c::scripts::local_1c_script::barcode_information, sett);
+    if(script.empty()){
+        throw native_exception("Не найден файл скрипта 1с!");
+    }
+
+    nlohmann::json result_for_client{};
+
+    for (const auto br : barcodes) {
+
+        nlohmann::json param_http{
+                {"barcode", br},
+                {"command", "ExecuteScript"},
+                {"script", arcirk::base64::base64_encode(script)},
+                {"privileged_mode", true}
+        };
+
+        auto http_result = http_service.exec_http_query("ExecuteScript", param_http);
+
+        if(http_result.is_object()){
+
+
+
+            int count = 0;
+            auto obj = http_result.value("barcode", nlohmann::json{});
+            auto stuct_br = pre::json::from_json<database::barcodes>(obj);
+            auto stuct_n = pre::json::from_json<database::nomenclature>(http_result["nomenclature"]);
+
+            auto rs = builder::query_builder().select().from(table_name).where(nlohmann::json{
+                    {"barcode", br}
+            }, true).exec(sql, {}, true);
+
+            for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+                count++;
+                const soci::row &row_ = *itr;
+                stuct_br.ref = row_.get<std::string>("ref");
+            }
+
+            if(stuct_br.ref.empty())
+                stuct_br.ref = arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid());
+
+            auto query = builder::query_builder();
+
+            query.use(pre::json::to_json(stuct_br));
+            if(count > 0){
+                queryas.push_back(query.update(table_name, true).where(nlohmann::json{
+                        {"ref", stuct_br.ref}
+                }, true).prepare());
+            }
+            else{
+                queryas.push_back(query.insert(table_name, true).prepare());
+            }
+
+            if(stuct_n.ref.empty())
+                continue;
+
+            count = 0;
+            query.clear();
+            table_name = arcirk::enum_synonym(arcirk::database::tables::tbNomenclature);
+            rs = builder::query_builder().select().from(table_name).where(nlohmann::json{
+                    {"ref", stuct_n.ref}
+            }, true).exec(sql, {}, true);
+
+            for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+                count++;
+            }
+
+            query.use(pre::json::to_json(stuct_n));
+            if(count > 0){
+                queryas.push_back(query.update(table_name, true).where(nlohmann::json{
+                        {"ref", stuct_n.ref}
+                }, true).prepare());
+            }
+            else{
+                queryas.push_back(query.insert(table_name, true).prepare());
+            }
+
+            result_for_client += nlohmann::json {
+                    {"barcode", pre::json::to_json(stuct_br)},
+                    {"nomenclature", pre::json::to_json(stuct_n)}
+            };
+        }
+
+    }
+
+    if(!queryas.empty()){
+        auto tr = soci::transaction(sql);
+        for (const auto& q : queryas) {
+            sql << q;
+        }
+        tr.commit();
+    }
+
+    result.result = result_for_client.dump();
+    result.message = "OK";
+
+    return result;
 }

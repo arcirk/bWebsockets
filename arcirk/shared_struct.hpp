@@ -159,6 +159,7 @@ namespace arcirk::server{
         SyncGetDiscrepancyInData, //Получить расхождения в данных между базами на клиенте и на Сервере
         SyncUpdateDataOnTheServer, //Обновляет данные на сервере по запросу клиента
         WebDavServiceConfiguration, //Получить настройки WebDav
+        SyncUpdateBarcode,
         CMD_INVALID=-1,
     };
 
@@ -183,6 +184,7 @@ namespace arcirk::server{
         {SyncGetDiscrepancyInData, "SyncGetDiscrepancyInData"}    ,
         {SyncUpdateDataOnTheServer, "SyncUpdateDataOnTheServer"}    ,
         {WebDavServiceConfiguration, "WebDavServiceConfiguration"}    ,
+        {SyncUpdateBarcode, "SyncUpdateBarcode"}    ,
     })
 
 }

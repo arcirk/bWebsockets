@@ -36,14 +36,15 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     if(field_is_exists(standard_attributes, "Родитель") && field_is_exists(struct_json, "parent"))
         struct_json["parent"] = get_string_value<std::string>(standard_attributes, "Родитель");
 
-    if(field_is_exists(standard_attributes, "ЭтоГруппа") && field_is_exists(struct_json, "is_group"))
-        struct_json["is_group"] = get_string_value<int>(standard_attributes, "ЭтоГруппа");
+    if(field_is_exists(standard_attributes, "ЭтоГруппа") && field_is_exists(struct_json, "is_group")){
+        auto val = get_string_value<std::string>(standard_attributes, "ЭтоГруппа");
+        struct_json["is_group"] = val == "false" ? 0 : 1;
+    }
 
-    if(field_is_exists(standard_attributes, "ПометкаУдаления") && field_is_exists(struct_json, "deletion_mark"))
-        struct_json["deletion_mark"] = get_string_value<int>(standard_attributes, "ЭтоГруппа");
-
-    if(field_is_exists(attributes, "Хэш"))
-        struct_json["hash"] = get_string_value<std::string>(attributes, "Хэш");
+    if(field_is_exists(standard_attributes, "ПометкаУдаления") && field_is_exists(struct_json, "deletion_mark")){
+        auto val = get_string_value<std::string>(standard_attributes, "ПометкаУдаления");
+        struct_json["deletion_mark"] = val == "false" ? 0 : 1;
+    }
 
     if(field_is_exists(attributes, "Представление") && field_is_exists(struct_json, "performance"))
         struct_json["performance"] = get_string_value<std::string>(attributes, "Представление");
@@ -81,6 +82,11 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     if(struct_json["ref"].empty()){
         fail("scheduled_operations::update_nomenclature", "Ошибка в данных объекта. Обновление отменено.");
         return;
+    }
+
+    if(field_is_exists(struct_json, "hash")){
+        std::string hash = arcirk::get_hash(struct_json["first"], struct_json["ref"]);
+        struct_json["hash"] = hash;
     }
 
     soci::rowset<soci::row> rs = (sql.prepare << builder::query_builder().select(nlohmann::json{"version"}).from(table_name).where(nlohmann::json{
@@ -141,10 +147,14 @@ bool scheduled_operations::perform_data_exchange() {
                 std::string ref = item.value("Object", "");
                 std::string xml_type = item.value("Type", "");
 
-                std::cout << xml_type << std::endl;
+                //std::cout << xml_type << std::endl;
 
                 if(xml_type == "InformationRegisterRecord.Штрихкоды"){
-                    add_information_register_record<barcodes>(item.value("Object",nlohmann::json{}), transaction_arr, sql, arcirk::enum_synonym(tables::tbBarcodes));
+                    std::string obj_str = item.value("Object", "");
+                    if(!obj_str.empty()){
+                        auto obj = nlohmann::json::parse(obj_str);
+                        add_information_register_record<barcodes>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbBarcodes));
+                    }
                     continue;
                 }
 
@@ -170,66 +180,6 @@ bool scheduled_operations::perform_data_exchange() {
                         add_query<subdivisions>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbSubdivisions));
                     else
                         continue;
-//                        std::string table_name = arcirk::enum_synonym(tables::tbNomenclature);
-//                        auto struct_n = arcirk::database::nomenclature();
-//                        struct_n.ref = ref;
-//                        nlohmann::json standard_attributes = obj.value("СтандартныеРеквизиты", nlohmann::json{});
-//                        bool error = false;
-//                        if(standard_attributes.is_object()){
-//                            auto name = standard_attributes.value("Наименование", nlohmann::json{});
-//                            if(name.is_object()){
-//                                struct_n.second = name.value("Значение", "Ошибка");
-//                                struct_n.second.erase(std::remove(struct_n.second.begin(), struct_n.second.end(), '\''), struct_n.second.end());
-//                            }
-//                            auto parent = standard_attributes.value("Родитель", nlohmann::json{});
-//                            if(parent.is_object()){
-//                                struct_n.parent = parent.value("Значение", arcirk::uuids::nil_string_uuid());
-//                            }
-//                        }else
-//                            error = true;
-//                        nlohmann::json attributes = obj.value("Реквизиты", nlohmann::json{});
-//                        if(attributes.is_object()){
-//                            auto article = attributes.value("Артикул", nlohmann::json{});
-//                            if(article.is_object()){
-//                                struct_n.first = article.value("Значение", "");
-//                                struct_n.first.erase(std::remove(struct_n.first.begin(), struct_n.first.end(), '\''), struct_n.first.end());
-//                            }
-//                        }else
-//                            error = true;
-//
-//                        if(!error){
-//                            int count = 0;
-////                            sql << builder::query_builder().row_count().from(table_name).where(nlohmann::json{
-////                                    {"ref", struct_n.ref}
-////                            }, true).prepare(), soci::into(count);
-////
-//                            soci::rowset<soci::row> rs = (sql.prepare << builder::query_builder().select(nlohmann::json{"version"}).from(table_name).where(nlohmann::json{
-//                                    {"ref", struct_n.ref}
-//                            }, true).prepare());
-//
-//                            for (auto it = rs.begin(); it != rs.end(); it++) {
-//                                const soci::row &row_ = *it;
-//                                count++;
-//                                struct_n.version = row_.get<int>(0) + 1;
-//                            }
-//                            if(struct_n.version == 0)
-//                                struct_n.version = 1;
-//
-//                            auto query = builder::query_builder();
-//                            query.use(pre::json::to_json(struct_n));
-//                            if (count > 0){
-//                                query.update(table_name, true).where(nlohmann::json{
-//                                        {"ref", struct_n.ref}
-//                                }, true);
-//                            }else
-//                                query.insert(table_name, true);
-//
-//                            transaction_arr.push_back(query.prepare());
-//
-//                        }
-
-
-
                 }
             }
         }
@@ -237,8 +187,6 @@ bool scheduled_operations::perform_data_exchange() {
     }
 
     if(transaction_arr.size() > 0){
-        //int lenght = (int)transaction_arr.size();
-
         int count = 0;
         std::vector<std::string> current_queries;
         for (auto query_text : transaction_arr) {
@@ -255,14 +203,8 @@ bool scheduled_operations::perform_data_exchange() {
                 current_queries.clear();
                 count = 0;
             }
-//            if(count % 100 == 0){
-//                tr.commit();
-//                //count -= lenght - count;
-//                count = 0;
-//            }
         }
-//        if(count > 0)
-//            tr.commit();
+
         if(current_queries.size() > 0){
             auto tr = soci::transaction(sql);
             for (auto current_text : current_queries) {
@@ -358,11 +300,12 @@ void scheduled_operations::add_information_register_record(const nlohmann::json 
     auto struct_json = pre::json::to_json(struct_n);
 
     std::cout << arcirk::local_8bit(object.dump()) << std::endl;
+    std::cout << arcirk::local_8bit(struct_json.dump()) << std::endl;
 
-    if(field_is_exists(object, "Штрихкод") && field_is_exists(struct_json, "barcode"))
-        struct_json["barcode"] = get_string_value<std::string>(object, "Штрихкод");
-    if(field_is_exists(object, "Владелец") && field_is_exists(struct_json, "parent"))
-        struct_json["parent"] = get_string_value<std::string>(object, "Владелец");
+    if(field_is_exists(object, "barcode") && field_is_exists(struct_json, "barcode"))
+        struct_json["barcode"] = get_string_value<std::string>(object, "barcode");
+    if(field_is_exists(object, "parent") && field_is_exists(struct_json, "parent"))
+        struct_json["parent"] = get_string_value<std::string>(object, "parent");
 
     int count = 0;
 

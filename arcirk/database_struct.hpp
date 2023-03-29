@@ -163,10 +163,11 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), nomenclature,
                 (int, _id)
                 (std::string, first) // Наименование
-                (std::string, second) // Артикул
+                (std::string, second)
                 (std::string, ref)
                 (std::string, cache) // Все остальные реквизиты
                 (std::string, parent)
+                (std::string, vendor_code)
                 (int, version)
 );
 
@@ -277,11 +278,13 @@ namespace arcirk::database{
 
     enum views{
         dvDevicesView,
+        dvDocumentsTableView,
         views_INVALID=-1,
     };
     NLOHMANN_JSON_SERIALIZE_ENUM(views, {
         { views_INVALID, nullptr }    ,
         { dvDevicesView, "DevicesView" }  ,
+        { dvDocumentsTableView, "DocumentsTableView" }  ,
     });
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
@@ -449,6 +452,7 @@ namespace arcirk::database{
                                                "                             NOT NULL,\n"
                                                "    cache           TEXT      DEFAULT \"\",\n"
                                                "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    vendor_code     TEXT,\n"
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
@@ -471,6 +475,37 @@ namespace arcirk::database{
                                                   "                             NOT NULL,\n"
                                                   "    version         INTEGER  DEFAULT(0)  NOT NULL\n" //Это версия структуры таблицы, во всех остальных поле версия - это версия объекта
                                                   ");";
+
+    const std::string documents_table_view_ddl = "CREATE VIEW DocumentsTableView AS\n"
+                                                "    SELECT DocumentsTables.barcode AS barcode,\n"
+                                                "           Barcodes.parent AS nomenclature,\n"
+                                                "           DocumentsTables.parent AS document,\n"
+                                                "           DocumentsTables.quantity AS quantity\n"
+                                                "      FROM DocumentsTables AS DocumentsTables\n"
+                                                "           LEFT JOIN\n"
+                                                "           Barcodes AS Barcodes ON DocumentsTables.barcode = Barcodes.barcode;";
+
+    static inline void fail(const std::string& what, const std::string& error, bool conv = true){
+        std::tm tm = arcirk::current_date();
+        char cur_date[100];
+        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
+        if(conv)
+            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
+        else
+            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
+    };
+
+    static inline void log(const std::string& what, const std::string& message, bool conv = true){
+        std::tm tm = arcirk::current_date();
+        char cur_date[100];
+        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+
+        if(conv)
+            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
+        else
+            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
+    };
 
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
@@ -624,6 +659,7 @@ namespace arcirk::database{
     static inline std::string get_ddl(views table){
         switch (table) {
             case dvDevicesView: return devises_view_ddl;
+            case dvDocumentsTableView: return documents_table_view_ddl;
             case views_INVALID:{
                 break;
             }
@@ -779,7 +815,7 @@ namespace arcirk::database{
     static inline std::map<tables, int> get_release_tables_versions(){
         std::map<tables, int> result;
         result.emplace(tables::tbDatabaseConfig, 2);
-        result.emplace(tables::tbNomenclature, 2);
+        result.emplace(tables::tbNomenclature, 3);
         result.emplace(tables::tbDocuments, 3);
         result.emplace(tables::tbDevices, 2);
         result.emplace(tables::tbMessages, 2);
@@ -817,7 +853,8 @@ namespace arcirk::database{
 
     static inline std::vector<views> views_name_array(){
         std::vector<views> result = {
-                dvDevicesView
+                dvDevicesView,
+                dvDocumentsTableView
         };
         return result;
     }
@@ -914,6 +951,8 @@ namespace arcirk::database{
         auto database_views = get_database_views(sql); //Массив существующих представлений
         auto tables_arr = tables_name_array(); //Массив имен таблиц
         bool is_rebase = false;
+
+
 
         //Сначала проверим, существует ли таблица версий
         if(std::find(database_tables.begin(), database_tables.end(), arcirk::enum_synonym(tables::tbDatabaseConfig)) == database_tables.end()) {
