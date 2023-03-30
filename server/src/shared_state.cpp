@@ -280,16 +280,21 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     std::vector<variant_t> params_v;
     if(!json_params.empty()){
         using nlohmann_json = nlohmann::json;
-        auto params_ = nlohmann_json::parse(json_params);
-        for (auto& el : params_.items()) {
-            auto value = el.value();
-            if(value.is_string()){
-                params_v.emplace_back(value.get<std::string>());
-            }else if(value.is_number()){
-                params_v.emplace_back(value.get<double>());
-            }else if(value.is_boolean()){
-                params_v.emplace_back(value.get<bool>());
+        try {
+            auto params_ = nlohmann_json::parse(json_params);
+
+            for (auto& el : params_.items()) {
+                auto value = el.value();
+                if(value.is_string()){
+                    params_v.emplace_back(value.get<std::string>());
+                }else if(value.is_number()){
+                    params_v.emplace_back(value.get<double>());
+                }else if(value.is_boolean()){
+                    params_v.emplace_back(value.get<bool>());
+                }
             }
+        } catch (const std::exception &ex) {
+            fail("shared_state::execute_command_handler", ex.what());
         }
     }
 

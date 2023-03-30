@@ -89,7 +89,7 @@ void scheduled_operations::add_query(const nlohmann::json &object,
         struct_json["hash"] = hash;
     }
 
-    soci::rowset<soci::row> rs = (sql.prepare << builder::query_builder().select(nlohmann::json{"version"}).from(table_name).where(nlohmann::json{
+    soci::rowset<soci::row> rs = (sql.prepare << builder::query_builder().select(nlohmann::json{"*"}).from(table_name).where(nlohmann::json{
             {"ref", struct_json["ref"]}
     }, true).prepare());
 
@@ -98,7 +98,11 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     for (auto it = rs.begin(); it != rs.end(); it++) {
         const soci::row &row_ = *it;
         count++;
-        struct_json["version"] = row_.get<int>(0) + 1;
+        struct_json["version"] = row_.get<int>("version") + 1;
+        //вернем хеш пользователя если запись существует
+        if(field_is_exists(struct_json, "hash")){
+            struct_json["hash"] = row_.get<std::string>("hash");
+        }
     }
     if(struct_json["version"] == 0)
         struct_json["version"] = 1;
