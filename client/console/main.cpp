@@ -6,6 +6,8 @@
 #include <client.hpp>
 #include <functional>
 #include <boost/beast/ssl.hpp>
+#include <skyr/url.hpp>
+#include <skyr/percent_encoding/percent_decode.hpp>
 
 const std::string version = "1.1.0";
 
@@ -143,6 +145,34 @@ main(int argc, char* argv[]){
 
     setlocale(LC_ALL, "Russian");
 
+    //url test
+    using namespace skyr::literals;
+
+//    auto url =
+//            "http://sub.example.إختبار:8090/\xcf\x80?a=1&c=2&b=\xe2\x80\x8d\xf0\x9f\x8c\x88"_url;
+    auto url =
+            "file://D:\\src\\build-PriceChecker-Android_Qt_6_4_2_Clang_armeabi_v7a-Release\\android-build\\build\\outputs\\apk\\release\\android-build-release-signed.apk"_url;
+
+    std::cout << "Protocol: " << url.protocol() << std::endl;
+
+    std::cout << "Domain?   " << std::boolalpha << url.is_domain() << std::endl;
+    std::cout << "Domain:   " << url.hostname() << std::endl;
+    std::cout << "Domain:   " << url.u8domain().value() << std::endl;
+
+    std::cout << "Port:     " << url.port<std::uint16_t>().value() << std::endl;
+
+    std::cout << "Pathname: "
+              << skyr::percent_decode(url.pathname()).value() << std::endl;
+
+    std::cout << "Search parameters:" << std::endl;
+    const auto &search = url.search_parameters();
+    for (const auto &[key, value] : search) {
+        std::cout << "  " << "key: " << key << ", value = " << value << std::endl;
+    }
+
+    return 0;
+    //
+
 //    try {
 //        //http тест
 //        const std::string host_1 = "http://192.168.43.25/trade";
@@ -220,113 +250,113 @@ main(int argc, char* argv[]){
 //    std::cout << static_cast<int>(b[0]) << " " << b << std::endl;
 //    std::cout << static_cast<int>(t[0]) << " " << t << std::endl;
     //return 0;
-
-    InputParser input(argc, argv);
-
-    if(input.cmdOptionExists("-v") || input.cmdOptionExists("-version")){
-        std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << version << std::endl;
-        return EXIT_SUCCESS;
-    }
-
-    const std::string &_url = input.getCmdOption("-url");
-    const std::string &_usr = input.getCmdOption("-usr");
-    const std::string &_pwd = input.getCmdOption("-pwd");
-    const std::string &_ar = input.getCmdOption("-ar");
-
-    callback_connect _connect = std::bind(&on_connect);
-    callback_error _err = std::bind(&on_error, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    callback_message _message = std::bind(&on_message, std::placeholders::_1);
-    callback_status _status = std::bind(&on_status_changed, std::placeholders::_1);
-    callback_close _on_close = std::bind(&on_stop);
-    callback_successful_authorization _on_successful_authorization = std::bind(&on_successful_authorization);
-
-    verify_directories();
-
-    server::server_config app_conf;
-    read_conf(app_conf);
-
-    std::string host = app_conf.ServerHost;
-    int port = app_conf.ServerPort;
-
-    ssl::context ctx{ssl::context::tlsv12_client};
-
-    std::shared_ptr<websocket_client> m_client;
-
-    client::client_param client_param = client::client_param();
-    client_param.app_name = "websocket_client";
-    client_param.user_name = "admin";
-    client_param.password = "admin";
-    client_param.user_uuid = arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid());
-
-    if(!_usr.empty())
-        client_param.user_name = _usr;
-    if(!_pwd.empty())
-        client_param.password = _pwd;
-
-    if(!_ar.empty())
-    {
-        try {
-            app_conf.AutoConnect = std::stoi(_ar.c_str());
-        } catch (std::exception &ex) {
-            std::cerr << arcirk::local_8bit("Ошибка преобразования параметра '-ar'.") << std::endl;
-        }
-    }
-
-
-    m_client = std::make_shared<websocket_client>(ctx, client_param);
-
-    std::string url = _url;
-
-    if(url.empty()){
-        if(host.empty())
-            host = arcirk::bIp::get_default_host("0.0.0.0", "192.168.10");
-
-        if(port <= 0)
-            port = 8080;
-        url = "wss://" + host + ":" + boost::to_string(port);
-    }
-
-    std::cout << url << std:: endl;
-
-    m_client->connect(client::client_events::wsMessage, _message);
-    m_client->connect(client::client_events::wsStatusChanged, _status);
-    m_client->connect(client::client_events::wsError, _err);
-    m_client->connect(client::client_events::wsConnect, _connect);
-    m_client->connect(client::client_events::wsClose, _on_close);
-    m_client->connect(client::client_events::wsSuccessfulAuthorization, _on_successful_authorization);
-
-    app_conf.ServerPort = port;
-    app_conf.ServerHost = host;
-    write_conf(app_conf);
-
-    m_client->set_certificate_file("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
-
-    std::string line;
-
-    m_client->set_auto_reconnect(app_conf.AutoConnect);
-
-    while (getline(std::cin, line)) {
-        if (line.empty()) {
-            continue;
-        }
-        else if (line == "start")
-        {
-            m_client->open(arcirk::Uri::Parse(url));
-        }
-        else if (line == "stop")
-        {
-            m_client->close(false);
-        }else if(line == "exit")
-            break;
-        else if (line == "send")
-        {
-            m_client->send_message("test message");
-        }else if (line == "get_users") {
-            get_online_users(m_client);
-        }else {
-            m_client->send_message(line);
-        }
-    }
-
-    return EXIT_SUCCESS;
+//////////////////////////////////////////////////////////////////////////////////////////////
+//    InputParser input(argc, argv);
+//
+//    if(input.cmdOptionExists("-v") || input.cmdOptionExists("-version")){
+//        std::cout << arcirk::local_8bit("arcirk.websocket.server v.") << version << std::endl;
+//        return EXIT_SUCCESS;
+//    }
+//
+//    const std::string &_url = input.getCmdOption("-url");
+//    const std::string &_usr = input.getCmdOption("-usr");
+//    const std::string &_pwd = input.getCmdOption("-pwd");
+//    const std::string &_ar = input.getCmdOption("-ar");
+//
+//    callback_connect _connect = std::bind(&on_connect);
+//    callback_error _err = std::bind(&on_error, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+//    callback_message _message = std::bind(&on_message, std::placeholders::_1);
+//    callback_status _status = std::bind(&on_status_changed, std::placeholders::_1);
+//    callback_close _on_close = std::bind(&on_stop);
+//    callback_successful_authorization _on_successful_authorization = std::bind(&on_successful_authorization);
+//
+//    verify_directories();
+//
+//    server::server_config app_conf;
+//    read_conf(app_conf);
+//
+//    std::string host = app_conf.ServerHost;
+//    int port = app_conf.ServerPort;
+//
+//    ssl::context ctx{ssl::context::tlsv12_client};
+//
+//    std::shared_ptr<websocket_client> m_client;
+//
+//    client::client_param client_param = client::client_param();
+//    client_param.app_name = "websocket_client";
+//    client_param.user_name = "admin";
+//    client_param.password = "admin";
+//    client_param.user_uuid = arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid());
+//
+//    if(!_usr.empty())
+//        client_param.user_name = _usr;
+//    if(!_pwd.empty())
+//        client_param.password = _pwd;
+//
+//    if(!_ar.empty())
+//    {
+//        try {
+//            app_conf.AutoConnect = std::stoi(_ar.c_str());
+//        } catch (std::exception &ex) {
+//            std::cerr << arcirk::local_8bit("Ошибка преобразования параметра '-ar'.") << std::endl;
+//        }
+//    }
+//
+//
+//    m_client = std::make_shared<websocket_client>(ctx, client_param);
+//
+//    std::string url = _url;
+//
+//    if(url.empty()){
+//        if(host.empty())
+//            host = arcirk::bIp::get_default_host("0.0.0.0", "192.168.10");
+//
+//        if(port <= 0)
+//            port = 8080;
+//        url = "wss://" + host + ":" + boost::to_string(port);
+//    }
+//
+//    std::cout << url << std:: endl;
+//
+//    m_client->connect(client::client_events::wsMessage, _message);
+//    m_client->connect(client::client_events::wsStatusChanged, _status);
+//    m_client->connect(client::client_events::wsError, _err);
+//    m_client->connect(client::client_events::wsConnect, _connect);
+//    m_client->connect(client::client_events::wsClose, _on_close);
+//    m_client->connect(client::client_events::wsSuccessfulAuthorization, _on_successful_authorization);
+//
+//    app_conf.ServerPort = port;
+//    app_conf.ServerHost = host;
+//    write_conf(app_conf);
+//
+//    m_client->set_certificate_file("C:\\src\\bWebsockets\\src\\client\\console\\ssl\\arcirk_ru.crt");
+//
+//    std::string line;
+//
+//    m_client->set_auto_reconnect(app_conf.AutoConnect);
+//
+//    while (getline(std::cin, line)) {
+//        if (line.empty()) {
+//            continue;
+//        }
+//        else if (line == "start")
+//        {
+//            m_client->open(arcirk::Uri::Parse(url));
+//        }
+//        else if (line == "stop")
+//        {
+//            m_client->close(false);
+//        }else if(line == "exit")
+//            break;
+//        else if (line == "send")
+//        {
+//            m_client->send_message("test message");
+//        }else if (line == "get_users") {
+//            get_online_users(m_client);
+//        }else {
+//            m_client->send_message(line);
+//        }
+//    }
+//
+//    return EXIT_SUCCESS;
 }

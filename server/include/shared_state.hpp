@@ -164,6 +164,7 @@ public:
     arcirk::server::server_command_result sync_get_discrepancy_in_data(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_barcode(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result download_app_update_file(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
@@ -221,6 +222,10 @@ private:
     static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
     void execute_command_handler(const std::string& message, subscriber *session);
     void forward_message(const std::string& message, subscriber *session);
+
+    bool init_default_result(arcirk::server::server_command_result& result,
+                             const boost::uuids::uuid &uuid, server::server_commands cmd,
+                             arcirk::database::roles role, nlohmann::json& param, const variant_t& param_);
 
 
     [[nodiscard]] soci::session soci_initialize() const;

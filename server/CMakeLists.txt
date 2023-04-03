@@ -114,6 +114,7 @@ set(ARCIRK_INCLUDE ../arcirk)
 #set(ARCIRK_LIB ../arcirk/cmake-build-debug)
 set(TASK_INCLUDE ../task/lib/include)
 #set(TASK_LIB ../task/lib/cmake-build-debug)
+set(WDC_INCLUDE ../wdc/include)
 
 file(GLOB CPPS "src/*.cpp"
         CPPH "include/*hpp")
@@ -129,6 +130,7 @@ target_include_directories(${TARGET} PRIVATE
         ${Boost_INCLUDE_DIRS}
         ${ARCIRK_INCLUDE}
         ${TASK_INCLUDE}
+        ${WDC_INCLUDE}
         )
 
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
@@ -149,6 +151,7 @@ target_link_libraries(${TARGET} PRIVATE
         SOCI::soci_empty_static
         SOCI::soci_sqlite3_static
         nlohmann_json::nlohmann_json
+        libwdc
         )
 
 if (WIN32)

@@ -13,6 +13,8 @@
 
 #include "../include/scheduled_operations.hpp"
 
+#include <wdclient.hpp>
+
 shared_state::shared_state(){
 
     using namespace arcirk::server;
@@ -39,6 +41,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::SyncGetDiscrepancyInData), this, &shared_state::sync_get_discrepancy_in_data);
     add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
     add_method(enum_synonym(server::server_commands::SyncUpdateBarcode), this, &shared_state::sync_update_barcode);
+    add_method(enum_synonym(server::server_commands::DownloadAppUpdateFile), this, &shared_state::download_app_update_file);
 
     run_server_tasks();
 }
@@ -2269,4 +2272,105 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
     result.message = "OK";
 
     return result;
+}
+
+arcirk::server::server_command_result
+shared_state::download_app_update_file(const variant_t &param, const variant_t &session_id) {
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::DownloadAppUpdateFile, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    std::string url_file = param_["file_name"];
+
+    if(url_file.empty())
+        throw native_exception("Не верные параметры команды!");
+
+    auto url = arcirk::Uri::Parse(url_file);
+
+    using namespace boost::filesystem;
+
+    path catalog(sett.ServerWorkingDirectory);
+    catalog /= sett.Version;
+    catalog /= "bin";
+
+    path file(url.Protocol != "file" ? url_file : url.Path);
+    auto dest = catalog  /  file.filename();
+
+    if(!exists(catalog)){
+        throw native_exception("Не верная структура каталогов на сервере!");
+    }
+
+    std::string protocol = url.Protocol;
+    if(protocol == "file"){
+
+        if(!exists(file)){
+            throw native_exception("Файл не найден!");
+        }else{
+            if(exists(dest))
+                remove(dest);
+
+            copy_file(
+                    file,
+                    dest
+            );
+        }
+    }else{
+        using namespace WebDAV;
+        auto dav_custom_param = param_.value("dav_param", nlohmann::json{});
+        dict_t dav_param;
+        if(!dav_custom_param.empty()){
+            dav_param.emplace("webdav_hostname", dav_custom_param["webdav_hostname"]);
+            dav_param.emplace("webdav_root", dav_custom_param["webdav_root"]);
+            dav_param.emplace("webdav_username", dav_custom_param["webdav_username"]);
+            dav_param.emplace("webdav_password", dav_custom_param["webdav_password"]);
+        }else{
+            dav_param.emplace("webdav_hostname", sett.WebDavHost);
+            dav_param.emplace("webdav_root", arcirk::str_sample("/remote.php/dav/files/%1%/", sett.WebDavUser));
+            dav_param.emplace("webdav_username", sett.WebDavUser);
+            dav_param.emplace("webdav_password", sett.WebDavPwd);
+        }
+
+        auto dav = Client(dav_param);
+        auto is_exists = dav.check(file.filename().string());
+
+        if(!is_exists)
+            throw native_exception("Файл на удаленном ресурсе не найден!");
+
+        if(exists(dest))
+            remove(dest);
+
+        //Синхронно копируем файл
+        auto res = dav.download(file.filename().string(), dest.string());
+
+        if(!res){
+            result.message = "error";
+            return result;
+        }
+    }
+
+    result.message = "OK";
+    return result;
+}
+
+bool shared_state::init_default_result(arcirk::server::server_command_result &result,
+                                       const boost::uuids::uuid &uuid, server::server_commands cmd,
+                                       arcirk::database::roles role, nlohmann::json& param, const variant_t& param_) {
+
+    result.command = enum_synonym(cmd);
+
+    bool operation_available = is_operation_available(uuid, role);
+    if (!operation_available)
+        throw native_exception("Не достаточно прав доступа!");
+
+    std::string param_json = base64_to_string(std::get<std::string>(param_));
+    param = nlohmann::json::parse(param_json);
+    result.uuid_form = param.value("uuid_form", arcirk::uuids::nil_string_uuid());
+
 }

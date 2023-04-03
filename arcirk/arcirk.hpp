@@ -236,55 +236,58 @@ namespace arcirk {
             else
                 protocolEnd = uri.begin();  // no protocol
 
-            //basic auth
-            iterator_t authStart = protocolEnd;
-            iterator_t authEnd = std::find(authStart, uriEnd, '@');
-            if(authEnd != uriEnd){
-                std::string auth_string = std::string(authStart, authEnd);
-                T_vec v_auth = split(auth_string, ":");
-                std::string usr = v_auth[0];
-                std::string pwd;
-                if(v_auth.size() > 1){
-                    pwd = v_auth[1];
+            if(result.Protocol != "file"){
+                //basic auth
+                iterator_t authStart = protocolEnd;
+                iterator_t authEnd = std::find(authStart, uriEnd, '@');
+                if(authEnd != uriEnd){
+                    std::string auth_string = std::string(authStart, authEnd);
+                    T_vec v_auth = split(auth_string, ":");
+                    std::string usr = v_auth[0];
+                    std::string pwd;
+                    if(v_auth.size() > 1){
+                        pwd = v_auth[1];
+                    }
+                    std::string base64 = base64::base64_encode(usr + ":" + pwd);
+                    result.BasicAuth = std::string("Basic ") + base64;
+                    authEnd += 1;
+                }else
+                    authEnd = authStart;
+
+                // host
+                iterator_t hostStart = authEnd;
+                iterator_t pathStart = std::find(hostStart, uriEnd, '/');  // get pathStart
+
+                iterator_t hostEnd = std::find(authEnd,
+                                               (pathStart != uriEnd) ? pathStart : queryStart,
+                                               ':');  // check for port
+
+                result.Host = std::string(hostStart, hostEnd);
+
+                // port
+                if ((hostEnd != uriEnd) && ((&*(hostEnd))[0] == ':'))  // we have a port
+                {
+                    hostEnd++;
+                    iterator_t portEnd = (pathStart != uriEnd) ? pathStart : queryStart;
+                    result.Port = std::string(hostEnd, portEnd);
                 }
-                std::string base64 = base64::base64_encode(usr + ":" + pwd);
-                result.BasicAuth = std::string("Basic ") + base64;
-                authEnd += 1;
-            }else
-                authEnd = authStart;
 
-            // host
-            iterator_t hostStart = authEnd;
-            iterator_t pathStart = std::find(hostStart, uriEnd, '/');  // get pathStart
+                if(result.Port.empty()){
+                    if(result.Protocol == "http")
+                        result.Port = "80";
+                    else if(result.Protocol == "https")
+                        result.Port = "443";
+                }
+                // path
+                if (pathStart != uriEnd)
+                    result.Path = std::string(pathStart, queryStart);
 
-            iterator_t hostEnd = std::find(authEnd,
-                                           (pathStart != uriEnd) ? pathStart : queryStart,
-                                           ':');  // check for port
-
-            result.Host = std::string(hostStart, hostEnd);
-
-            // port
-            if ((hostEnd != uriEnd) && ((&*(hostEnd))[0] == ':'))  // we have a port
-            {
-                hostEnd++;
-                iterator_t portEnd = (pathStart != uriEnd) ? pathStart : queryStart;
-                result.Port = std::string(hostEnd, portEnd);
+                // query
+                if (queryStart != uriEnd)
+                    result.QueryString = std::string(queryStart, uri.end());
+            }else{
+                result.Path = std::string(protocolEnd, uriEnd);
             }
-
-            if(result.Port.empty()){
-                if(result.Protocol == "http")
-                    result.Port = "80";
-                else if(result.Protocol == "https")
-                    result.Port = "443";
-            }
-
-            // path
-            if (pathStart != uriEnd)
-                result.Path = std::string(pathStart, queryStart);
-
-            // query
-            if (queryStart != uriEnd)
-                result.QueryString = std::string(queryStart, uri.end());
 
             return result;
 

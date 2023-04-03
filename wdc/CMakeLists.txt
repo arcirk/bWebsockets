@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
-        add_definitions(/MT)
+#        add_definitions(/MT)
 
         add_definitions("-DCURL_STATICLIB")
         set(CURL_LIBRARY "-lcurl")
@@ -21,6 +21,14 @@ if(WIN32)
         set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
         set(Boost_USE_MULTITHREADED      ON)
         set(Boost_USE_STATIC_RUNTIME    ON)
+endif()
+
+if(MSVC)
+        add_compile_options(
+                $<$<CONFIG:>:/MT> #---------|
+                $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
+                $<$<CONFIG:Release>:/MT> #--|
+        )
 endif()
 
 find_package(Boost REQUIRED)
@@ -44,6 +52,9 @@ add_library(libwdc
         ../pugixml/pugiconfig.hpp
         ../pugixml/pugixml.hpp
         )
+
+
+
 set_target_properties(libwdc PROPERTIES PREFIX "")
 set_target_properties(libwdc PROPERTIES IMPORT_PREFIX "")
 

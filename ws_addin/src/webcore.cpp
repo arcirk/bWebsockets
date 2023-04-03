@@ -161,6 +161,7 @@ std::string WebCore::get_server_commands() {
             {enum_synonym(server_commands::SetNewDeviceId), enum_synonym(server_commands::SetNewDeviceId)},
             {enum_synonym(server_commands::ObjectSetToDatabase), enum_synonym(server_commands::ObjectSetToDatabase)},
             {enum_synonym(server_commands::ObjectGetFromDatabase), enum_synonym(server_commands::ObjectGetFromDatabase)},
+            {enum_synonym(server_commands::DownloadAppUpdateFile), enum_synonym(server_commands::DownloadAppUpdateFile)},
     };
 
     return commands.dump();

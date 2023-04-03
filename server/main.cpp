@@ -81,6 +81,11 @@ void verify_directories(const std::string& working_directory_dir = ""){
         path _1c_dir = m_root_conf;
         _1c_dir /= "1c/bsl";
         arcirk::standard_paths::verify_directory(_1c_dir);
+
+        //каталог с обновлениями
+        path bin = m_root_conf;
+        bin /= "bin";
+        arcirk::standard_paths::verify_directory(bin);
     }
 }
 

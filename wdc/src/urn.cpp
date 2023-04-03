@@ -59,7 +59,7 @@ namespace WebDAV
       bool is_find = false;
       do
       {
-        auto first_position = m_path.find(double_separte);
+        first_position = m_path.find(double_separte);
         is_find = first_position != m_path.npos;
         if (is_find)
         {

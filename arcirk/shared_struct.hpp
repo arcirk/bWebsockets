@@ -159,7 +159,8 @@ namespace arcirk::server{
         SyncGetDiscrepancyInData, //Получить расхождения в данных между базами на клиенте и на Сервере
         SyncUpdateDataOnTheServer, //Обновляет данные на сервере по запросу клиента
         WebDavServiceConfiguration, //Получить настройки WebDav
-        SyncUpdateBarcode,
+        SyncUpdateBarcode, //синхронизирует на сервере штрихкод и номенклатуру по запросу клиента с сервером 1с
+        DownloadAppUpdateFile, //Загружает файл в каталог bin (каталог bin используется для хранения релизов клиентских программ)
         CMD_INVALID=-1,
     };
 
@@ -185,6 +186,7 @@ namespace arcirk::server{
         {SyncUpdateDataOnTheServer, "SyncUpdateDataOnTheServer"}    ,
         {WebDavServiceConfiguration, "WebDavServiceConfiguration"}    ,
         {SyncUpdateBarcode, "SyncUpdateBarcode"}    ,
+        {DownloadAppUpdateFile, "DownloadAppUpdateFile"}    ,
     })
 
 }
@@ -204,6 +206,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, WebDavHost)
         (std::string, WebDavUser)
         (std::string, WebDavPwd)
+        (std::string, WebDavRoot)
         (bool, WebDavSSL)
         (int, SQLFormat)
         (std::string, SQLHost)
