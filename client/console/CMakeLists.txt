@@ -129,7 +129,6 @@ target_include_directories(${TARGET} PRIVATE
 find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(skyr-url CONFIG REQUIRED)
 
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
@@ -141,7 +140,6 @@ target_link_libraries(${TARGET} PRIVATE
         arcirk
         ws_client
         nlohmann_json::nlohmann_json
-        skyr::skyr-url
         )
 
 if (WIN32)
