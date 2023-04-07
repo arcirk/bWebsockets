@@ -165,6 +165,9 @@ public:
     arcirk::server::server_command_result sync_update_data_on_the_server(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result sync_update_barcode(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result download_app_update_file(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_information_about_file(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result check_for_updates(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result upload_file(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();

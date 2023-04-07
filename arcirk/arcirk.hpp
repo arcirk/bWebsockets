@@ -77,6 +77,9 @@ namespace arcirk {
     std::string crypt(const std::string &source, const std::string& key);
     //void* _crypt(void* data, unsigned data_size, void* key, unsigned key_size);
 
+    void write_file(const std::string& filename, ByteArray& file_bytes);
+    void read_file(const std::string &filename, ByteArray &result);
+
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);
         boost::uuids::uuid string_to_uuid(const std::string& sz_uuid, bool random_uuid = false);

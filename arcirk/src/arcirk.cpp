@@ -100,4 +100,29 @@ namespace arcirk{
         }
         return f.str();
     }
+
+    void write_file(const std::string& filename, ByteArray& file_bytes){
+        std::ofstream file(filename, std::ios::out|std::ios::binary);
+        std::copy(file_bytes.cbegin(), file_bytes.cend(),
+                  std::ostream_iterator<unsigned char>(file));
+    }
+
+    void read_file(const std::string &filename, ByteArray &result)
+    {
+
+        FILE * fp = fopen(filename.c_str(), "rb");
+
+        fseek(fp, 0, SEEK_END);
+        size_t flen= ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+
+        std::vector<unsigned char> v (flen);
+
+        fread(&v[0], 1, flen, fp);
+
+        fclose(fp);
+
+        result = v;
+    }
+
 }

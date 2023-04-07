@@ -42,6 +42,9 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
     add_method(enum_synonym(server::server_commands::SyncUpdateBarcode), this, &shared_state::sync_update_barcode);
     add_method(enum_synonym(server::server_commands::DownloadAppUpdateFile), this, &shared_state::download_app_update_file);
+    add_method(enum_synonym(server::server_commands::GetInformationAboutFile), this, &shared_state::get_information_about_file);
+    add_method(enum_synonym(server::server_commands::CheckForUpdates), this, &shared_state::check_for_updates);
+    add_method(enum_synonym(server::server_commands::UploadFile), this, &shared_state::upload_file);
 
     run_server_tasks();
 }
@@ -348,6 +351,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     result_response.app_name = session->app_name();
     result_response.param = return_value.param;
+    result_response.data = return_value.data;
 
     response = pre::json::to_json(result_response).dump();
 
@@ -2373,4 +2377,159 @@ bool shared_state::init_default_result(arcirk::server::server_command_result &re
     param = nlohmann::json::parse(param_json);
     result.uuid_form = param.value("uuid_form", arcirk::uuids::nil_string_uuid());
 
+}
+
+arcirk::server::server_command_result
+        shared_state::get_information_about_file(const variant_t &param, const variant_t &session_id) {
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::GetInformationAboutFile, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    std::string file_name = param_["file_name"];
+
+    if(file_name.empty())
+        throw native_exception("Не верные параметры команды!");
+
+    using namespace boost::filesystem;
+
+    path catalog(sett.ServerWorkingDirectory);
+    catalog /= sett.Version;
+    catalog /= "bin";
+    path file = catalog;
+    file /= file_name;
+
+    if(!exists(file)){
+        throw native_exception("Файл не найден!");
+    }else{
+        auto sz = file_size(file);
+        auto t = last_write_time(file);
+        char cur_date[100];
+        std::tm tm = *std::localtime(&t);
+        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+        nlohmann::json info{
+                {"size", (int)sz},
+                {"time", cur_date}
+        };
+        result.result = info.dump();
+    }
+
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result
+        shared_state::check_for_updates(const variant_t &param, const variant_t &session_id) {
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::CheckForUpdates, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto current_version = param_.value("current_version", nlohmann::json{});
+    std::string release_dir = param_["release_dir"];
+    std::string extension = param_["extension"];
+
+    if(current_version.empty() || release_dir.empty() || extension.empty())
+        throw native_exception("Не верные параметры!");
+
+    namespace fs = boost::filesystem;
+
+    fs::path dir = sett.ServerWorkingDirectory;
+    dir /= sett.Version;
+    dir /= release_dir;
+
+    if(!fs::exists(dir))
+        throw native_exception("Каталог не найден!");
+
+    bool version_set = false;
+
+    for(const auto& filename : fs::directory_iterator(dir)){
+        if(is_directory(filename))
+            continue;
+        std::string::size_type index = filename.path().string().find("_v",0);
+        if(index != std::string::npos){
+            std::string::size_type index_ext = filename.path().string().find("." + extension,0);
+            std::string str_version = filename.path().string().substr(index + 2, filename.path().string().length() - index_ext + 1);
+            T_vec vec = arcirk::split(str_version, "_");
+            if(vec.size() == 3){
+                int v_major = std::stoi(vec[0]);
+                int v_minor = std::stoi(vec[1]);
+                int v_path  = std::stoi(vec[0]);
+                bool value_is_greater = false;
+                if(v_major > current_version.value("major", 0)){
+                    value_is_greater = true;
+                }
+                if(!value_is_greater && v_minor > current_version.value("minor", 0)){
+                    value_is_greater = true;
+                }
+                if(!value_is_greater && v_path > current_version.value("path", 0)){
+                    value_is_greater = true;
+                }
+                if(value_is_greater){
+                    current_version["major"] = v_major;
+                    current_version["minor"] = v_minor;
+                    current_version["path"] = v_path;
+                    version_set = true;
+                }
+            }
+        }
+    }
+
+    if(version_set){
+        result.result = arcirk::base64::base64_encode(nlohmann::json{
+                {"new_version", current_version}
+        }.dump());
+    }
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result
+        shared_state::upload_file(const variant_t &param, const variant_t &session_id) {
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::UploadFile, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto file_name = param_.value("file_name", "");
+
+    if(file_name.empty())
+        throw native_exception("Ошибка в параметрах!");
+
+    namespace fs = boost::filesystem;
+    fs::path file(sett.ServerWorkingDirectory);
+    file /= sett.Version;
+    file /= file_name;
+
+    if(!fs::exists(file))
+        throw native_exception("Файл не найден!");
+
+    if(fs::is_directory(file))
+        throw native_exception("Файл является директорией!");
+
+    arcirk::read_file(file.string(), result.data);
+
+    result.result = arcirk::base64::base64_encode(nlohmann::json{
+            {"file_name", file.filename().string()}
+    }.dump());
+    result.message = "OK";
+    return result;
 }

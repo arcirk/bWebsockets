@@ -42,15 +42,17 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, receiver_name)
                 (std::string, receiver_uuid)
                 (std::string, version)
+                (arcirk::ByteArray, data)
 )
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::server), server_command_result,
-        (std::string, command)
+                (arcirk::server), server_command_result,
+                (std::string, command)
                 (std::string, uuid_form)
                 (std::string, result)
                 (std::string, message)
                 (std::string, error_description)
                 (std::string, param)
+                (arcirk::ByteArray, data)
 
 )
 
@@ -161,6 +163,9 @@ namespace arcirk::server{
         WebDavServiceConfiguration, //Получить настройки WebDav
         SyncUpdateBarcode, //синхронизирует на сервере штрихкод и номенклатуру по запросу клиента с сервером 1с
         DownloadAppUpdateFile, //Загружает файл в каталог bin (каталог bin используется для хранения релизов клиентских программ)
+        GetInformationAboutFile, //получить информацию о файле
+        CheckForUpdates, //поиск фалов обрновления
+        UploadFile, //скачать файл
         CMD_INVALID=-1,
     };
 
@@ -187,6 +192,9 @@ namespace arcirk::server{
         {WebDavServiceConfiguration, "WebDavServiceConfiguration"}    ,
         {SyncUpdateBarcode, "SyncUpdateBarcode"}    ,
         {DownloadAppUpdateFile, "DownloadAppUpdateFile"}    ,
+        {GetInformationAboutFile, "GetInformationAboutFile"}    ,
+        {CheckForUpdates, "CheckForUpdates"}    ,
+        {UploadFile, "UploadFile"}    ,
     })
 
 }
