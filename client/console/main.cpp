@@ -178,7 +178,7 @@ main(int argc, char* argv[]){
 //        const std::string host_1 = "http://192.168.43.25/trade";
 //        const std::string target = "/hs/http_trade/info";
 //
-//        std::string concatenated = "IIS_1C:LbyFvj1";
+//        std::string concatenated = "admin:admin";
 //        std::string data = arcirk::base64::base64_encode(concatenated);
 //        std::string headerData = "Basic " + data;
 //        //request.setRawHeader("Authorization", headerData.toLocal8Bit());

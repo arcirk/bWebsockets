@@ -53,7 +53,7 @@ main(int argc, char* argv[]) {
         req.set(http::field::host, host);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-        std::string auth = "IIS_1C:LbyFvj1";
+        std::string auth = "admin:admin";
         req.set(http::field::authorization, "Basic " + arcirk::base64::base64_encode(auth));
         req.set(http::field::content_type, "application/json");
 
