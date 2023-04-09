@@ -6,6 +6,7 @@
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <soci/boost-fusion.h>
+#include <soci/odbc/soci-odbc.h>
 
 #include <exception>
 #include <functional>

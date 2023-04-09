@@ -80,6 +80,9 @@ namespace arcirk {
     void write_file(const std::string& filename, ByteArray& file_bytes);
     void read_file(const std::string &filename, ByteArray &result);
 
+    std::string byte_array_to_string(const ByteArray& data);
+    ByteArray string_to_byte_array(const std::string& str);
+
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);
         boost::uuids::uuid string_to_uuid(const std::string& sz_uuid, bool random_uuid = false);
@@ -87,6 +90,8 @@ namespace arcirk {
         boost::uuids::uuid nil_uuid();
         std::string uuid_to_string(const boost::uuids::uuid& uuid);
         boost::uuids::uuid random_uuid();
+        ByteArray to_byte_array(const boost::uuids::uuid& uuid);
+        boost::uuids::uuid from_byte_array(const ByteArray& byte);
     }
 
     namespace standard_paths{

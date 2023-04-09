@@ -239,20 +239,67 @@ void load_certs(boost::asio::ssl::context& ctx, const std::string& cert, const s
 //
 //}
 
-void verify_database_structure(){
+bool is_odbc_database(soci::session& sql){
+    using namespace soci;
+    using namespace arcirk::database;
+    try {
+        auto version = arcirk::server::get_version();
+        std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.major), std::to_string(version.minor), std::to_string(version.path));
+        //Проверяем на существование базы данных
+        auto builder = builder::query_builder(builder::sql_database_type::type_ODBC);
+        builder.row_count().from("sys.databases").where(nlohmann::json{{"name", db_name}}, true);
+        int count = -1;
+        sql << builder.prepare(), into(count);
+        if (count <= 0){
+            sql << arcirk::str_sample("CREATE DATABASE %1%", db_name);
+            sql << builder.prepare(), into(count);
+            if (count > 0){
+                std::cout << arcirk::local_8bit("База данных успешно создана!") << std::endl;
+                return true;
+            }else{
+                std::cerr << arcirk::local_8bit("Ошибка создания базы данных!!") << std::endl;
+                return false;
+            }
+        }
+    } catch (const std::exception &e) {
+        native_exception(e.what());
+    }
+
+    return false;
+}
+
+void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::server_config& sett){
 
 
     using namespace boost::filesystem;
     using namespace soci;
     using namespace arcirk::database;
 
-    path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
+    auto version = arcirk::server::get_version();
+//    std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.major), std::to_string(version.minor), std::to_string(version.path));
 
-    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
-    session sql(soci::sqlite3, connection_string);
+    session sql;
+    if(type == arcirk::DatabaseType::dbTypeSQLite){
+        path data = m_root_conf /+ "data" /+ "arcirk.sqlite";
+        std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
+        sql.open(soci::sqlite3, connection_string);
+    }else{
+        std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
+                                                           "SERVER=%1%;Persist Security Info=true;"
+                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, sett.SQLPassword);
+        sql.open(soci::odbc, connection_string);
+        if(sql.is_connected())
+            is_odbc_database(sql);
+    }
+
+    if(!sql.is_connected()){
+        std::cerr << "Error connection database!" << std::endl;
+        return;
+    }
 
     try {
-        verify_database(sql);
+        verify_database(sql, type, pre::json::to_json(version));
+        sql.close();
     }catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
@@ -319,8 +366,8 @@ int main(int argc, char* argv[])
     //если рабочий каталог не задан используем каталог по умолчанию
     if(conf.ServerWorkingDirectory.empty())
         conf.ServerWorkingDirectory = program_data().string();
-    //проверяем структуру базы данных
-    verify_database_structure();
+
+
 
     //читаем командную строку
     read_command_line(input, conf);
@@ -338,6 +385,9 @@ int main(int argc, char* argv[])
     conf.Version = ARCIRK_VERSION;
 
     save_conf(conf);
+
+    //проверяем структуру базы данных
+    verify_database_structure((arcirk::DatabaseType)conf.SQLFormat, conf);
 
     auto const address = net::ip::make_address(conf.ServerHost);
     auto const port = static_cast<unsigned short>(conf.ServerPort);

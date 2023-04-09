@@ -150,6 +150,7 @@ target_link_libraries(${TARGET} PRIVATE
         SOCI::soci_core_static
         SOCI::soci_empty_static
         SOCI::soci_sqlite3_static
+        SOCI::soci_odbc_static
         nlohmann_json::nlohmann_json
         libwdc
         )

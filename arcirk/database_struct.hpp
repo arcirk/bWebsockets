@@ -2,11 +2,12 @@
 #define ARCIRK_DATABASE_STRUCT_HPP
 
 #include "includes.hpp"
+#include <map>
 
 namespace arcirk{
         enum DatabaseType{
             dbTypeSQLite = 0,
-                    dbTypeODBC
+            dbTypeODBC
         };
 };
 
@@ -18,7 +19,14 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, ref)
                 (int, version)
 );
-
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), database_config_test,
+        (std::vector<unsigned char>, ref)
+        (std::string, first)
+        (std::string, second)
+        (std::vector<unsigned char>, cache)
+        (int, version)
+);
 BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), user_info,
                 (int, _id)
@@ -300,6 +308,25 @@ namespace arcirk::database{
                                            "    unread_messages INTEGER   DEFAULT (0),\n"
                                            "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                            ");";
+    const std::string messages_odbc_table_ddl = "CREATE TABLE [dbo].[Messages](\n"
+                                            "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                            "[first] [varchar](max) NULL,\n"
+                                            "[second] [varchar](max) NULL,\n"
+                                            "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                            "[message] [text] NULL,\n"
+                                            "[token] [varchar](max) NOT NULL,\n"
+                                            "[date] [int] NOT NULL,\n"
+                                            "[content_type] [char](10) NULL,\n"
+                                            "[unread_messages] [int] NULL,\n"
+                                            "[version] [int] NOT NULL\n"
+                                            "CONSTRAINT [PK_Messages] PRIMARY KEY CLUSTERED\n"
+                                            "(\n"
+                                            "[_id] ASC\n"
+                                            ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                            ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+//    const std::string messages_odbc_index1_ddl = "ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_content_type]  DEFAULT ('HTML') FOR [content_type]";
+//    const std::string messages_odbc_index2_ddl ="ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_unread_messages]  DEFAULT ((0)) FOR [unread_messages]";
+//    const std::string messages_odbc_index3_ddl ="ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_version]  DEFAULT ((0)) FOR [version]";
 
     const std::string users_table_ddl = "CREATE TABLE Users (\n"
                                         "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -321,6 +348,29 @@ namespace arcirk::database{
                                         "                            DEFAULT (0),\n"
                                         "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                         ");";
+    const std::string users_odbc_table_ddl = "CREATE TABLE [dbo].[Users](\n"
+                                        "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                        "[first] [varchar](max) NULL,\n"
+                                        "[second] [varchar](max) NULL,\n"
+                                        "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                        "[hash] [varchar](max) NOT NULL UNIQUE,\n"
+                                        "[role] [varchar](max) NULL,\n"
+                                        "[performance] [varchar](max) NULL,\n"
+                                        "[parent] [char](36) NULL,\n"
+                                        "[cache] [text] NULL,\n"
+                                        "[is_group] [int] NOT NULL,"
+                                        "[deletion_mark] [int] NOT NULL,"
+                                        "[version] [int] NOT NULL\n"
+                                        "CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED\n"
+                                        "(\n"
+                                        "[_id] ASC\n"
+                                        ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                        ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
+//    const std::string users_odbc_index1_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_hash]  DEFAULT ('0') FOR [hash]";
+//    const std::string users_odbc_index2_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_role]  DEFAULT ('user') FOR [role]";
+//    const std::string users_odbc_index3_ddl = "ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_version]  DEFAULT ((0)) FOR [version]";
+//    const std::string users_odbc_index4_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_parent]  DEFAULT ('00000000-0000-0000-0000-000000000000') FOR [parent]";
 
     const std::string organizations_table_ddl = "CREATE TABLE Organizations (\n"
                                                 "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -331,6 +381,19 @@ namespace arcirk::database{
                                                 "    cache           TEXT      DEFAULT \"\",\n"
                                                 "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                 ");";
+    const std::string organizations_odbc_table_ddl = "CREATE TABLE [dbo].[Organizations](\n"
+                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                "[first] [varchar](max) NULL,\n"
+                                                "[second] [varchar](max) NULL,\n"
+                                                "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                "[cache] [text] NULL,\n"
+                                                "[version] [int] NOT NULL\n"
+                                                "CONSTRAINT [PK_Organizations] PRIMARY KEY CLUSTERED\n"
+                                                "(\n"
+                                                "[_id] ASC\n"
+                                                ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string subdivisions_table_ddl = "CREATE TABLE Subdivisions (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
@@ -340,6 +403,19 @@ namespace arcirk::database{
                                                "    cache           TEXT      DEFAULT \"\",\n"
                                                "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                ");";
+    const std::string subdivisions_odbc_table_ddl = "CREATE TABLE [dbo].[Subdivisions](\n"
+                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                "[first] [varchar](max) NULL,\n"
+                                                "[second] [varchar](max) NULL,\n"
+                                                "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                "[cache] [text] NULL,\n"
+                                                "[version] [int] NOT NULL\n"
+                                                "CONSTRAINT [PK_Subdivisions] PRIMARY KEY CLUSTERED\n"
+                                                "(\n"
+                                                "[_id] ASC\n"
+                                                ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string warehouses_table_ddl = "CREATE TABLE Warehouses (\n"
                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                              "    [first]         TEXT,\n"
@@ -349,6 +425,19 @@ namespace arcirk::database{
                                              "    cache           TEXT      DEFAULT \"\",\n"
                                              "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                              ");";
+    const std::string warehouses_odbc_table_ddl = "CREATE TABLE [dbo].[Warehouses](\n"
+                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                "[first] [varchar](max) NULL,\n"
+                                                "[second] [varchar](max) NULL,\n"
+                                                "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                "[cache] [text] NULL,\n"
+                                                "[version] [int] NOT NULL\n"
+                                                "CONSTRAINT [PK_Warehouses] PRIMARY KEY CLUSTERED\n"
+                                                "(\n"
+                                                "[_id] ASC\n"
+                                                ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string price_types_table_ddl = "CREATE TABLE PriceTypes (\n"
                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                               "    [first]         TEXT,\n"
@@ -358,6 +447,19 @@ namespace arcirk::database{
                                               "    cache           TEXT      DEFAULT \"\",\n"
                                               "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                               ");";
+    const std::string price_types_odbc_table_ddl = "CREATE TABLE [dbo].[PriceTypes](\n"
+                                                  "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                  "[first] [varchar](max) NULL,\n"
+                                                  "[second] [varchar](max) NULL,\n"
+                                                  "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                  "[cache] [text] NULL,\n"
+                                                  "[version] [int] NOT NULL\n"
+                                                  "CONSTRAINT [PK_PriceTypes] PRIMARY KEY CLUSTERED\n"
+                                                  "(\n"
+                                                  "[_id] ASC\n"
+                                                  ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                  ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string devices_type_table_ddl = "CREATE TABLE DevicesType (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
@@ -366,6 +468,18 @@ namespace arcirk::database{
                                                "                             NOT NULL,\n"
                                                "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                ");";
+
+    const std::string devices_type_odbc_table_ddl = "CREATE TABLE [dbo].[DevicesType](\n"
+                                                   "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                   "[first] [varchar](max) NULL,\n"
+                                                   "[second] [varchar](max) NULL,\n"
+                                                   "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                   "[version] [int] NOT NULL\n"
+                                                   "CONSTRAINT [PK_DevicesType] PRIMARY KEY CLUSTERED\n"
+                                                   "(\n"
+                                                   "[_id] ASC\n"
+                                                   ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                   ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string workplaces_table_ddl = "CREATE TABLE Workplaces (\n"
                                              "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -377,6 +491,21 @@ namespace arcirk::database{
                                              "    server          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                              "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                              ");";
+
+    const std::string workplaces_odbc_table_ddl = "CREATE TABLE [dbo].[Workplaces](\n"
+                                                    "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                    "[first] [varchar](max) NULL,\n"
+                                                    "[second] [varchar](max) NULL,\n"
+                                                    "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                  "[cache] [text] NULL,\n"
+                                                    "[server] [char](36) NULL,\n"
+                                                    "[version] [int] NOT NULL\n"
+                                                    "CONSTRAINT [PK_Workplaces] PRIMARY KEY CLUSTERED\n"
+                                                    "(\n"
+                                                    "[_id] ASC\n"
+                                                    ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                    ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string devices_table_ddl = "CREATE TABLE Devices (\n"
                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                           "    [first]         TEXT,\n"
@@ -393,6 +522,25 @@ namespace arcirk::database{
                                           "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                           ");";
+    const std::string devices_odbc_table_ddl = "CREATE TABLE [dbo].[Devices](\n"
+                                                  "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                  "[first] [varchar](max) NULL,\n"
+                                                  "[second] [varchar](max) NULL,\n"
+                                                  "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                  "[cache] [text] NULL,\n"
+                                                  "[deviceType] [char](36) NULL,\n"
+                                                  "[address] [varchar](max) NULL,\n"
+                                                  "[workplace] [char](36) NULL,\n"
+                                                  "[price_type] [char](36) NULL,\n"
+                                                  "[warehouse] [char](36) NULL,\n"
+                                                  "[subdivision] [char](36) NULL,\n"
+                                                  "[organization] [char](36) NULL,\n"
+                                                  "[version] [int] NOT NULL\n"
+                                                  "CONSTRAINT [PK_Devices] PRIMARY KEY CLUSTERED\n"
+                                                  "(\n"
+                                                  "[_id] ASC\n"
+                                                  ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                  ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string devises_view_ddl = "CREATE VIEW DevicesView AS\n"
                                          "    SELECT Devices.ref AS ref,\n"
@@ -428,6 +576,24 @@ namespace arcirk::database{
                                             "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                             "    deleted_mark    INTEGER NOT NULL DEFAULT(0)\n"
                                             ");";
+    const std::string documents_odbc_table_ddl = "CREATE TABLE [dbo].[Documents](\n"
+                                               "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                               "[first] [varchar](max) NULL,\n"
+                                               "[second] [varchar](max) NULL,\n"
+                                               "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                               "[cache] [text] NULL,\n"
+                                               "[number] [varchar](max)NULL,\n"
+                                               "[date] [int] NOT NULL,\n"
+                                               "[xml_type] [varchar](max) NULL,\n"
+                                               "[device_id] [char](36) NULL,\n"
+                                               "[workplace] [char](36) NULL,\n"
+                                               "[deleted_mark] [int] NOT NULL,\n"
+                                               "[version] [int] NOT NULL\n"
+                                               "CONSTRAINT [PK_Documents] PRIMARY KEY CLUSTERED\n"
+                                               "(\n"
+                                               "[_id] ASC\n"
+                                               ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                               ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string document_table_table_ddl = "CREATE TABLE DocumentsTables (\n"
                                                  "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -443,6 +609,23 @@ namespace arcirk::database{
                                                  "    product         TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                  "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                  ");";
+    const std::string document_table_odbc_table_ddl = "CREATE TABLE [dbo].[DocumentsTables](\n"
+                                                 "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                 "[first] [varchar](max) NULL,\n"
+                                                 "[second] [varchar](max) NULL,\n"
+                                                 "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                 "[cache] [text] NULL,\n"
+                                                 "[price] [varchar](max)NULL,\n"
+                                                 "[quantity] [int] NOT NULL,\n"
+                                                 "[barcode] [varchar](max) NULL,\n"
+                                                 "[parent] [char](36) NULL,\n"
+                                                 "[product] [char](36) NULL,\n"
+                                                 "[version] [int] NOT NULL\n"
+                                                 "CONSTRAINT [PK_DocumentsTables] PRIMARY KEY CLUSTERED\n"
+                                                 "(\n"
+                                                 "[_id] ASC\n"
+                                                 ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                 ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string nomenclature_table_ddl = "CREATE TABLE Nomenclature (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -456,6 +639,21 @@ namespace arcirk::database{
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
+    const std::string nomenclature_odbc_table_ddl = "CREATE TABLE [dbo].[Nomenclature](\n"
+                                                      "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                      "[first] [varchar](max) NULL,\n"
+                                                      "[second] [varchar](max) NULL,\n"
+                                                      "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                      "[cache] [text] NULL,\n"
+                                                      "[parent] [char](36) NULL,\n"
+                                                      "[vendor_code] [varchar](max) NULL,\n"
+                                                      "[version] [int] NOT NULL\n"
+                                                      "CONSTRAINT [PK_Nomenclature] PRIMARY KEY CLUSTERED\n"
+                                                      "(\n"
+                                                      "[_id] ASC\n"
+                                                      ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                      ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string barcodes_table_ddl = "CREATE TABLE Barcodes (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
@@ -467,6 +665,20 @@ namespace arcirk::database{
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
+    const std::string barcodes_odbc_table_ddl = "CREATE TABLE [dbo].[Barcodes](\n"
+                                                    "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                    "[first] [varchar](max) NULL,\n"
+                                                    "[second] [varchar](max) NULL,\n"
+                                                    "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                    "[barcode][varchar](128) NULL,\n"
+                                                    "[parent] [char](36) NULL,\n"
+                                                    "[version] [int] NOT NULL\n"
+                                                    "CONSTRAINT [PK_Barcodes] PRIMARY KEY CLUSTERED\n"
+                                                    "(\n"
+                                                    "[_id] ASC\n"
+                                                    ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                    ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
     const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
                                                   "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                   "    [first]         TEXT,\n"
@@ -476,6 +688,19 @@ namespace arcirk::database{
                                                   "    version         INTEGER  DEFAULT(0)  NOT NULL\n" //Это версия структуры таблицы, во всех остальных поле версия - это версия объекта
                                                   ");";
 
+    const std::string database_config_odbc_table_ddl = "CREATE TABLE [dbo].[DatabaseConfig](\n"
+                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                "[first] [varchar](max) NULL,\n"
+                                                "[second] [varchar](max) NULL,\n"
+                                                "[ref] [char](36) NOT NULL,\n"
+                                                "[version] [int] NOT NULL\n"
+                                                "CONSTRAINT [PK_DatabaseConfig] PRIMARY KEY CLUSTERED\n"
+                                                "(\n"
+                                                "[_id] ASC\n"
+                                                ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
+
     const std::string documents_table_view_ddl = "CREATE VIEW DocumentsTableView AS\n"
                                                 "    SELECT DocumentsTables.barcode AS barcode,\n"
                                                 "           Barcodes.parent AS nomenclature,\n"
@@ -484,6 +709,7 @@ namespace arcirk::database{
                                                 "      FROM DocumentsTables AS DocumentsTables\n"
                                                 "           LEFT JOIN\n"
                                                 "           Barcodes AS Barcodes ON DocumentsTables.barcode = Barcodes.barcode;";
+
 
     static inline void fail(const std::string& what, const std::string& error, bool conv = true){
         std::tm tm = arcirk::current_date();
@@ -632,22 +858,22 @@ namespace arcirk::database{
         return result;
     }
 
-    static inline std::string get_ddl(tables table){
+    static inline std::string get_ddl(tables table, DatabaseType type){
         switch (table) {
-            case tbUsers: return users_table_ddl;
-            case tbMessages: return messages_table_ddl;
-            case tbOrganizations: return organizations_table_ddl;
-            case tbSubdivisions: return subdivisions_table_ddl;
-            case tbWarehouses: return warehouses_table_ddl;
-            case tbPriceTypes: return price_types_table_ddl;
-            case tbWorkplaces: return workplaces_table_ddl;
-            case tbDevices: return devices_table_ddl;
-            case tbDocumentsTables: return document_table_table_ddl;
-            case tbDocuments: return documents_table_ddl;
-            case tbNomenclature: return nomenclature_table_ddl;
-            case tbDatabaseConfig: return database_config_table_ddl;
-            case tbDevicesType:  return devices_type_table_ddl;
-            case tbBarcodes:  return barcodes_table_ddl;
+            case tbUsers: return type == DatabaseType::dbTypeSQLite ? users_table_ddl : users_odbc_table_ddl;
+            case tbMessages: return type == DatabaseType::dbTypeSQLite ? messages_table_ddl : messages_odbc_table_ddl;
+            case tbOrganizations: return type == DatabaseType::dbTypeSQLite ? organizations_table_ddl : organizations_odbc_table_ddl;
+            case tbSubdivisions: return type == DatabaseType::dbTypeSQLite ? subdivisions_table_ddl : subdivisions_odbc_table_ddl;
+            case tbWarehouses: return type == DatabaseType::dbTypeSQLite ? warehouses_table_ddl : warehouses_odbc_table_ddl;
+            case tbPriceTypes: return type == DatabaseType::dbTypeSQLite ? price_types_table_ddl : price_types_odbc_table_ddl;
+            case tbWorkplaces: return type == DatabaseType::dbTypeSQLite ? workplaces_table_ddl : workplaces_odbc_table_ddl;
+            case tbDevices: return type == DatabaseType::dbTypeSQLite ? devices_table_ddl : devices_odbc_table_ddl;
+            case tbDocumentsTables: return type == DatabaseType::dbTypeSQLite ? document_table_table_ddl : document_table_odbc_table_ddl;
+            case tbDocuments: return type == DatabaseType::dbTypeSQLite ? documents_table_ddl : documents_odbc_table_ddl;
+            case tbNomenclature: return type == DatabaseType::dbTypeSQLite ? nomenclature_table_ddl : nomenclature_odbc_table_ddl;
+            case tbDatabaseConfig: return type == DatabaseType::dbTypeSQLite ? database_config_table_ddl : database_config_odbc_table_ddl;
+            case tbDevicesType:  return type == DatabaseType::dbTypeSQLite ? devices_type_table_ddl : devices_type_odbc_table_ddl;
+            case tbBarcodes:  return type == DatabaseType::dbTypeSQLite ? barcodes_table_ddl : barcodes_odbc_table_ddl;
             case tables_INVALID:{
                 break;
             }
@@ -704,6 +930,8 @@ namespace arcirk::database{
         std::vector<std::pair<std::string, nlohmann::json>> m_list;
         auto items_ = values.items();
         for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
+            if(itr.key() == "_id")
+                continue;
             m_list.emplace_back(itr.key(), itr.value());
         }
 
@@ -734,17 +962,147 @@ namespace arcirk::database{
         return result;
     }
 
-    static inline void rebase(soci::session& sql, tables table){
+    static inline std::map<tables, int> get_release_tables_versions(){
+        std::map<tables, int> result;
+        result.emplace(tables::tbDatabaseConfig, 2);
+        result.emplace(tables::tbNomenclature, 3);
+        result.emplace(tables::tbDocuments, 3);
+        result.emplace(tables::tbDevices, 2);
+        result.emplace(tables::tbMessages, 2);
+        result.emplace(tables::tbUsers, 2);
+        result.emplace(tables::tbDevicesType, 2);
+        result.emplace(tables::tbDocumentsTables, 3);
+        result.emplace(tables::tbOrganizations, 2);
+        result.emplace(tables::tbPriceTypes, 2);
+        result.emplace(tables::tbSubdivisions, 2);
+        result.emplace(tables::tbWarehouses, 2);
+        result.emplace(tables::tbWorkplaces, 2);
+        result.emplace(tables::tbBarcodes, 1);
+        return result;
+    }
+
+    static inline std::vector<tables> tables_name_array(){
+        std::vector<tables> result = {
+                tbUsers,
+                tbMessages,
+                tbOrganizations,
+                tbSubdivisions,
+                tbWarehouses,
+                tbPriceTypes,
+                tbWorkplaces,
+                tbDevices,
+                tbDevicesType,
+                tbDocuments,
+                tbDocumentsTables,
+                tbNomenclature,
+                tbDatabaseConfig,
+                tbBarcodes
+        };
+        return result;
+    }
+
+    static inline std::vector<views> views_name_array(){
+        std::vector<views> result = {
+                dvDevicesView,
+                dvDocumentsTableView
+        };
+        return result;
+    }
+
+    static inline std::string default_value_ddl(const std::string& table_name, const std::string& name, boost::variant<std::string, int> value){
+        std::string sample = "ALTER TABLE [dbo].[%1%] ADD  CONSTRAINT [DF_%1%_%2%]  DEFAULT (%3%) FOR [%2%]";
+        std::string val;
+        if(value.type() == typeid(std::string))
+            val = arcirk::str_sample("'%1%'", boost::get<std::string>(value));
+        else if(value.type() == typeid(int))
+            val = arcirk::str_sample("(%1%)", std::to_string(boost::get<int>(value)));
+
+        if(val.empty())
+            return {};
+
+        return arcirk::str_sample(sample, table_name, name, val);
+    }
+
+    static inline std::map<arcirk::database::tables, std::vector<std::string>> get_default_values_ddl(){
+        auto tables_arr = tables_name_array(); //Массив имен таблиц
+        std::map<arcirk::database::tables, std::vector<std::string>> result;
+        for (auto table : tables_arr) {
+            std::vector<std::string> ddls;
+            ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "version", 0));
+            if(table == tables::tbMessages){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "content_type", "HTML"));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "unread_messages", 0));
+                result.emplace(table, ddls);
+            }
+            else if(table == tables::tbUsers){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "hash", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "role", "user"));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
+                result.emplace(table, ddls);
+            }
+            else if(table == tables::tbOrganizations || table == tables::tbSubdivisions
+            || table == tables::tbWorkplaces || table == tables::tbWarehouses || table == tables::tbPriceTypes
+            || table == tables::tbDevices || table == tables::tbNomenclature){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "cache", " "));
+                result.emplace(table, ddls);
+                if(table == tables::tbWorkplaces)
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "server", "00000000-0000-0000-0000-000000000000"));
+                else if(table == tables::tbDevices) {
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deviceType", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "workplace", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "price_type", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "warehouse", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "subdivision", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "organization", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "address", "127.0.0.1"));
+                }
+            }
+            else if(table == tables::tbDocuments){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "cache", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "number", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "xml_type", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "date", 0));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deleted_mark", 0));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "device_id", "00000000-0000-0000-0000-000000000000"));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "workplace", "00000000-0000-0000-0000-000000000000"));
+                result.emplace(table, ddls);
+            }
+            else if(table == tables::tbDocumentsTables){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "cache", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "price", 0));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "quantity", 0));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "product", "00000000-0000-0000-0000-000000000000"));
+                result.emplace(table, ddls);
+            }
+            else if(table == tables::tbBarcodes){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
+                result.emplace(table, ddls);
+            }else
+                result.emplace(table, ddls);
+        }
+        return result;
+    }
+    static inline void rebase(soci::session& sql, tables table, DatabaseType type){
 
         using namespace soci;
 
         std::string table_name = arcirk::enum_synonym(table);
         std::string temp_query = arcirk::str_sample("create temp table %1%_temp as select * from %1%;", table_name);
+        auto def_values = get_default_values_ddl(); // массивы значений по умолчанию для sql server
 
         auto tr = soci::transaction(sql);
         sql << temp_query;
         sql << arcirk::str_sample("drop table %1%;", table_name);
-        sql << get_ddl(table);
+        sql << get_ddl(table, type);
+        if(type == DatabaseType::dbTypeODBC){
+            auto def = def_values[table];
+            for (auto str : def) {
+                sql << str;
+            }
+        }
         tr.commit();
 
         auto tr_ = soci::transaction(sql);
@@ -812,76 +1170,39 @@ namespace arcirk::database{
 
     }
 
-    static inline std::map<tables, int> get_release_tables_versions(){
-        std::map<tables, int> result;
-        result.emplace(tables::tbDatabaseConfig, 2);
-        result.emplace(tables::tbNomenclature, 3);
-        result.emplace(tables::tbDocuments, 3);
-        result.emplace(tables::tbDevices, 2);
-        result.emplace(tables::tbMessages, 2);
-        result.emplace(tables::tbUsers, 2);
-        result.emplace(tables::tbDevicesType, 2);
-        result.emplace(tables::tbDocumentsTables, 3);
-        result.emplace(tables::tbOrganizations, 2);
-        result.emplace(tables::tbPriceTypes, 2);
-        result.emplace(tables::tbSubdivisions, 2);
-        result.emplace(tables::tbWarehouses, 2);
-        result.emplace(tables::tbWorkplaces, 2);
-        result.emplace(tables::tbBarcodes, 1);
-        return result;
-    }
+    static inline std::vector<std::string> get_database_tables(soci::session& sql, DatabaseType type, const nlohmann::json& version){
 
-    static inline std::vector<tables> tables_name_array(){
-        std::vector<tables> result = {
-                tbUsers,
-                tbMessages,
-                tbOrganizations,
-                tbSubdivisions,
-                tbWarehouses,
-                tbPriceTypes,
-                tbWorkplaces,
-                tbDevices,
-                tbDevicesType,
-                tbDocuments,
-                tbDocumentsTables,
-                tbNomenclature,
-                tbDatabaseConfig,
-                tbBarcodes
-        };
-        return result;
-    }
-
-    static inline std::vector<views> views_name_array(){
-        std::vector<views> result = {
-                dvDevicesView,
-                dvDocumentsTableView
-        };
-        return result;
-    }
-
-    static inline std::vector<std::string> get_database_tables(soci::session& sql){
-
-        soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
+        std::string query = "SELECT name FROM sqlite_master WHERE type='table';";
+        if(type == arcirk::dbTypeODBC){
+            std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.value("major", 0)), std::to_string(version.value("minor", 0)), std::to_string(version.value("path", 0)));
+            sql << "use " + db_name;
+            query = "SELECT * FROM sys.objects WHERE type in (N'U')";
+        }
+        soci::rowset<soci::row> rs = (sql.prepare << query);
         std::vector<std::string> result;
         for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
         {
             soci::row const& row = *it;
             result.push_back(row.get<std::string>(0));
         }
-
         return result;
     }
 
-    static inline std::vector<std::string> get_database_views(soci::session& sql){
+    static inline std::vector<std::string> get_database_views(soci::session& sql, DatabaseType type, const nlohmann::json& version){
 
-        soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
+        std::string query = "SELECT name FROM sqlite_master WHERE type='view';";
+        if(type == arcirk::dbTypeODBC){
+            std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.value("major", 0)), std::to_string(version.value("minor", 0)), std::to_string(version.value("path", 0)));
+            sql << "use " + db_name;
+            query = "SELECT * FROM sys.objects WHERE type in (N'V')";
+        }
+        soci::rowset<soci::row> rs = (sql.prepare << query);
         std::vector<std::string> result;
         for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
         {
             soci::row const& row = *it;
             result.push_back(row.get<std::string>(0));
         }
-
         return result;
     }
 
@@ -900,7 +1221,8 @@ namespace arcirk::database{
             sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
             if(count <= 0){
                 //Добавить учетную запись по умолчанию
-                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
+                //sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
+                sql << query_insert("Users", pre::json::to_json(u));
             }
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
@@ -942,21 +1264,25 @@ namespace arcirk::database{
         }
     }
 
-    static inline void verify_database(soci::session& sql){
+    static inline void verify_database(soci::session& sql, DatabaseType type, const nlohmann::json& version){
 
         using namespace soci;
 
         auto release_table_versions = get_release_tables_versions(); //Текущие версии релиза
-        auto database_tables = get_database_tables(sql); //Массив существующих таблиц
-        auto database_views = get_database_views(sql); //Массив существующих представлений
+        auto database_tables = get_database_tables(sql, type, version); //Массив существующих таблиц
+        auto database_views = get_database_views(sql, type, version); //Массив существующих представлений
         auto tables_arr = tables_name_array(); //Массив имен таблиц
+        auto def_values = get_default_values_ddl(); // массивы значений по умолчанию для sql server
         bool is_rebase = false;
 
+        std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.value("major", 0)), std::to_string(version.value("minor", 0)), std::to_string(version.value("path", 0)));
 
+        if(type == DatabaseType::dbTypeODBC)
+            sql << "use " + db_name;
 
         //Сначала проверим, существует ли таблица версий
         if(std::find(database_tables.begin(), database_tables.end(), arcirk::enum_synonym(tables::tbDatabaseConfig)) == database_tables.end()) {
-            auto ddl = get_ddl(tables::tbDatabaseConfig);
+            auto ddl = get_ddl(tables::tbDatabaseConfig, type);
             sql << ddl;
         }
 
@@ -978,12 +1304,18 @@ namespace arcirk::database{
             if(std::find(database_tables.begin(), database_tables.end(), arcirk::enum_synonym(t_name)) == database_tables.end()){
                 //Таблицы не существует, просто создаем новую
                 auto tr = soci::transaction(sql);
-                sql << get_ddl(t_name);
+                sql << get_ddl(t_name, type);
                 sql << query_insert(arcirk::enum_synonym(tables::tbDatabaseConfig), nlohmann::json{
                         {"first", arcirk::enum_synonym(t_name)},
                         {"version", release_table_versions[t_name]},
                         {"ref", arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid())}
                 });
+                if(type == DatabaseType::dbTypeODBC){
+                    auto def = def_values[t_name];
+                    for (auto str : def) {
+                        sql << str;
+                    }
+                }
                 tr.commit();
             }else{
                 //Если существует, проверяем версию таблицы, если не совпадает запускаем реструктуризацию
@@ -992,7 +1324,7 @@ namespace arcirk::database{
                 if(itr_ver != current_table_versions.end())
                     current_ver = itr_ver->second;
                 if(release_table_versions[t_name] != current_ver){
-                    rebase(sql, t_name);
+                    rebase(sql, t_name, type);
                     auto tr = soci::transaction(sql);
 
                     if(current_ver == 0)
@@ -1017,6 +1349,7 @@ namespace arcirk::database{
         }
 
     }
+
 
 }
 

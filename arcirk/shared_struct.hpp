@@ -13,36 +13,42 @@ typedef std::function<void(const std::string&, const std::string&, int)> callbac
 typedef std::function<void()> callback_close;
 typedef std::function<void()> callback_successful_authorization;
 
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::server), version_application,
+        (int, major)
+        (int, minor)
+        (int, path)
+)
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::client), client_param,
         (std::string, app_name)
-                (std::string, user_uuid)
-                (std::string, user_name)
-                (std::string, hash)
-                (std::string, host_name)
-                (std::string, password)
-                (std::string, session_uuid)
-                (std::string, system_user)
-                (std::string, device_id)
+        (std::string, user_uuid)
+        (std::string, user_name)
+        (std::string, hash)
+        (std::string, host_name)
+        (std::string, password)
+        (std::string, session_uuid)
+        (std::string, system_user)
+        (std::string, device_id)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::server), server_response,
         (std::string, command)
-                (std::string, message)
-                (std::string, param)
-                (std::string, result)
-                (std::string, sender)
-                (std::string, receiver)
-                (std::string, uuid_form)
-                (std::string, app_name)
-                (std::string, sender_name)
-                (std::string, sender_uuid)
-                (std::string, receiver_name)
-                (std::string, receiver_uuid)
-                (std::string, version)
-                (arcirk::ByteArray, data)
+        (std::string, message)
+        (std::string, param)
+        (std::string, result)
+        (std::string, sender)
+        (std::string, receiver)
+        (std::string, uuid_form)
+        (std::string, app_name)
+        (std::string, sender_name)
+        (std::string, sender_uuid)
+        (std::string, receiver_name)
+        (std::string, receiver_uuid)
+        (std::string, version)
+        (arcirk::ByteArray, data)
 )
 BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::server), server_command_result,
@@ -140,6 +146,15 @@ namespace arcirk::client{
 }
 
 namespace arcirk::server{
+
+    static inline version_application get_version(){
+        T_vec vec = arcirk::split(ARCIRK_VERSION, ".");
+         auto ver = version_application();
+         ver.major = std::stoi(vec[0]);
+         ver.minor = std::stoi(vec[1]);
+         ver.path = std::stoi(vec[2]);
+        return ver;
+    }
 
     enum server_commands{
         ServerVersion, //Версия сервера

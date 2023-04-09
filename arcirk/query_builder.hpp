@@ -9,8 +9,8 @@
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database::builder), sql_value,
         (std::string, key)
-                (std::string, alias)
-                (std::string, value)
+        (std::string, alias)
+        (std::string, value)
 );
 
 namespace arcirk::database::builder {
@@ -200,6 +200,13 @@ namespace arcirk::database::builder {
             databaseType = sql_database_type::type_Sqlite3;
             queryType = Select;
         };
+
+        explicit
+        query_builder(sql_database_type db_type){
+            databaseType = db_type;
+            queryType = Select;
+        };
+
         ~query_builder()= default;
 
         static std::shared_ptr<query_builder> create(){
@@ -321,14 +328,24 @@ namespace arcirk::database::builder {
         }
 
         query_builder& from(const std::string& table_name){
-            table_name_ = table_name;
+            if(databaseType == type_Sqlite3)
+                table_name_ = table_name;
+            else{
+                if(table_name.substr(0, 1) != "#")
+                    table_name_ = "dbo.[" + table_name + "]";
+                else
+                    table_name_ = table_name;
+            }
+
             result.append("\nfrom ");
-            result.append(table_name);
+            result.append(table_name_);
             return *this;
         }
-        query_builder& from(const query_builder& subquery){
+        query_builder& from(const query_builder& subquery, const std::string& alias = ""){
             result.append("\nfrom ");
             result.append("(" + subquery.prepare() + ")");
+            if(!alias.empty())
+                result.append(" as " + alias);
             return *this;
         }
 
@@ -530,8 +547,11 @@ namespace arcirk::database::builder {
 
         query_builder& update(const std::string& table_name, bool use_values, bool skip_id = true){
             queryType = Update;
-            table_name_ = table_name;
-            result = str_sample("update %1% set ", table_name);
+            if(databaseType == type_Sqlite3)
+                table_name_ = table_name;
+            else
+                table_name_ = "dbo.[" + table_name + "]";
+            result = str_sample("update %1% set ", table_name_);
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                 if(itr->alias == "_id" && skip_id)
                     continue;
@@ -541,8 +561,12 @@ namespace arcirk::database::builder {
                     auto val = nlohmann::json::parse(itr->value);
                     if(val.is_string())
                         value = val.get<std::string>();
-                    else if(val.is_number_float())
+                    else if(val.is_number_float()){
                         value = std::to_string(val.get<double>());
+                        auto index = value.find(",");
+                        if(index > 0)
+                            value.replace(index, 1, ".");
+                    }
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
 
@@ -562,8 +586,18 @@ namespace arcirk::database::builder {
 
         query_builder& insert(const std::string& table_name, bool use_values, bool skip_id = true){
             queryType = Insert;
-            table_name_ = table_name;
-            result = str_sample("insert into %1% (", table_name);
+
+            if(databaseType == type_Sqlite3)
+                table_name_ = table_name;
+            else{
+                if(table_name.substr(0, 1) != "#")
+                    table_name_ = "dbo.[" + table_name + "]";
+                else
+                    table_name_ = table_name;
+            }
+
+
+            result = str_sample("insert into %1% (", table_name_);
             std::string string_values;
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                 if(itr->alias == "_id" && skip_id)
@@ -574,8 +608,12 @@ namespace arcirk::database::builder {
                     std::string value;
                     if(val.is_string())
                         value = val.get<std::string>();
-                    else if(val.is_number_float())
+                    else if(val.is_number_float()){
                         value = std::to_string(val.get<double>());
+                        auto index = value.find(",");
+                        if(index > 0)
+                            value.replace(index, 1, ".");
+                    }
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
 
@@ -612,6 +650,7 @@ namespace arcirk::database::builder {
         }
 
         [[nodiscard]] std::string prepare(const json& where_not_exists = {}, bool use_values = false) const{
+
             if (where_not_exists.empty())
                 return result;
             else{

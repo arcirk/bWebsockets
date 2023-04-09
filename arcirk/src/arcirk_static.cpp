@@ -53,6 +53,16 @@ namespace arcirk{
             return boost::uuids::random_generator()();
         }
 
+        ByteArray to_byte_array(const boost::uuids::uuid& uuid){
+            ByteArray v(uuid.size());
+            std::copy(uuid.begin(), uuid.end(), v.begin());
+            return v;
+        }
+        boost::uuids::uuid from_byte_array(const ByteArray& byte){
+            boost::uuids::uuid u;
+            memcpy(&u, byte.data(), byte.size());
+            return u;
+        }
     }
 
     namespace standard_paths{
@@ -287,5 +297,13 @@ namespace arcirk{
         std::string result((char*)text);
 
         return result;
+    }
+
+    std::string byte_array_to_string(const ByteArray& data){
+        return std::string(data.begin(), data.end());
+    }
+
+    ByteArray string_to_byte_array(const std::string& str){
+        return ByteArray(str.begin(), str.end());
     }
 }

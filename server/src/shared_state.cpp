@@ -4,6 +4,7 @@
 #include "../include/websocket_session.hpp"
 #include <soci/soci.h>
 #include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/odbc/soci-odbc.h>
 
 #include <algorithm>
 #include <locale>
@@ -47,6 +48,9 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::UploadFile), this, &shared_state::upload_file);
 
     run_server_tasks();
+
+    sql_sess = new soci::session();// soci_initialize();
+
 }
 
 void shared_state::join(subscriber *session) {
@@ -192,14 +196,14 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         msg_struct.unread_messages = 1;
         try {
             auto sql = soci_initialize();
-            msg_struct.token  = get_channel_token(sql, boost::to_string(session->user_uuid()), boost::to_string(itr->second->user_uuid()));
+            msg_struct.token  = get_channel_token(*sql, boost::to_string(session->user_uuid()), boost::to_string(itr->second->user_uuid()));
             if(msg_struct.token == "error"){
                 fail("shared_state::forward_message", "Ошибка генерации токена!");
                 return;
             }
-            auto query = database::builder::query_builder();
+            auto query = database::builder::query_builder((database::builder::sql_database_type)sett.SQLFormat);
             query.use(pre::json::to_json(msg_struct));
-            query.insert("Messages", true).execute(sql);
+            query.insert("Messages", true).execute(*sql);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
         }
@@ -273,6 +277,8 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     if(v.size() > 2){
         try {
             json_params = arcirk::base64::base64_decode(v[param_index]);
+//            if(json_params.substr(json_params.length() - 1, 1) != "}")
+//                json_params.append("\"}");
         } catch (std::exception &e) {
             fail("shared_state::execute_command_handler:parse_params:error", e.what(), false);
             return;
@@ -421,50 +427,54 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 
     return false;
 }
-bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) const {
+bool shared_state::verify_auth_from_hash(const std::string &usr, const std::string &hash) {
 
     log("shared_state::verify_auth_from_hash", "verify_connection ... ");
 
     using namespace boost::filesystem;
     using namespace soci;
+    using namespace arcirk::database;
 
-    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
-        if(sett.ServerWorkingDirectory.empty())
-        {
-            fail("shared_state::verify_auth:error", "Ошибки в параметрах сервера!");
-            return false;
-        }
-
-        path database(sett.ServerWorkingDirectory);
-        database /= sett.Version;
-        database /= "data";
-        database /= "arcirk.sqlite";
-
-        if(!exists(database)){
-            fail("shared_state::verify_auth:error", "Файл базы данных не найден!");
-            return false;
-        }
+//    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+//        if(sett.ServerWorkingDirectory.empty())
+//        {
+//            fail("shared_state::verify_auth:error", "Ошибки в параметрах сервера!");
+//            return false;
+//        }
+//
+//        path database(sett.ServerWorkingDirectory);
+//        database /= sett.Version;
+//        database /= "data";
+//        database /= "arcirk.sqlite";
+//
+//        if(!exists(database)){
+//            fail("shared_state::verify_auth:error", "Файл базы данных не найден!");
+//            return false;
+//        }
 
         try {
-            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
-            session sql(soci::sqlite3, connection_string);
+//            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+//            session sql(soci::sqlite3, connection_string);
+            auto sql = soci_initialize();
             int count = 0;
             //sql << "select count(*) from Users where hash = " <<  "'" << hash << "'" , into(count);
-            soci::rowset<soci::row> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
-            for (auto it = rs.begin(); it != rs.end(); it++) {
-                const soci::row &row_ = *it;
-                count++;
-            }
+            //soci::rowset<soci::row> rs = (sql->prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+            //soci::rowset<soci::row> rs = (sql->prepare << builder::query_builder((builder::sql_database_type)sett.SQLFormat).select(nlohmann::json{{"count", "count(*)"}}).from("Users").where(nlohmann::json{{"hash", hash}}, true).prepare());
+            *sql <<  builder::query_builder((builder::sql_database_type)sett.SQLFormat).row_count().from(enum_synonym(tables::tbUsers)).where(nlohmann::json{{"hash", hash}}, true).prepare(), soci::into(count);
+//            for (auto it = rs.begin(); it != rs.end(); it++) {
+//                const soci::row &row_ = *it;
+//                count++;
+//            }
             return count > 0;
         } catch (std::exception &e) {
             fail("shared_state::verify_auth:error", e.what(), false);
         }
 
-    }
+    //}
     return false;
 }
 
-bool shared_state::verify_auth(const std::string& usr, const std::string& pwd ) const {
+bool shared_state::verify_auth(const std::string& usr, const std::string& pwd ) {
 
     using namespace boost::filesystem;
     using namespace soci;
@@ -788,27 +798,28 @@ boost::filesystem::path shared_state::sqlite_database_path() const {
     return db_path;
 }
 
-arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid &user_uuid) const{
+arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid &user_uuid){
 
     using namespace boost::filesystem;
     using namespace soci;
 
     auto result = arcirk::database::user_info();
 
-    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
-        if(sett.ServerWorkingDirectory.empty())
-        {
-            throw native_exception("Ошибки в параметрах сервера!");
-        }
+//    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+//        if(sett.ServerWorkingDirectory.empty())
+//        {
+//            throw native_exception("Ошибки в параметрах сервера!");
+//        }
 
         try {
-            path db_path = sqlite_database_path();
-
+//            path db_path = sqlite_database_path();
+//
             std::string ref = arcirk::uuids::uuid_to_string(user_uuid);
-
-            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
-            session sql(soci::sqlite3, connection_string);
-            soci::rowset<arcirk::database::user_info> rs = (sql.prepare << "select * from Users where ref = " <<  "'" << ref << "'");
+//
+//            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+//            session sql(soci::sqlite3, connection_string);
+            auto sql = soci_initialize();
+            soci::rowset<arcirk::database::user_info> rs = (sql->prepare << "select * from Users where ref = " <<  "'" << ref << "'");
             int count = -1;
             for (auto it = rs.begin(); it != rs.end(); it++) {
                 result = *it;
@@ -821,41 +832,42 @@ arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid
             fail("shared_state::verify_auth:error", e.what(), false);
         }
 
-    }
+    //}
     return result;
 }
 
-arcirk::database::user_info shared_state::get_user_info(const std::string &hash) const{
+arcirk::database::user_info shared_state::get_user_info(const std::string &hash){
 
     using namespace boost::filesystem;
     using namespace soci;
 
     auto result = arcirk::database::user_info();
 
-    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
-        if(sett.ServerWorkingDirectory.empty())
-        {
-            //fail("shared_state::get_user_info:error", "Ошибки в параметрах сервера!");
-            throw native_exception("Ошибки в параметрах сервера!");
-        }
-
-        path database(sett.ServerWorkingDirectory);
-        database /= sett.Version;
-        database /= "data";
-        database /= "arcirk.sqlite";
-
-        if(!exists(database)){
-            //fail("shared_state::get_user_info:error", "Файл базы данных не найден!");
-            throw native_exception("Файл базы данных не найден!");
-        }
+//    if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+//        if(sett.ServerWorkingDirectory.empty())
+//        {
+//            //fail("shared_state::get_user_info:error", "Ошибки в параметрах сервера!");
+//            throw native_exception("Ошибки в параметрах сервера!");
+//        }
+//
+//        path database(sett.ServerWorkingDirectory);
+//        database /= sett.Version;
+//        database /= "data";
+//        database /= "arcirk.sqlite";
+//
+//        if(!exists(database)){
+//            //fail("shared_state::get_user_info:error", "Файл базы данных не найден!");
+//            throw native_exception("Файл базы данных не найден!");
+//        }
 
         if(hash.empty())
             throw native_exception("Хеш пользователя не указан!");
 
         try {
-            std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
-            session sql(soci::sqlite3, connection_string);
-            soci::rowset<arcirk::database::user_info> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+            //std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+            //session sql(soci::sqlite3, connection_string);
+            auto sql = soci_initialize();
+            soci::rowset<arcirk::database::user_info> rs = (sql->prepare << "select * from Users where hash = " <<  "'" << hash << "'");
             int count = -1;
             for (auto it = rs.begin(); it != rs.end(); it++) {
                 result = *it;
@@ -868,7 +880,7 @@ arcirk::database::user_info shared_state::get_user_info(const std::string &hash)
             fail("shared_state::get_user_info:error", e.what(), false);
         }
 
-    }
+   //}
     return result;
 }
 
@@ -1022,7 +1034,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
         bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
         if (!operation_available)
             throw native_exception("Не достаточно прав доступа!");
-        result.result = base64::base64_encode(execute_random_sql_query(sql, query_text)); //текст запроса передан в параметрах
+        result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text)); //текст запроса передан в параметрах
     }
     else{
         std::string base64_query_param = param_.value("query_param", "");
@@ -1056,7 +1068,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
 
             if(!table_name.empty()){
                 bool return_table = false;
-                auto query = database::builder::query_builder();
+                auto query = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
                 if(query_type == "select"){
                     if(!values.empty())
                         query.select(values).from(table_name);
@@ -1075,8 +1087,8 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                     if(ref.empty())
                         throw native_exception("Не найдено значение идентификатора для сравнения!");
                     int count = 0;
-                    auto query_temp = database::builder::query_builder();
-                    sql << query_temp.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+                    auto query_temp = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
+                    *sql << query_temp.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
                     if(count <= 0){
                         query.insert(table_name, true);
                     }else{
@@ -1100,9 +1112,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                 }
                 //std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
-                    result.result = base64::base64_encode(execute_random_sql_query(sql, query_text));
+                    result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text));
                 else{
-                    query.execute(sql, {}, true);
+                    query.execute(*sql, {}, true);
                     result.result = "{}";
                 }
             }
@@ -1161,20 +1173,21 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
     }
 
     auto p_info = values_from_param<user_info>(values);
-    auto query = builder::query_builder();
+    auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
+    auto sql = soci_initialize();
 
-    path db_path = sqlite_database_path();
-    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
-    session sql(soci::sqlite3, connection_string);
-
+//    path db_path = sqlite_database_path();
+//    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", db_path.string());
+//    session sql(soci::sqlite3, connection_string);
+//
     int count = -1;
-    sql << query.select({"count(*)"}).from("Users").where({{"ref", ref}}, true).prepare(), into(count);
-
+//    sql << query.select({"count(*)"}).from("Users").where({{"ref", ref}}, true).prepare(), into(count);
+    *sql << query.row_count().from(arcirk::enum_synonym(database::tables::tbUsers)).where({{"ref", ref}}, true).prepare(), into(count);
     query.use(p_info);
     if(count <= 0){
-        query.insert("Users", true).execute(sql);
+        query.insert(arcirk::enum_synonym(database::tables::tbUsers), true).execute(*sql);
     }else{
-        query.update("Users", true).where({{"ref", ref}}, true).execute(sql);
+        query.update(arcirk::enum_synonym(database::tables::tbUsers), true).where({{"ref", ref}}, true).execute(*sql);
     }
 
     result.result = "success";
@@ -1182,11 +1195,22 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
 
     return result;
 }
-soci::session shared_state::soci_initialize() const{
+soci::session * shared_state::soci_initialize(){
+
     using namespace boost::filesystem;
     using namespace soci;
 
-    auto result = arcirk::database::user_info();
+    auto version = arcirk::server::get_version();
+    std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.major), std::to_string(version.minor), std::to_string(version.path));
+
+    if(sql_sess->is_connected()){
+        if(sett.SQLFormat == DatabaseType::dbTypeODBC){
+            *sql_sess << "use " + db_name;
+        }
+        return sql_sess;
+    }
+
+    //auto result = arcirk::database::user_info();
 
     if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
         if(sett.ServerWorkingDirectory.empty())
@@ -1205,12 +1229,22 @@ soci::session shared_state::soci_initialize() const{
 
         try {
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
-            return session{soci::sqlite3, connection_string};
+            //return session{soci::sqlite3, connection_string};
+            sql_sess->open(soci::sqlite3, connection_string);
+            return sql_sess;
         } catch (native_exception &e) {
             fail("shared_state::soci_initialize:error", e.what(), false);
         }
+    }else{
+        std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
+                                                           "SERVER=%1%;Persist Security Info=true;"
+                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, sett.SQLPassword);
+        sql_sess->open(soci::odbc, connection_string);
+        if(sql_sess->is_connected())
+            *sql_sess << "use " + db_name;
+        return sql_sess;
     }
-    return {};
+    return nullptr;
 }
 
 arcirk::server::server_command_result shared_state::get_messages(const variant_t &param, const variant_t &session_id) {
@@ -1245,13 +1279,13 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     }
 
     auto sql = soci_initialize();
-    std::string token = get_channel_token(sql, sender, recipient);
+    std::string token = get_channel_token(*sql, sender, recipient);
 
-    auto query = database::builder::query_builder();
+    auto query = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
     nlohmann::json table = {};
 
     query.select({"*"}).from("Messages").where({{"token", token}}, true).order_by({"date"});
-    query.execute(query.prepare(), sql, table);
+    query.execute(query.prepare(), *sql, table);
 
     result.message = base64::base64_encode(table.dump());
 
@@ -1406,14 +1440,14 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         }
 
         auto sql = soci_initialize();
-        auto tr = soci::transaction(sql);
-        auto query = builder::query_builder();
+        auto tr = soci::transaction(*sql);
+        auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
         auto items = values_array.items();
 
         if(delete_is_exists){
             if(where_values.is_object()){
                 //удалить все записи удовлетворяющие условиям
-                sql << query.remove().from(table_name).where(where_values, true).prepare();
+                *sql << query.remove().from(table_name).where(where_values, true).prepare();
             }else if(where_values.is_array()){
                 //удалить выбранные записи удовлетворяющие условиям
                 for (auto itr = items.begin(); itr != items.end(); ++itr) {
@@ -1426,7 +1460,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
                                 {itr, itr.value().value(*itr_, "")}
                         };
                     }
-                    sql << query.remove().from(table_name).where(where, true).prepare();
+                    *sql << query.remove().from(table_name).where(where, true).prepare();
                 }
             }
         }
@@ -1451,7 +1485,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
                 query_text = query.prepare(where, true);
             }
 
-            sql << query_text;
+            *sql << query_text;
 
 //            if (!where_is_exists_field.empty()) {
 //                std::string is_exists_val = itr.value().value(where_is_exists_field, "");
@@ -1488,7 +1522,7 @@ bool shared_state::edit_table_only_admin(const std::string &table_name) {
     return std::find(vec.begin(), vec.end(), table_name) != vec.end();
 }
 
-void shared_state::data_synchronization_set_object(const nlohmann::json &object, const std::string& table_name) const {
+void shared_state::data_synchronization_set_object(const nlohmann::json &object, const std::string& table_name) {
 
     using namespace arcirk::database;
     using namespace soci;
@@ -1502,7 +1536,7 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
         table_json[itr.key()] = standard_attributes[itr.key()];
     }
 
-    auto query = builder::query_builder();
+    auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
     query.use(table_json);
     std::string ref = query.ref();
 
@@ -1511,21 +1545,21 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
 
     auto sql = soci_initialize();
     int count = -1;
-    sql << query.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
+    *sql << query.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
 
-    auto tr = soci::transaction(sql);
+    auto tr = soci::transaction(*sql);
 
     query.clear();
     query.use(table_json);
 
     if(count > 0)
-        sql << query.update(table_name, true).where({{"ref", ref}}, true).prepare();
+        *sql << query.update(table_name, true).where({{"ref", ref}}, true).prepare();
     else
-        sql << query.insert(table_name, true).prepare();
+        *sql << query.insert(table_name, true).prepare();
 
     if(enm_val == tbDocuments){
         query.clear();
-        sql << query.remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
+        *sql << query.remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
     }
 
     auto tabular_sections = object.value("TabularSections", nlohmann::json{});
@@ -1544,7 +1578,7 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
                             query.use(row_);
                             if(enm_val == tbDocuments){
                                 std::string query_text = query.insert("DocumentsTables", true).prepare();
-                                sql << query_text;
+                                *sql << query_text;
                             }
 
                         }
@@ -1602,13 +1636,13 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
 
 }
 
-nlohmann::json shared_state::data_synchronization_get_object(const std::string& table_name, const std::string& ref) const{
+nlohmann::json shared_state::data_synchronization_get_object(const std::string& table_name, const std::string& ref) {
 
     using namespace arcirk::database;
     using namespace soci;
 
     auto sql = soci_initialize();
-    auto query = builder::query_builder();
+    auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
 
     nlohmann::json j_table = table_name;
     nlohmann::json j_object{};
@@ -1616,7 +1650,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     if(o_table == database::tbDocuments){
         std::vector<database::documents> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                             true).rows_to_array<database::documents>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object["object"]["StandardAttributes"] = pre::json::to_json<database::documents>(r);
@@ -1625,7 +1659,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
             std::vector<database::document_table> m_vec_table = query.select({"*"}).from(
                     arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}},
                                                                                      true).rows_to_array<database::document_table>(
-                    sql);
+                    *sql);
             nlohmann::json n_json_table{};
             for (const auto itr : m_vec_table) {
                 n_json_table += pre::json::to_json<database::document_table>(itr);
@@ -1638,7 +1672,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbDevices){
         std::vector<database::devices> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                           true).rows_to_array<database::devices>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1648,7 +1682,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbMessages){
         std::vector<database::messages> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                            true).rows_to_array<database::messages>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1658,7 +1692,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbOrganizations){
         std::vector<database::organizations> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                                 true).rows_to_array<database::organizations>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1668,7 +1702,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbPriceTypes){
         std::vector<database::price_types> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                               true).rows_to_array<database::price_types>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1678,7 +1712,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbSubdivisions){
         std::vector<database::subdivisions> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                                true).rows_to_array<database::subdivisions>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1688,7 +1722,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbWarehouses){
         std::vector<database::warehouses> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                              true).rows_to_array<database::warehouses>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1698,7 +1732,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
     }else if(o_table == database::tbWorkplaces){
         std::vector<database::workplaces> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},
                                                                                              true).rows_to_array<database::workplaces>(
-                sql);
+                *sql);
         if(!m_vec.empty()){
             auto r = m_vec[0];
             j_object ={
@@ -1774,14 +1808,14 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
     //nlohmann::json result_table{};
     //nlohmann::json t = table_name;
     //auto table_type = t.get<tables>();
-    auto query = builder::query_builder();
+    auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
 
     int count = -1;
     //Проверим зарегистрировано ли устройство
     query.row_count().from(enum_synonym(tables::tbDevices)).where(nlohmann::json{
             {"ref", device_id}
     }, true);
-    sql << query.prepare(), into(count);
+    *sql << query.prepare(), into(count);
 
     if (count <= 0)
         throw native_exception(str_sample("Устройство с идентификатором %1% не зарегистрировано!", device_id).c_str());
@@ -1794,27 +1828,53 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
 
     //if(table_type == tables::tbDocuments){
 
-    auto tr = soci::transaction(sql);
+    auto tr = soci::transaction(*sql);
     //Заполняем временную таблицу данными с клиента
     std::string temp_table = table_name + "_temp";
-    std::string sql_ddl = str_sample("CREATE TEMP TABLE IF NOT EXISTS  %1% (\n"
+    std::string sql_ddl;
+    std::string temp_pref = "";
+    std::string temp_alias = "tmp";
+
+    if(sett.SQLFormat == 0)
+        sql_ddl = str_sample("CREATE TEMP TABLE IF NOT EXISTS  %1% (\n"
                                      "ref TEXT,\n"
                                      "version INTEGER\n"
                                      ");\n", temp_table);
-    sql << sql_ddl;
-
-    if (ext_table.is_array() && !ext_table.empty()) {
-        for (auto itr = ext_table.begin(); itr != ext_table.end(); ++itr) {
-            nlohmann::json r = *itr;
-            query.clear();
-            query.use(r);
-            sql_ddl = query.insert(temp_table, true).prepare();
-            sql << sql_ddl;
+    else{
+        //sql_ddl = str_sample("IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='#%1%' and xtype='U')\n", temp_table);
+        try {
+            *sql << arcirk::str_sample("DROP TABLE ##%1%", table_name + "_temp");
+        }catch (...){
+            //
         }
+        sql_ddl.append(str_sample("CREATE TABLE ##%1% (\n"
+                             "[ref] [char](36),\n"
+                             "[version] [int] \n"
+                             ");\n", temp_table));
+
+        temp_pref = "##";
     }
 
+    *sql << sql_ddl;
+    try {
+        if (ext_table.is_array() && !ext_table.empty()) {
+            for (auto itr = ext_table.begin(); itr != ext_table.end(); ++itr) {
+                nlohmann::json r = *itr;
+                query.clear();
+                query.use(r);
+                sql_ddl = query.insert(temp_pref + temp_table, true).prepare();
+                *sql << sql_ddl;
+            }
+        }
+    } catch (std::exception const &e) {
+        fail("shared_state::sync_get_discrepancy_in_data", e.what());
+        result.message = "error";
+        return result;
+    }
+
+
     //std::cout << sql_ddl << std::endl;
-    sql << sql_ddl;
+    *sql << sql_ddl;
     tr.commit();
 
     sql_ddl = "";
@@ -1825,23 +1885,23 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
     if (!workplace.empty())
         where_values["workplace"] = workplace;
 
-    auto q = builder::query_builder();
+    auto q = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
 
     q.select(nlohmann::json{
-            {"ref", "ref"},
-            {"ver1", "max(Ver1)"},
-            {"ver2", "max(Ver2)"}
-    }).from(builder::query_builder().select(nlohmann::json{
+            {"ref", temp_alias + "." + "ref"},
+            {"ver1", "max(" + temp_alias + "." + "Ver1)"},
+            {"ver2", "max(" + temp_alias + "." + "Ver2)"}
+    }).from(builder::query_builder((builder::sql_database_type)sett.SQLFormat).select(nlohmann::json{
                     {"ref",  "ref"},
                     {"ver1", "version"},
                     {"ver2", "-1"}}).from(table_name).where(where_values, true).union_all(
-                    builder::query_builder().select(nlohmann::json{
+                    builder::query_builder((builder::sql_database_type)sett.SQLFormat).select(nlohmann::json{
                             {"ref",  "ref"},
                             {"ver1", "-1"},
                             {"ver2", "version"}
-                    }).from(table_name + "_temp")
+                    }).from(temp_pref + table_name + "_temp")
             )
-    ).group_by("ref");
+    , temp_alias).group_by("ref");
 
     sql_ddl.append(q.prepare());
 
@@ -1865,12 +1925,26 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
 
     nlohmann::json result_j{};
     //std::cout << sql_ddl << std::endl;
-    soci::rowset<soci::row> rs = (sql.prepare << sql_ddl);
+    soci::rowset<soci::row> rs = (sql->prepare << sql_ddl);
+
     for (auto it = rs.begin(); it != rs.end(); it++) {
         const soci::row& row_ = *it;
+        int ver1, ver2;
         std::string ref = builder::query_builder::get_value<std::string>(row_, 0);
-        int ver1 = std::stoi(builder::query_builder::get_value<std::string>(row_, 1)) ; //версия сервера
-        int ver2 = std::stoi(builder::query_builder::get_value<std::string>(row_, 2)); //версия клиента
+        if(sett.SQLFormat == 0){
+            std::string ver1_ = builder::query_builder::get_value<std::string>(row_, 1);
+            std::string ver2_ = builder::query_builder::get_value<std::string>(row_, 2);
+            if(ver1_.empty())
+                ver1_ = "0";
+            if(ver2_.empty())
+                ver2_ = "0";
+            ver1 = std::stoi(ver1_) ; //версия сервера
+            ver2 = std::stoi(ver2_); //версия клиента
+        }else{
+            ver1 = builder::query_builder::get_value<int>(row_, 1); //версия сервера
+            ver2 = builder::query_builder::get_value<int>(row_, 2);
+        }
+
         if (ver1 > ver2) {
             result_j["objects"] += {
                     {ref, data_synchronization_get_object(table_name, ref)}
@@ -1883,7 +1957,8 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
         };
     }
 
-    sql.close();
+    //sql.close();
+    *sql << arcirk::str_sample("DROP TABLE %1%", temp_pref + table_name + "_temp");
 
     result.result = base64::base64_encode(result_j.dump());
     result.message = "OK";
@@ -1920,7 +1995,7 @@ arcirk::server::server_command_result shared_state::sync_update_data_on_the_serv
     if (!operation_available)
         throw native_exception("Не достаточно прав доступа!");
 
-    auto sql = soci_initialize();
+    //auto sql = soci_initialize();
 
     if (!base64_param.empty()) {
         ext_objects = nlohmann::json::parse(arcirk::base64::base64_decode(base64_param));
@@ -1963,25 +2038,26 @@ std::string shared_state::handle_request(const std::string &body, const std::str
 
             std::string hash = arcirk::get_hash(m_auth[0], m_auth[1]);
 
-            if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
-                if(sett.ServerWorkingDirectory.empty())
-                {
-                    return std::string("shared_state::verify_auth:error ") + "Ошибки в параметрах сервера!";
-                }
-
-                path database(sett.ServerWorkingDirectory);
-                database /= sett.Version;
-                database /= "data";
-                database /= "arcirk.sqlite";
-
-                if(!exists(database)){
-                    return std::string("shared_state::verify_auth:error ") + "Файл базы данных не найден!";
-                }
-
- //               try {
-                    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
-                    session sql(soci::sqlite3, connection_string);
-                    soci::rowset<soci::row> rs = (sql.prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+//            if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
+//                if(sett.ServerWorkingDirectory.empty())
+//                {
+//                    return std::string("shared_state::verify_auth:error ") + "Ошибки в параметрах сервера!";
+//                }
+//
+//                path database(sett.ServerWorkingDirectory);
+//                database /= sett.Version;
+//                database /= "data";
+//                database /= "arcirk.sqlite";
+//
+//                if(!exists(database)){
+//                    return std::string("shared_state::verify_auth:error ") + "Файл базы данных не найден!";
+//                }
+//
+// //               try {
+//                    std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
+//                    session sql(soci::sqlite3, connection_string);
+                    auto sql = soci_initialize();
+                    soci::rowset<soci::row> rs = (sql->prepare << "select * from Users where hash = " <<  "'" << hash << "'");
                     for (auto it = rs.begin(); it != rs.end(); it++) {
                         const soci::row &row_ = *it;
                         http_session->set_role(row_.get<std::string>("role"));
@@ -1994,7 +2070,7 @@ std::string shared_state::handle_request(const std::string &body, const std::str
 //                }
 
             }
-        }
+      //  }
 //    } catch (std::exception &e) {
 //        return std::string("shared_state::verify_auth:error ") + e.what();
 //    }
@@ -2076,7 +2152,7 @@ void shared_state::run_server_tasks() {
         arcirk::services::task_options opt1{};
         opt1.end_task = 0;
         opt1.start_task = 0;
-        opt1.interval = 1800;
+        opt1.interval = 60;
         opt1.name = "ExchangePlan";
         opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt1.allowed = true;
@@ -2122,12 +2198,12 @@ void shared_state::erase_deleted_mark_objects() {
     using namespace arcirk::database;
 
     auto sql = soci_initialize();
-    auto query = builder::query_builder();
-    auto tr = soci::transaction(sql);
-    sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deleted_mark = '1');";
-    sql << "delete from Documents where Documents.deleted_mark = '1';";
+    auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
+    auto tr = soci::transaction(*sql);
+    *sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deleted_mark = '1');";
+    *sql << "delete from Documents where Documents.deleted_mark = '1';";
     tr.commit();
-    log("shared_state::synchronize_objects_from_1c", "Регламентная операция успешно завершена!");
+    log("shared_state::erase_deleted_mark_objects", "Регламентная операция успешно завершена!");
 }
 
 void shared_state::synchronize_objects_from_1c() {
@@ -2207,9 +2283,9 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
             auto stuct_br = pre::json::from_json<database::barcodes>(obj);
             auto stuct_n = pre::json::from_json<database::nomenclature>(http_result["nomenclature"]);
 
-            auto rs = builder::query_builder().select().from(table_name).where(nlohmann::json{
+            auto rs = builder::query_builder((builder::sql_database_type)sett.SQLFormat).select().from(table_name).where(nlohmann::json{
                     {"barcode", br}
-            }, true).exec(sql, {}, true);
+            }, true).exec(*sql, {}, true);
 
             for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
                 count++;
@@ -2220,7 +2296,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
             if(stuct_br.ref.empty())
                 stuct_br.ref = arcirk::uuids::uuid_to_string(arcirk::uuids::random_uuid());
 
-            auto query = builder::query_builder();
+            auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
 
             query.use(pre::json::to_json(stuct_br));
             if(count > 0){
@@ -2238,9 +2314,9 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
             count = 0;
             query.clear();
             table_name = arcirk::enum_synonym(arcirk::database::tables::tbNomenclature);
-            rs = builder::query_builder().select().from(table_name).where(nlohmann::json{
+            rs = builder::query_builder((builder::sql_database_type)sett.SQLFormat).select().from(table_name).where(nlohmann::json{
                     {"ref", stuct_n.ref}
-            }, true).exec(sql, {}, true);
+            }, true).exec(*sql, {}, true);
 
             for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
                 count++;
@@ -2265,9 +2341,9 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
     }
 
     if(!queryas.empty()){
-        auto tr = soci::transaction(sql);
+        auto tr = soci::transaction(*sql);
         for (const auto& q : queryas) {
-            sql << q;
+            *sql << q;
         }
         tr.commit();
     }
@@ -2376,7 +2452,7 @@ bool shared_state::init_default_result(arcirk::server::server_command_result &re
     std::string param_json = base64_to_string(std::get<std::string>(param_));
     param = nlohmann::json::parse(param_json);
     result.uuid_form = param.value("uuid_form", arcirk::uuids::nil_string_uuid());
-
+    return true;
 }
 
 arcirk::server::server_command_result

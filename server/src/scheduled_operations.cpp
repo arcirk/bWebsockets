@@ -157,7 +157,7 @@ bool scheduled_operations::perform_data_exchange() {
                     std::string obj_str = item.value("Object", "");
                     if(!obj_str.empty()){
                         auto obj = nlohmann::json::parse(obj_str);
-                        add_information_register_record<barcodes>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbBarcodes));
+                        add_information_register_record<barcodes>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbBarcodes));
                     }
                     continue;
                 }
@@ -169,19 +169,19 @@ bool scheduled_operations::perform_data_exchange() {
                 if(obj.is_object()){
 
                     if (xml_type == "CatalogRef.Номенклатура" || xml_type == "CatalogObject.Номенклатура")
-                        add_query<nomenclature>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbNomenclature));
+                        add_query<nomenclature>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbNomenclature));
                     else if(xml_type == "CatalogRef.Организации" || xml_type == "CatalogObject.Организации")
-                        add_query<organizations>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbOrganizations));
+                        add_query<organizations>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbOrganizations));
                     else if(xml_type == "CatalogRef.Пользователи" || xml_type == "CatalogObject.Пользователи")
-                        add_query<user_info>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbUsers));
+                        add_query<user_info>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbUsers));
                     else if(xml_type == "CatalogRef.Склады" || xml_type == "CatalogObject.Склады")
-                        add_query<warehouses>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbWarehouses));
+                        add_query<warehouses>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbWarehouses));
                     else if(xml_type == "CatalogRef.РабочиеМеста" || xml_type == "CatalogObject.РабочиеМеста")
-                        add_query<workplaces>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbWorkplaces));
+                        add_query<workplaces>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbWorkplaces));
                     else if(xml_type == "CatalogRef.ТипыЦенНоменклатуры" || xml_type == "CatalogObject.ТипыЦенНоменклатуры")
-                        add_query<price_types>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbPriceTypes));
+                        add_query<price_types>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbPriceTypes));
                     else if(xml_type == "CatalogRef.Подразделения" || xml_type == "CatalogObject.Подразделения")
-                        add_query<subdivisions>(obj, transaction_arr, sql, arcirk::enum_synonym(tables::tbSubdivisions));
+                        add_query<subdivisions>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbSubdivisions));
                     else
                         continue;
                 }
@@ -199,9 +199,9 @@ bool scheduled_operations::perform_data_exchange() {
             count++;
             current_queries.push_back(query_text);
             if(count == 10000){
-                auto tr = soci::transaction(sql);
+                auto tr = soci::transaction(*sql);
                 for (const auto current_text : current_queries) {
-                    sql << current_text;
+                    *sql << current_text;
                 }
                 tr.commit();
                 current_queries.clear();
@@ -210,9 +210,9 @@ bool scheduled_operations::perform_data_exchange() {
         }
 
         if(current_queries.size() > 0){
-            auto tr = soci::transaction(sql);
+            auto tr = soci::transaction(*sql);
             for (auto current_text : current_queries) {
-                sql << current_text;
+                *sql << current_text;
             }
             tr.commit();
         }
@@ -228,6 +228,7 @@ bool scheduled_operations::perform_data_exchange() {
 
 scheduled_operations::scheduled_operations(const arcirk::server::server_config &sett) {
     sett_ = sett;
+    sql_sess = std::make_shared<soci::session>();
 }
 
 nlohmann::json scheduled_operations::exec_http_query(const std::string& command, const nlohmann::json& param) {
