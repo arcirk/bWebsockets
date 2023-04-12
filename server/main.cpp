@@ -246,8 +246,9 @@ bool is_odbc_database(soci::session& sql){
         auto version = arcirk::server::get_version();
         std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.major), std::to_string(version.minor), std::to_string(version.path));
         //Проверяем на существование базы данных
-        auto builder = builder::query_builder(builder::sql_database_type::type_ODBC);
+        auto builder = builder::query_builder(); //builder::sql_database_type::type_ODBC
         builder.row_count().from("sys.databases").where(nlohmann::json{{"name", db_name}}, true);
+        //std::cout << builder.prepare() << std::endl;
         int count = -1;
         sql << builder.prepare(), into(count);
         if (count <= 0){
@@ -262,7 +263,7 @@ bool is_odbc_database(soci::session& sql){
             }
         }
     } catch (const std::exception &e) {
-        native_exception(e.what());
+        std::cerr << e.what() << std::endl;
     }
 
     return false;

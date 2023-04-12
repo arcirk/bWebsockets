@@ -191,21 +191,33 @@ public:
                     parser_->release(), state_, http_authorization);
         }else{
             if(state_->use_authorization() && !http_authorization){
+                std::string shared_files_dir = "/shared_files/releases";
+                std::string target = static_cast<std::string>(req.target());
                 //auto const post_body = boost::make_shared<std::string const>(req.body());
-                return handle_request(*doc_root_, parser_->release(), queue_, true);
+                //return handle_request(*doc_root_, parser_->release(), queue_, true);
+                if(target.empty() || target == "/")
+                    return handle_request(*doc_root_, parser_->release(), queue_);
+                else if(target.substr(0, shared_files_dir.length()) == "/shared_files/releases"){
+                    return handle_request(*doc_root_, parser_->release(), queue_);
+                }
             }
         }
 
         auto req_ = parser_->release();
 
         if(!http_authorization){
-            http::response<http::string_body> res{http::status::unauthorized, req_.version()};
-            res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-            res.set(http::field::content_type, "text/html");
-            res.keep_alive(req_.keep_alive());
-            res.body() = "An error occurred: Incorrect username or password.";
-            res.prepare_payload();
-            return queue_(std::move(res));
+            std::string target = static_cast<std::string>(req.target());
+            if (target.empty() || target == "/") // откроем index.html
+                return handle_request(*doc_root_, parser_->release(), queue_);
+            else{
+                http::response<http::string_body> res{http::status::unauthorized, req_.version()};
+                res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                res.set(http::field::content_type, "text/html");
+                res.keep_alive(req_.keep_alive());
+                res.body() = "An error occurred: Incorrect username or password.";
+                res.prepare_payload();
+                return queue_(std::move(res));
+            }
         }else{
             auto const bad_request =
                     [&req](beast::string_view why)

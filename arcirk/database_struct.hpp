@@ -3,6 +3,7 @@
 
 #include "includes.hpp"
 #include <map>
+#include "arcirk.hpp"
 
 namespace arcirk{
         enum DatabaseType{
@@ -353,7 +354,7 @@ namespace arcirk::database{
                                         "[first] [varchar](max) NULL,\n"
                                         "[second] [varchar](max) NULL,\n"
                                         "[ref] [char](36) NOT NULL UNIQUE,\n"
-                                        "[hash] [varchar](max) NOT NULL UNIQUE,\n"
+                                        "[hash] [varchar](max) NOT NULL,\n"
                                         "[role] [varchar](max) NULL,\n"
                                         "[performance] [varchar](max) NULL,\n"
                                         "[parent] [char](36) NULL,\n"
@@ -615,8 +616,8 @@ namespace arcirk::database{
                                                  "[second] [varchar](max) NULL,\n"
                                                  "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                  "[cache] [text] NULL,\n"
-                                                 "[price] [varchar](max)NULL,\n"
-                                                 "[quantity] [int] NOT NULL,\n"
+                                                 "[price] [float] NOT NULL,\n"
+                                                 "[quantity] [float] NOT NULL,\n"
                                                  "[barcode] [varchar](max) NULL,\n"
                                                  "[parent] [char](36) NULL,\n"
                                                  "[product] [char](36) NULL,\n"

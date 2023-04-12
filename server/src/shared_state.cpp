@@ -1231,6 +1231,7 @@ soci::session * shared_state::soci_initialize(){
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             //return session{soci::sqlite3, connection_string};
             sql_sess->open(soci::sqlite3, connection_string);
+            log("soci_initialize", "Open sqlite3 database.");
             return sql_sess;
         } catch (native_exception &e) {
             fail("shared_state::soci_initialize:error", e.what(), false);
@@ -1242,6 +1243,7 @@ soci::session * shared_state::soci_initialize(){
         sql_sess->open(soci::odbc, connection_string);
         if(sql_sess->is_connected())
             *sql_sess << "use " + db_name;
+        log("soci_initialize", "Open odbc driver database.");
         return sql_sess;
     }
     return nullptr;
@@ -2152,7 +2154,7 @@ void shared_state::run_server_tasks() {
         arcirk::services::task_options opt1{};
         opt1.end_task = 0;
         opt1.start_task = 0;
-        opt1.interval = 60;
+        opt1.interval = 1800;
         opt1.name = "ExchangePlan";
         opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt1.allowed = true;

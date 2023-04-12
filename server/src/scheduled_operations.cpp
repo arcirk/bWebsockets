@@ -304,8 +304,8 @@ void scheduled_operations::add_information_register_record(const nlohmann::json 
     auto struct_n = T();
     auto struct_json = pre::json::to_json(struct_n);
 
-    std::cout << arcirk::local_8bit(object.dump()) << std::endl;
-    std::cout << arcirk::local_8bit(struct_json.dump()) << std::endl;
+//    std::cout << arcirk::local_8bit(object.dump()) << std::endl;
+//    std::cout << arcirk::local_8bit(struct_json.dump()) << std::endl;
 
     if(field_is_exists(object, "barcode") && field_is_exists(struct_json, "barcode"))
         struct_json["barcode"] = get_string_value<std::string>(object, "barcode");
