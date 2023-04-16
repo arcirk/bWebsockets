@@ -2202,8 +2202,8 @@ void shared_state::erase_deleted_mark_objects() {
     auto sql = soci_initialize();
     auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
     auto tr = soci::transaction(*sql);
-    *sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deleted_mark = '1');";
-    *sql << "delete from Documents where Documents.deleted_mark = '1';";
+    *sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deletion_mark = '1');";
+    *sql << "delete from Documents where Documents.deletion_mark = '1';";
     tr.commit();
     log("shared_state::erase_deleted_mark_objects", "Регламентная операция успешно завершена!");
 }

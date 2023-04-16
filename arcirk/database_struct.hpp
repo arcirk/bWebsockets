@@ -55,6 +55,9 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, date)
                 (std::string, content_type)
                 (int, unread_messages)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
@@ -65,53 +68,68 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, second)
                 (std::string, ref)
                 (std::string, cache)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), subdivisions,
-        (int, _id)
+                (arcirk::database), subdivisions,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
                 (std::string, cache)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), warehouses,
-        (int, _id)
+                (arcirk::database), warehouses,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
                 (std::string, cache)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), price_types,
-        (int, _id)
+                (arcirk::database), price_types,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
                 (std::string, cache)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), workplaces,
-        (int, _id)
+                (arcirk::database), workplaces,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
                 (std::string, cache)
                 (std::string, server)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), devices,
-        (int, _id)
+                (arcirk::database), devices,
+                (int, _id)
                 (std::string, first)
                 (std::string, second)
                 (std::string, ref)
@@ -123,6 +141,9 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, warehouse)
                 (std::string, subdivision)
                 (std::string, organization)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
@@ -150,7 +171,9 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, version)
                 (std::string, device_id)
                 (std::string, workplace)
-                (int, deleted_mark)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -163,8 +186,10 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (double, price)
                 (double, quantity)
                 (std::string, barcode)
-                (std::string, parent)
                 (std::string, product)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
@@ -179,6 +204,8 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, vendor_code)
                 (std::string, trademark)
                 (std::string, unit)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
@@ -190,6 +217,8 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, ref)
                 (std::string, barcode)
                 (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
                 (int, version)
 );
 
@@ -309,6 +338,9 @@ namespace arcirk::database{
                                            "    date            INTEGER,\n"
                                            "    content_type    TEXT      DEFAULT HTML,\n"
                                            "    unread_messages INTEGER   DEFAULT (0),\n"
+                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                           "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                           "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                            "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                            ");";
     const std::string messages_odbc_table_ddl = "CREATE TABLE [dbo].[Messages](\n"
@@ -321,6 +353,9 @@ namespace arcirk::database{
                                             "[date] [int] NOT NULL,\n"
                                             "[content_type] [char](10) NULL,\n"
                                             "[unread_messages] [int] NULL,\n"
+                                            "[parent] [char](36) NULL,\n"
+                                            "[is_group] [int] NOT NULL,\n"
+                                            "[deletion_mark] [int] NOT NULL,\n"
                                             "[version] [int] NOT NULL\n"
                                             "CONSTRAINT [PK_Messages] PRIMARY KEY CLUSTERED\n"
                                             "(\n"
@@ -358,8 +393,8 @@ namespace arcirk::database{
                                         "[performance] [varchar](max) NULL,\n"
                                         "[parent] [char](36) NULL,\n"
                                         "[cache] [text] NULL,\n"
-                                        "[is_group] [int] NOT NULL,"
-                                        "[deletion_mark] [int] NOT NULL,"
+                                        "[is_group] [int] NOT NULL,\n"
+                                        "[deletion_mark] [int] NOT NULL,\n"
                                         "[version] [int] NOT NULL\n"
                                         "CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED\n"
                                         "(\n"
@@ -374,6 +409,9 @@ namespace arcirk::database{
                                                 "    ref             TEXT (36) UNIQUE\n"
                                                 "                             NOT NULL,\n"
                                                 "    cache           TEXT      DEFAULT \"\",\n"
+                                                "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                 "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                 ");";
     const std::string organizations_odbc_table_ddl = "CREATE TABLE [dbo].[Organizations](\n"
@@ -382,7 +420,10 @@ namespace arcirk::database{
                                                 "[second] [varchar](max) NULL,\n"
                                                 "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                 "[cache] [text] NULL,\n"
-                                                "[version] [int] NOT NULL\n"
+                                                 "[parent] [char](36) NULL,\n"
+                                                 "[is_group] [int] NOT NULL,\n"
+                                                 "[deletion_mark] [int] NOT NULL,\n"
+                                                 "[version] [int] NOT NULL\n"
                                                 "CONSTRAINT [PK_Organizations] PRIMARY KEY CLUSTERED\n"
                                                 "(\n"
                                                 "[_id] ASC\n"
@@ -396,6 +437,9 @@ namespace arcirk::database{
                                                "    ref             TEXT (36) UNIQUE\n"
                                                "                             NOT NULL,\n"
                                                "    cache           TEXT      DEFAULT \"\",\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                ");";
     const std::string subdivisions_odbc_table_ddl = "CREATE TABLE [dbo].[Subdivisions](\n"
@@ -404,7 +448,10 @@ namespace arcirk::database{
                                                 "[second] [varchar](max) NULL,\n"
                                                 "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                 "[cache] [text] NULL,\n"
-                                                "[version] [int] NOT NULL\n"
+                                                    "[parent] [char](36) NULL,\n"
+                                                    "[is_group] [int] NOT NULL,\n"
+                                                    "[deletion_mark] [int] NOT NULL,\n"
+                                                    "[version] [int] NOT NULL\n"
                                                 "CONSTRAINT [PK_Subdivisions] PRIMARY KEY CLUSTERED\n"
                                                 "(\n"
                                                 "[_id] ASC\n"
@@ -418,6 +465,9 @@ namespace arcirk::database{
                                              "    ref             TEXT (36) UNIQUE\n"
                                              "                             NOT NULL,\n"
                                              "    cache           TEXT      DEFAULT \"\",\n"
+                                             "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                             "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                              "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                              ");";
     const std::string warehouses_odbc_table_ddl = "CREATE TABLE [dbo].[Warehouses](\n"
@@ -426,7 +476,10 @@ namespace arcirk::database{
                                                 "[second] [varchar](max) NULL,\n"
                                                 "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                 "[cache] [text] NULL,\n"
-                                                "[version] [int] NOT NULL\n"
+                                                  "[parent] [char](36) NULL,\n"
+                                                  "[is_group] [int] NOT NULL,\n"
+                                                  "[deletion_mark] [int] NOT NULL,\n"
+                                                  "[version] [int] NOT NULL\n"
                                                 "CONSTRAINT [PK_Warehouses] PRIMARY KEY CLUSTERED\n"
                                                 "(\n"
                                                 "[_id] ASC\n"
@@ -440,6 +493,9 @@ namespace arcirk::database{
                                               "    ref             TEXT (36) UNIQUE\n"
                                               "                             NOT NULL,\n"
                                               "    cache           TEXT      DEFAULT \"\",\n"
+                                              "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                              "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                              "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                               "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                               ");";
     const std::string price_types_odbc_table_ddl = "CREATE TABLE [dbo].[PriceTypes](\n"
@@ -448,7 +504,10 @@ namespace arcirk::database{
                                                   "[second] [varchar](max) NULL,\n"
                                                   "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                   "[cache] [text] NULL,\n"
-                                                  "[version] [int] NOT NULL\n"
+                                                   "[parent] [char](36) NULL,\n"
+                                                   "[is_group] [int] NOT NULL,\n"
+                                                   "[deletion_mark] [int] NOT NULL,\n"
+                                                   "[version] [int] NOT NULL\n"
                                                   "CONSTRAINT [PK_PriceTypes] PRIMARY KEY CLUSTERED\n"
                                                   "(\n"
                                                   "[_id] ASC\n"
@@ -461,6 +520,9 @@ namespace arcirk::database{
                                                "    second          TEXT,\n"
                                                "    ref             TEXT (36) UNIQUE\n"
                                                "                             NOT NULL,\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                                ");";
 
@@ -469,7 +531,10 @@ namespace arcirk::database{
                                                    "[first] [varchar](max) NULL,\n"
                                                    "[second] [varchar](max) NULL,\n"
                                                    "[ref] [char](36) NOT NULL UNIQUE,\n"
-                                                   "[version] [int] NOT NULL\n"
+                                                    "[parent] [char](36) NULL,\n"
+                                                    "[is_group] [int] NOT NULL,\n"
+                                                    "[deletion_mark] [int] NOT NULL,\n"
+                                                    "[version] [int] NOT NULL\n"
                                                    "CONSTRAINT [PK_DevicesType] PRIMARY KEY CLUSTERED\n"
                                                    "(\n"
                                                    "[_id] ASC\n"
@@ -484,6 +549,9 @@ namespace arcirk::database{
                                              "                             NOT NULL,\n"
                                              "    cache           TEXT      DEFAULT \"\",\n"
                                              "    server          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                             "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                              "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                              ");";
 
@@ -494,7 +562,10 @@ namespace arcirk::database{
                                                     "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                   "[cache] [text] NULL,\n"
                                                     "[server] [char](36) NULL,\n"
-                                                    "[version] [int] NOT NULL\n"
+                                                  "[parent] [char](36) NULL,\n"
+                                                  "[is_group] [int] NOT NULL,\n"
+                                                  "[deletion_mark] [int] NOT NULL,\n"
+                                                  "[version] [int] NOT NULL\n"
                                                     "CONSTRAINT [PK_Workplaces] PRIMARY KEY CLUSTERED\n"
                                                     "(\n"
                                                     "[_id] ASC\n"
@@ -515,6 +586,9 @@ namespace arcirk::database{
                                           "    warehouse       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    subdivision     TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                           "    organization    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                          "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                          "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                           "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
                                           ");";
     const std::string devices_odbc_table_ddl = "CREATE TABLE [dbo].[Devices](\n"
@@ -530,7 +604,10 @@ namespace arcirk::database{
                                                   "[warehouse] [char](36) NULL,\n"
                                                   "[subdivision] [char](36) NULL,\n"
                                                   "[organization] [char](36) NULL,\n"
-                                                  "[version] [int] NOT NULL\n"
+                                               "[parent] [char](36) NULL,\n"
+                                               "[is_group] [int] NOT NULL,\n"
+                                               "[deletion_mark] [int] NOT NULL,\n"
+                                               "[version] [int] NOT NULL\n"
                                                   "CONSTRAINT [PK_Devices] PRIMARY KEY CLUSTERED\n"
                                                   "(\n"
                                                   "[_id] ASC\n"
@@ -570,7 +647,9 @@ namespace arcirk::database{
                                             "    version         INTEGER NOT NULL DEFAULT(0),\n"
                                             "    device_id       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                             "    workplace       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                            "    deleted_mark    INTEGER NOT NULL DEFAULT(0)\n"
+                                            "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                            "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                            "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL"
                                             ");";
     const std::string documents_odbc_table_ddl = "CREATE TABLE [dbo].[Documents](\n"
                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
@@ -583,8 +662,10 @@ namespace arcirk::database{
                                                "[xml_type] [varchar](max) NULL,\n"
                                                "[device_id] [char](36) NULL,\n"
                                                "[workplace] [char](36) NULL,\n"
-                                               "[deleted_mark] [int] NOT NULL,\n"
-                                               "[version] [int] NOT NULL\n"
+                                                 "[parent] [char](36) NULL,\n"
+                                                 "[is_group] [int] NOT NULL,\n"
+                                                 "[deletion_mark] [int] NOT NULL,\n"
+                                                 "[version] [int] NOT NULL\n"
                                                "CONSTRAINT [PK_Documents] PRIMARY KEY CLUSTERED\n"
                                                "(\n"
                                                "[_id] ASC\n"
@@ -601,8 +682,10 @@ namespace arcirk::database{
                                                  "    price           DOUBLE DEFAULT (0),\n"
                                                  "    quantity        DOUBLE DEFAULT (0),\n"
                                                  "    barcode         TEXT      DEFAULT \"\",\n"
-                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                  "    product         TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                 "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                 "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                  "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                  ");";
     const std::string document_table_odbc_table_ddl = "CREATE TABLE [dbo].[DocumentsTables](\n"
@@ -614,9 +697,11 @@ namespace arcirk::database{
                                                  "[price] [float] NOT NULL,\n"
                                                  "[quantity] [float] NOT NULL,\n"
                                                  "[barcode] [varchar](max) NULL,\n"
-                                                 "[parent] [char](36) NULL,\n"
                                                  "[product] [char](36) NULL,\n"
-                                                 "[version] [int] NOT NULL\n"
+                                                      "[parent] [char](36) NULL,\n"
+                                                      "[is_group] [int] NOT NULL,\n"
+                                                      "[deletion_mark] [int] NOT NULL,\n"
+                                                      "[version] [int] NOT NULL\n"
                                                  "CONSTRAINT [PK_DocumentsTables] PRIMARY KEY CLUSTERED\n"
                                                  "(\n"
                                                  "[_id] ASC\n"
@@ -630,54 +715,63 @@ namespace arcirk::database{
                                                "    ref             TEXT (36) UNIQUE\n"
                                                "                             NOT NULL,\n"
                                                "    cache           TEXT      DEFAULT \"\",\n"
-                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                "    vendor_code     TEXT DEFAULT \"\",\n"
                                                "    trademark       TEXT DEFAULT \"\",\n"
                                                "    unit            TEXT DEFAULT \"шт.\",\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
     const std::string nomenclature_odbc_table_ddl = "CREATE TABLE [dbo].[Nomenclature](\n"
-                                                      "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
-                                                      "[first] [varchar](max) NULL,\n"
-                                                      "[second] [varchar](max) NULL,\n"
-                                                      "[ref] [char](36) NOT NULL UNIQUE,\n"
-                                                      "[cache] [text] NULL,\n"
-                                                      "[parent] [char](36) NULL,\n"
-                                                      "[vendor_code] [varchar](max) NULL,\n"
-                                                      "[trademark] [varchar](max) NULL,\n"
-                                                      "[unit] [varchar](max) NULL,\n"
-                                                      "[version] [int] NOT NULL\n"
-                                                      "CONSTRAINT [PK_Nomenclature] PRIMARY KEY CLUSTERED\n"
-                                                      "(\n"
-                                                      "[_id] ASC\n"
-                                                      ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
-                                                      ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+                                                "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                "[first] [varchar](max) NULL,\n"
+                                                "[second] [varchar](max) NULL,\n"
+                                                "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                "[cache] [text] NULL,\n"
+                                                "[vendor_code] [varchar](max) NULL,\n"
+                                                "[trademark] [varchar](max) NULL,\n"
+                                                "[unit] [varchar](max) NULL,\n"
+                                                "[parent] [char](36) NULL,\n"
+                                                "[is_group] [int] NOT NULL,\n"
+                                                "[deletion_mark] [int] NOT NULL,\n"
+                                                "[version] [int] NOT NULL\n"
+                                                "CONSTRAINT [PK_Nomenclature] PRIMARY KEY CLUSTERED\n"
+                                                "(\n"
+                                                "[_id] ASC\n"
+                                                ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string barcodes_table_ddl = "CREATE TABLE Barcodes (\n"
-                                               "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
-                                               "    [first]         TEXT,\n"
-                                               "    second          TEXT,\n"
-                                               "    ref             TEXT (36) UNIQUE\n"
-                                               "                             NOT NULL,\n"
-                                               "    barcode         TEXT (128) DEFAULT \"\",\n"
-                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                               "    version         INTEGER NOT NULL DEFAULT(0)\n"
+                                           "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                           "    [first]         TEXT,\n"
+                                           "    second          TEXT,\n"
+                                           "    ref             TEXT (36) UNIQUE\n"
+                                           "                             NOT NULL,\n"
+                                           "    barcode         TEXT (128) DEFAULT \"\",\n"
+                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                           "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                           "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                           "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
     const std::string barcodes_odbc_table_ddl = "CREATE TABLE [dbo].[Barcodes](\n"
-                                                    "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
-                                                    "[first] [varchar](max) NULL,\n"
-                                                    "[second] [varchar](max) NULL,\n"
-                                                    "[ref] [char](36) NOT NULL UNIQUE,\n"
-                                                    "[barcode][varchar](128) NULL,\n"
-                                                    "[parent] [char](36) NULL,\n"
-                                                    "[version] [int] NOT NULL\n"
-                                                    "CONSTRAINT [PK_Barcodes] PRIMARY KEY CLUSTERED\n"
-                                                    "(\n"
-                                                    "[_id] ASC\n"
-                                                    ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
-                                                    ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+                                            "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                            "[first] [varchar](max) NULL,\n"
+                                            "[second] [varchar](max) NULL,\n"
+                                            "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                            "[barcode][varchar](128) NULL,\n"
+                                            "[parent] [char](36) NULL,\n"
+                                            "[is_group] [int] NOT NULL,\n"
+                                            "[deletion_mark] [int] NOT NULL,\n"
+                                            "[version] [int] NOT NULL\n"
+                                            "CONSTRAINT [PK_Barcodes] PRIMARY KEY CLUSTERED\n"
+                                            "(\n"
+                                            "[_id] ASC\n"
+                                            ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                            ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string database_config_table_ddl = "CREATE TABLE DatabaseConfig (\n"
                                                   "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -949,10 +1043,16 @@ namespace arcirk::database{
             std::string value;
             if(itr->second.is_string())
                 value = itr->second.get<std::string>();
-            else if(itr->second.is_number_float())
+            else if(itr->second.is_number_float()){
                 value = std::to_string(itr->second.get<double>());
+                auto index = value.find(",");
+                if(index > 0)
+                    value.replace(index, 1, ".");
+            }
             else if(itr->second.is_number_integer())
                 value = std::to_string(itr->second.get<long long>());
+
+            boost::algorithm::erase_all(value, "'");
 
             if(value.empty())
                 string_values.append("''");
@@ -974,19 +1074,19 @@ namespace arcirk::database{
     static inline std::map<tables, int> get_release_tables_versions(){
         std::map<tables, int> result;
         result.emplace(tables::tbDatabaseConfig, 2);
-        result.emplace(tables::tbNomenclature, 6);
-        result.emplace(tables::tbDocuments, 3);
-        result.emplace(tables::tbDevices, 2);
-        result.emplace(tables::tbMessages, 2);
-        result.emplace(tables::tbUsers, 2);
-        result.emplace(tables::tbDevicesType, 2);
-        result.emplace(tables::tbDocumentsTables, 3);
-        result.emplace(tables::tbOrganizations, 2);
-        result.emplace(tables::tbPriceTypes, 2);
-        result.emplace(tables::tbSubdivisions, 2);
-        result.emplace(tables::tbWarehouses, 2);
-        result.emplace(tables::tbWorkplaces, 2);
-        result.emplace(tables::tbBarcodes, 1);
+        result.emplace(tables::tbNomenclature, 7);
+        result.emplace(tables::tbDocuments, 4);
+        result.emplace(tables::tbDevices, 3);
+        result.emplace(tables::tbMessages, 3);
+        result.emplace(tables::tbUsers, 3);
+        result.emplace(tables::tbDevicesType, 3);
+        result.emplace(tables::tbDocumentsTables, 4);
+        result.emplace(tables::tbOrganizations, 3);
+        result.emplace(tables::tbPriceTypes, 3);
+        result.emplace(tables::tbSubdivisions, 3);
+        result.emplace(tables::tbWarehouses, 3);
+        result.emplace(tables::tbWorkplaces, 3);
+        result.emplace(tables::tbBarcodes, 2);
         return result;
     }
 
@@ -1038,6 +1138,10 @@ namespace arcirk::database{
         for (auto table : tables_arr) {
             std::vector<std::string> ddls;
             ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "version", 0));
+            ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
+            ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deletion_mark", 0));
+            ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "is_group", 0));
+
             if(table == tables::tbMessages){
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "content_type", "HTML"));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "unread_messages", 0));
@@ -1046,7 +1150,6 @@ namespace arcirk::database{
             else if(table == tables::tbUsers){
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "hash", " "));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "role", "user"));
-                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
                 result.emplace(table, ddls);
             }
             else if(table == tables::tbOrganizations || table == tables::tbSubdivisions
@@ -1076,7 +1179,6 @@ namespace arcirk::database{
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "number", " "));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "xml_type", " "));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "date", 0));
-                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deleted_mark", 0));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "device_id", "00000000-0000-0000-0000-000000000000"));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "workplace", "00000000-0000-0000-0000-000000000000"));
                 result.emplace(table, ddls);
@@ -1086,13 +1188,11 @@ namespace arcirk::database{
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "price", 0));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "quantity", 0));
-                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "product", "00000000-0000-0000-0000-000000000000"));
                 result.emplace(table, ddls);
             }
             else if(table == tables::tbBarcodes){
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
-                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "parent", "00000000-0000-0000-0000-000000000000"));
                 result.emplace(table, ddls);
             }else
                 result.emplace(table, ddls);
