@@ -20,6 +20,8 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     auto struct_n = T(); //arcirk::database::nomenclature();
     auto struct_json = pre::json::to_json(struct_n);
 
+    //log("add_query", object.dump());
+
     nlohmann::json standard_attributes = object.value("СтандартныеРеквизиты", nlohmann::json{});
     nlohmann::json attributes = object.value("Реквизиты", nlohmann::json{});
     struct_json["ref"] = get_string_value<std::string>(standard_attributes, "Ссылка");
@@ -79,6 +81,12 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     if(field_is_exists(standard_attributes, "Номер") && field_is_exists(struct_json, "number"))
         struct_json["number"] = get_string_value<std::string>(standard_attributes, "Номер");
 
+    if(field_is_exists(attributes, "ЕдиницаХраненияОстатков") && field_is_exists(struct_json, "unit"))
+        struct_json["unit"] = get_string_value<std::string>(attributes, "ЕдиницаХраненияОстатков", "Представление");
+
+    if(field_is_exists(attributes, "ТорговаяМарка") && field_is_exists(struct_json, "trademark"))
+        struct_json["trademark"] = get_string_value<std::string>(attributes, "ТорговаяМарка", "Представление");
+
     if(struct_json["ref"].empty()){
         fail("scheduled_operations::update_nomenclature", "Ошибка в данных объекта. Обновление отменено.");
         return;
@@ -121,10 +129,10 @@ void scheduled_operations::add_query(const nlohmann::json &object,
 }
 
 template<typename T>
-T scheduled_operations::get_string_value(const nlohmann::json &object, const std::string& key) const {
+T scheduled_operations::get_string_value(const nlohmann::json &object, const std::string& key, const std::string& name) const {
     if(object.is_object()){
         auto value_struct = object.value(key, nlohmann::json{});
-        return value_struct.value("Значение", T());
+        return value_struct.value(name, T());
     }else
         return {};
 }
@@ -193,6 +201,8 @@ bool scheduled_operations::perform_data_exchange() {
     if(transaction_arr.size() > 0){
         int count = 0;
         std::vector<std::string> current_queries;
+        int max = (int)transaction_arr.size();
+        int step = 0;
         for (auto query_text : transaction_arr) {
             //sql << query_text;
             //lenght--;
@@ -203,6 +213,8 @@ bool scheduled_operations::perform_data_exchange() {
                 for (const auto current_text : current_queries) {
                     *sql << current_text;
                 }
+                step += count;
+                log("scheduled_operations::perform_data_exchange", arcirk::str_sample("commit %1% elements in %2%", std::to_string(step), std::to_string(max)));
                 tr.commit();
                 current_queries.clear();
                 count = 0;
@@ -216,7 +228,7 @@ bool scheduled_operations::perform_data_exchange() {
             }
             tr.commit();
         }
-
+        log("scheduled_operations::perform_data_exchange", "Загрузка объектов завершена.");
     }
 
     //очищаем регистрацию
@@ -289,6 +301,8 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     if (ec && ec != beast::errc::not_connected)
         throw beast::system_error{ec};
 
+    if(result_body == "error")
+        throw native_exception("Ошибка на http сервисе!");
 
     auto result = nlohmann::json::parse(result_body);
 

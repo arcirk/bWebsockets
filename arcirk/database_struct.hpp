@@ -177,6 +177,8 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, cache) // Все остальные реквизиты
                 (std::string, parent)
                 (std::string, vendor_code)
+                (std::string, trademark)
+                (std::string, unit)
                 (int, version)
 );
 
@@ -325,9 +327,6 @@ namespace arcirk::database{
                                             "[_id] ASC\n"
                                             ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
                                             ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
-//    const std::string messages_odbc_index1_ddl = "ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_content_type]  DEFAULT ('HTML') FOR [content_type]";
-//    const std::string messages_odbc_index2_ddl ="ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_unread_messages]  DEFAULT ((0)) FOR [unread_messages]";
-//    const std::string messages_odbc_index3_ddl ="ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_version]  DEFAULT ((0)) FOR [version]";
 
     const std::string users_table_ddl = "CREATE TABLE Users (\n"
                                         "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -367,11 +366,6 @@ namespace arcirk::database{
                                         "[_id] ASC\n"
                                         ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
                                         ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
-
-//    const std::string users_odbc_index1_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_hash]  DEFAULT ('0') FOR [hash]";
-//    const std::string users_odbc_index2_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_role]  DEFAULT ('user') FOR [role]";
-//    const std::string users_odbc_index3_ddl = "ALTER TABLE [dbo].[Messages] ADD  CONSTRAINT [DF_Messages_version]  DEFAULT ((0)) FOR [version]";
-//    const std::string users_odbc_index4_ddl = "ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_parent]  DEFAULT ('00000000-0000-0000-0000-000000000000') FOR [parent]";
 
     const std::string organizations_table_ddl = "CREATE TABLE Organizations (\n"
                                                 "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -549,7 +543,8 @@ namespace arcirk::database{
                                          "           Subdivisions.[first] AS subdivision,\n"
                                          "           Warehouses.[first] AS warehouse,\n"
                                          "           PriceTypes.[first] AS price,\n"
-                                         "           Workplaces.[first] AS workplace\n"
+                                         "           Workplaces.[first] AS workplace,\n"
+                                         "           Devices.deviceType AS device_type\n"
                                          "      FROM Devices\n"
                                          "           LEFT JOIN\n"
                                          "           Organizations ON Devices.organization = Organizations.ref\n"
@@ -636,7 +631,9 @@ namespace arcirk::database{
                                                "                             NOT NULL,\n"
                                                "    cache           TEXT      DEFAULT \"\",\n"
                                                "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                               "    vendor_code     TEXT,\n"
+                                               "    vendor_code     TEXT DEFAULT \"\",\n"
+                                               "    trademark       TEXT DEFAULT \"\",\n"
+                                               "    unit            TEXT DEFAULT \"шт.\",\n"
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
                                                ");";
 
@@ -648,6 +645,8 @@ namespace arcirk::database{
                                                       "[cache] [text] NULL,\n"
                                                       "[parent] [char](36) NULL,\n"
                                                       "[vendor_code] [varchar](max) NULL,\n"
+                                                      "[trademark] [varchar](max) NULL,\n"
+                                                      "[unit] [varchar](max) NULL,\n"
                                                       "[version] [int] NOT NULL\n"
                                                       "CONSTRAINT [PK_Nomenclature] PRIMARY KEY CLUSTERED\n"
                                                       "(\n"
@@ -895,21 +894,30 @@ namespace arcirk::database{
         return {};
     }
 
-    static inline std::map<std::string, table_info_sqlite>  table_info(soci::session& sql, tables table) {
+    static inline std::map<std::string, table_info_sqlite>  table_info(soci::session& sql, tables table, DatabaseType type, const std::string& database_name = "") {
         using namespace soci;
         std::map<std::string, table_info_sqlite> result{};
         std::string  query = arcirk::str_sample("PRAGMA table_info(\"%1%\");", arcirk::enum_synonym(table));
+        std::string c_name = "name";
+        std::string c_type = "type";
+        if(type == DatabaseType::dbTypeODBC){
+            sql << arcirk::str_sample("USE %1%;", database_name);
+            query = arcirk::str_sample("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '%1%'", arcirk::enum_synonym(table));
+            c_name = "COLUMN_NAME";
+            c_type = "DATA_TYPE";
+        }
         //soci::rowset<table_info_sqlite> rs = (sql.prepare << query);
         soci::rowset<row> rs = (sql.prepare << query);
         //for (rowset<table_info_sqlite>::const_iterator it = rs.begin(); it != rs.end(); ++it)
+
         for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
         {
             //table_info_sqlite info = *it;
             auto info = table_info_sqlite();
             row const& row_ = *it;
             //info.cid = row_.get<int>("cid");
-            info.name = row_.get<std::string>("name");
-            info.type = row_.get<std::string>("type");
+            info.name = row_.get<std::string>(c_name);
+            info.type = row_.get<std::string>(c_type);
             result.emplace(info.name, info);
         }
         return result;
@@ -966,7 +974,7 @@ namespace arcirk::database{
     static inline std::map<tables, int> get_release_tables_versions(){
         std::map<tables, int> result;
         result.emplace(tables::tbDatabaseConfig, 2);
-        result.emplace(tables::tbNomenclature, 3);
+        result.emplace(tables::tbNomenclature, 6);
         result.emplace(tables::tbDocuments, 3);
         result.emplace(tables::tbDevices, 2);
         result.emplace(tables::tbMessages, 2);
@@ -1057,6 +1065,11 @@ namespace arcirk::database{
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "organization", "00000000-0000-0000-0000-000000000000"));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "address", "127.0.0.1"));
                 }
+                else if(table == tables::tbNomenclature) {
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "vendor_code", " "));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "trademark", " "));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "unit", "шт."));
+                }
             }
             else if(table == tables::tbDocuments){
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "cache", " "));
@@ -1086,12 +1099,20 @@ namespace arcirk::database{
         }
         return result;
     }
-    static inline void rebase(soci::session& sql, tables table, DatabaseType type){
+    static inline void rebase(soci::session& sql, tables table, DatabaseType type, const std::string& database_name = ""){
 
         using namespace soci;
 
         std::string table_name = arcirk::enum_synonym(table);
+        log("rebase", "start rebase table " + table_name);
+
+        if(type == DatabaseType::dbTypeODBC){
+            sql << "use " + database_name;
+        }
         std::string temp_query = arcirk::str_sample("create temp table %1%_temp as select * from %1%;", table_name);
+        if(type == DatabaseType::dbTypeODBC){
+            temp_query = arcirk::str_sample("select * INTO ##%1%_temp  from %1%;", table_name);
+        }
         auto def_values = get_default_values_ddl(); // массивы значений по умолчанию для sql server
 
         auto tr = soci::transaction(sql);
@@ -1106,10 +1127,16 @@ namespace arcirk::database{
         }
         tr.commit();
 
-        auto tr_ = soci::transaction(sql);
-        soci::rowset<soci::row> rs = (sql.prepare << arcirk::str_sample("select * from %1%_temp;", table_name));
-        //std::vector<std::string> columns{};
-        auto t_info = table_info(sql, table);
+        auto t_info = table_info(sql, table, type, database_name);
+        std::vector<std::string> tmt;
+
+        std::string tem_prefix = "";
+        if(type == DatabaseType::dbTypeODBC){
+            tem_prefix = "##";
+        }
+
+        soci::rowset<soci::row> rs = (sql.prepare << arcirk::str_sample("select * from %1%%2%_temp;", tem_prefix, table_name));
+
         int count = 0;
         for (rowset<row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
         {
@@ -1161,14 +1188,23 @@ namespace arcirk::database{
                 }
             }
 
-            sql << query_insert(table_name, values);
-
+            //sql << query_insert(table_name, values);
+            tmt.push_back(query_insert(table_name, values));
         }
 
-        sql << arcirk::str_sample("drop table if exists %1%_temp;", table_name);
+        auto tr_ = soci::transaction(sql);
+//        sql << "select * into " + table_name + " from " + arcirk::str_sample("%1%%2%_temp;", tem_prefix, table_name);
+        for (auto const& q: tmt) {
+            sql << q;
+        }
+        if(type == DatabaseType::dbTypeSQLite)
+            sql << arcirk::str_sample("drop table if exists %1%_temp;", table_name);
+        else
+            sql << arcirk::str_sample("drop table ##%1%_temp;", table_name);
 
         tr_.commit();
 
+        log("rebase", "end rebase table " + table_name);
     }
 
     static inline std::vector<std::string> get_database_tables(soci::session& sql, DatabaseType type, const nlohmann::json& version){
@@ -1325,7 +1361,7 @@ namespace arcirk::database{
                 if(itr_ver != current_table_versions.end())
                     current_ver = itr_ver->second;
                 if(release_table_versions[t_name] != current_ver){
-                    rebase(sql, t_name, type);
+                    rebase(sql, t_name, type, db_name);
                     auto tr = soci::transaction(sql);
 
                     if(current_ver == 0)

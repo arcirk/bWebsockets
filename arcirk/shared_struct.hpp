@@ -181,6 +181,7 @@ namespace arcirk::server{
         GetInformationAboutFile, //получить информацию о файле
         CheckForUpdates, //поиск фалов обрновления
         UploadFile, //скачать файл
+        GetDatabaseTables,
         CMD_INVALID=-1,
     };
 
@@ -210,6 +211,7 @@ namespace arcirk::server{
         {GetInformationAboutFile, "GetInformationAboutFile"}    ,
         {CheckForUpdates, "CheckForUpdates"}    ,
         {UploadFile, "UploadFile"}    ,
+        {GetDatabaseTables, "GetDatabaseTables"}    ,
     })
 
 }
@@ -249,6 +251,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (bool, AllowDelayedAuthorization)
         (bool, AllowHistoryMessages)
         (std::string, ExchangePlan)
+        (std::string, ServerProtocol)
 );
 
 #endif

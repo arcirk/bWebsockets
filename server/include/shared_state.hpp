@@ -168,6 +168,7 @@ public:
     arcirk::server::server_command_result get_information_about_file(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result check_for_updates(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result upload_file(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_database_tables(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
@@ -176,7 +177,7 @@ public:
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name);
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref);
 
-    static std::string execute_random_sql_query(soci::session& sql, const std::string& query_text) ;
+    static std::string execute_random_sql_query(soci::session& sql, const std::string& query_text, bool add_line_number = false, bool add_empty_column = false) ;
 
     static auto parse_json(const std::string& json_text, bool is_base64 = false);
 
@@ -223,7 +224,7 @@ private:
     std::vector<MethodMeta> methods_meta;
 
     [[nodiscard]] bool verify_auth(const std::string& usr, const std::string& pwd);
-    [[nodiscard]] bool verify_auth_from_hash(const std::string& usr, const std::string& hash);
+    [[nodiscard]] bool verify_auth_from_hash(const std::string& hash);
     static bool is_cmd(const std::string& message) { return message.substr(0, 3) == "cmd";};
     static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
     void execute_command_handler(const std::string& message, subscriber *session);

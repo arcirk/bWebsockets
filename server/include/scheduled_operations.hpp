@@ -26,7 +26,7 @@ private:
     void add_information_register_record(const nlohmann::json& object, std::vector<std::string>& transaction_arr, soci::session& sql, const std::string& table_name);
 
     template<typename T>
-    T get_string_value(const nlohmann::json& object, const std::string& key) const;
+    T get_string_value(const nlohmann::json& object, const std::string& key, const std::string& name = "Значение") const;
 
     static bool field_is_exists(const nlohmann::json &object, const std::string& name);
 

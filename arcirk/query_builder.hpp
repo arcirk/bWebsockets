@@ -570,6 +570,8 @@ namespace arcirk::database::builder {
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
 
+                    boost::algorithm::erase_all(value, "'");
+
                     if(value.empty())
                         result.append("=''");
                     else
@@ -596,7 +598,6 @@ namespace arcirk::database::builder {
                     table_name_ = table_name;
             }
 
-
             result = str_sample("insert into %1% (", table_name_);
             std::string string_values;
             for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
@@ -616,6 +617,8 @@ namespace arcirk::database::builder {
                     }
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
+
+                    boost::algorithm::erase_all(value, "'");
 
                     if(value.empty())
                         string_values.append("''");
@@ -733,13 +736,18 @@ namespace arcirk::database::builder {
             return m_vec;
         }
 
-        static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}){
+        static void execute(const std::string& query_text, soci::session& sql, json& result_table, const std::vector<std::string>& column_ignore = {}
+        , bool add_line_number = false, bool add_empty_column = false){
 
             soci::rowset<soci::row> rs = (sql.prepare << query_text);
 
             // std::cout << query_text << std::endl;
 
-            json columns = {"line_number"};
+            json columns = {};
+            if(add_line_number)
+                columns += "line_number";
+            if(add_empty_column)
+                columns += "empty";
             json roms = {};
             int line_number = 0;
 
@@ -747,7 +755,11 @@ namespace arcirk::database::builder {
             {
                 line_number++;
                 row const& row = *it;
-                json j_row = {{"line_number", line_number}};
+                json j_row = json::object();
+                if(add_line_number)
+                    j_row["line_number"] = line_number;
+                if(add_empty_column)
+                    j_row["empty"] = " ";
 
                 for(std::size_t i = 0; i != row.size(); ++i)
                 {
