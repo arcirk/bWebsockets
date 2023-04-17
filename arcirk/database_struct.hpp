@@ -148,14 +148,13 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), devices_view,
-        (std::string, ref)
+                (arcirk::database), devices_view,
+                (std::string, ref)
                 (std::string, workplace)
                 (std::string, price)
                 (std::string, warehouse)
                 (std::string, subdivision)
                 (std::string, organization)
-                (int, version)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -838,13 +837,14 @@ namespace arcirk::database{
                 usr_info.is_group = 0;
                 usr_info.deletion_mark = 0;
                 return pre::json::to_json(usr_info);
-                //std::string usr_info_json = to_string(pre::json::to_json(usr_info));
-                //return usr_info_json;
             }
             case tbMessages:{
                 auto tbl = messages();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.content_type ="Text";
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
                 //std::string tbl_json = to_string(pre::json::to_json(tbl));
                 //return tbl_json;
@@ -852,6 +852,9 @@ namespace arcirk::database{
             case tbOrganizations:{
                 auto tbl = organizations();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -859,6 +862,9 @@ namespace arcirk::database{
             case tbSubdivisions:{
                 auto tbl = subdivisions();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -866,6 +872,9 @@ namespace arcirk::database{
             case tbWarehouses:{
                 auto tbl = warehouses();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -873,6 +882,9 @@ namespace arcirk::database{
             case tbPriceTypes:{
                 auto tbl = price_types();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -881,6 +893,9 @@ namespace arcirk::database{
                 auto tbl = workplaces();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.server = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -895,6 +910,9 @@ namespace arcirk::database{
                 tbl.warehouse = arcirk::uuids::nil_string_uuid();
                 tbl.subdivision = arcirk::uuids::nil_string_uuid();
                 tbl.organization = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -904,6 +922,9 @@ namespace arcirk::database{
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.price = 0;
                 tbl.quantity = 0;
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -913,6 +934,9 @@ namespace arcirk::database{
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.device_id = arcirk::uuids::nil_string_uuid();
                 tbl.date = date_to_seconds();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
@@ -921,12 +945,17 @@ namespace arcirk::database{
                 auto tbl = nomenclature();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
             }
             case tbBarcodes: {
                 auto tbl = barcodes();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
             }
             case tbDatabaseConfig: {

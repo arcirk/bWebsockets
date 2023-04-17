@@ -42,11 +42,13 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::SyncGetDiscrepancyInData), this, &shared_state::sync_get_discrepancy_in_data);
     add_method(enum_synonym(server::server_commands::SyncUpdateDataOnTheServer), this, &shared_state::sync_update_data_on_the_server);
     add_method(enum_synonym(server::server_commands::SyncUpdateBarcode), this, &shared_state::sync_update_barcode);
-    add_method(enum_synonym(server::server_commands::DownloadAppUpdateFile), this, &shared_state::download_app_update_file);
+    add_method(enum_synonym(server::server_commands::DownloadFile), this, &shared_state::download_file);
     add_method(enum_synonym(server::server_commands::GetInformationAboutFile), this, &shared_state::get_information_about_file);
     add_method(enum_synonym(server::server_commands::CheckForUpdates), this, &shared_state::check_for_updates);
     add_method(enum_synonym(server::server_commands::UploadFile), this, &shared_state::upload_file);
     add_method(enum_synonym(server::server_commands::GetDatabaseTables), this, &shared_state::get_database_tables);
+    add_method(enum_synonym(server::server_commands::FileToDatabase), this, &shared_state::file_to_database);
+    add_method(enum_synonym(server::server_commands::ProfileDirFileList), this, &shared_state::profile_directory_file_list);
 
     run_server_tasks();
 
@@ -2154,7 +2156,7 @@ void shared_state::run_server_tasks() {
         arcirk::services::task_options opt1{};
         opt1.end_task = 0;
         opt1.start_task = 0;
-        opt1.interval = 60;
+        opt1.interval = 1800;
         opt1.name = "ExchangePlan";
         opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt1.allowed = true;
@@ -2357,14 +2359,14 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
 }
 
 arcirk::server::server_command_result
-shared_state::download_app_update_file(const variant_t &param, const variant_t &session_id) {
+shared_state::download_file(const variant_t &param, const variant_t &session_id) {
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     nlohmann::json param_{};
     arcirk::server::server_command_result result;
     try {
-        init_default_result(result, uuid, arcirk::server::DownloadAppUpdateFile, arcirk::database::roles::dbAdministrator
-                ,param_, param);
+        init_default_result(result, uuid, arcirk::server::DownloadFile, arcirk::database::roles::dbAdministrator
+                , param_, param);
     } catch (const std::exception &e) {
         throw native_exception(e.what());
     }
@@ -2640,4 +2642,369 @@ arcirk::server::server_command_result shared_state::get_database_tables(const va
     }
     return result;
 
+}
+
+arcirk::server::server_command_result shared_state::file_to_database(const variant_t &param,
+                                                                     const variant_t &session_id) {
+
+    using namespace arcirk::database;
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::FileToDatabase, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto file_name = param_.value("file_name", "");
+    auto table_name = param_.value("table_name", "");
+
+    if(file_name.empty() || table_name.empty())
+        throw native_exception("Ошибка в параметрах запроса!");
+
+
+    fs::path file(sett.ServerWorkingDirectory);
+    file /= sett.Version;
+    file /= file_name;
+
+    if(!fs::exists(file))
+        throw native_exception("Файл не найден!");
+
+    if(fs::is_directory(file))
+        throw native_exception("Файл является директорией!");
+
+    task_manager->stop();
+    log("shared_state::file_to_database", "Все назначенные задания временно остановлены.");
+
+    const auto sql_format = (builder::sql_database_type)sett.SQLFormat;
+    auto sql = soci_initialize();
+
+    auto callback = std::function<void()>(std::bind(&shared_state::start_tasks, this));
+
+    auto m_worker= new boost::thread([&file, &table_name, &sql_format, &sql, &callback]()
+           {
+               log("shared_state::file_to_database", arcirk::str_sample("Начало загрузки данных из файла %1% в таблицу %2%.", file.filename().string(), table_name));
+               log("shared_state::file_to_database", "Чтение файла ...");
+
+               ByteArray data;
+               arcirk::read_file(file.string(), data);
+               if(data.empty())
+                   throw native_exception("Ошибка чтения файла!");
+
+               auto text = arcirk::byte_array_to_string(data);
+
+               log("shared_state::file_to_database", "Парсинг json ...");
+               auto j = json::parse(text);
+
+               if(!j.is_array())
+                   throw native_exception("Ошибка формата файла!");
+
+               std::set<std::string> query_strings;
+
+               auto query = builder::query_builder();
+               query.set_databaseType(sql_format);
+
+               auto rs = query.select(json{"ref"}).from(table_name).exec(*sql);
+               std::vector<std::string> refs;
+               log("shared_state::file_to_database", "Подготовка к импорту ...");
+
+               for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+                   row const& row = *itr;
+                   refs.push_back(row.get<std::string>(0));
+               }
+               int row_count = (int)refs.size();
+               log("shared_state::file_to_database", arcirk::str_sample("Текущее количество записей в таблице %1%", std::to_string(row_count).c_str()));
+
+               for (auto itr = j.begin(); itr != j.end() ; ++itr) {
+
+                   auto obj = *itr;
+                   if(!obj.is_object())
+                       continue;
+
+                   std::string  ref = obj["ref"].get<std::string>();
+                   bool is_exists = std::find(refs.begin(), refs.end(), ref) != refs.end();
+                   query.clear();
+                   query.use(obj);
+                   if(is_exists){
+                       query_strings.insert(query.update(table_name, true).where(json{
+                               {"ref", obj["ref"].get<std::string>()}
+                       }, true).prepare());
+                   }else{
+                       query_strings.insert(query.insert(table_name, true).prepare());
+                   }
+               }
+               log("shared_state::file_to_database", "Применение изменений ...");
+
+               if((int)query_strings.size() != 0){
+                   std::set<std::string> s;
+
+                   int count = 0;
+
+                   for (auto const& str : query_strings) {
+                       count++;
+                       if(count < 10000)
+                           s.insert(str);
+                       else{
+                           auto tr = soci::transaction(*sql);
+                           for (auto const& q : s) {
+                               *sql << q;
+                           }
+                           tr.commit();
+                           count = 0;
+                           s.clear();
+                           s.insert(str);
+                           log("shared_state::file_to_database", "Успешно добавлено/обновлено 10000 записей ..");
+                       }
+                   }
+                   if(s.size() > 0){
+                       count = (int)s.size();
+                       auto tr = soci::transaction(*sql);
+                       for (auto const& q : s) {
+                           *sql << q;
+                       }
+                       tr.commit();
+                       log("shared_state::file_to_database", arcirk::str_sample("Успешно добавлено/обновлено %1% записей ..", std::to_string(count)).c_str());
+                   }
+               }
+
+               log("shared_state::file_to_database", arcirk::str_sample("Загрузка данных из файла %1% в таблицу %2% окончена.", file.filename().string(), table_name));
+
+               callback();
+           }
+    );
+
+//    log("shared_state::file_to_database", arcirk::str_sample("Начало загрузки данных из файла %1% в таблицу %2%.", file.filename().string(), table_name));
+//    log("shared_state::file_to_database", "Чтение файла ...");
+//    ByteArray data;
+//    arcirk::read_file(file.string(), data);
+//    if(data.empty())
+//        throw native_exception("Ошибка чтения файла!");
+//
+//    auto text = arcirk::byte_array_to_string(data);
+//
+//    log("shared_state::file_to_database", "Парсинг json ...");
+//    auto j = json::parse(text);
+//
+//    if(!j.is_array())
+//        throw native_exception("Ошибка формата файла!");
+//
+//
+//    auto sql = soci_initialize();
+//    std::set<std::string> query_strings;
+//
+//    auto query = builder::query_builder();
+//    query.set_databaseType((builder::sql_database_type)sett.SQLFormat);
+
+//    auto rs = query.select(json{"ref"}).from(table_name).exec(*sql);
+//    std::vector<std::string> refs;
+//    log("shared_state::file_to_database", "Подготовка к импорту ...");
+//
+//    for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+//        row const& row = *itr;
+//        refs.push_back(row.get<std::string>(0));
+//    }
+//
+//    log("shared_state::file_to_database", arcirk::str_sample("Текущее количество записей в таблице %1%"), std::to_string((int)refs.size()).c_str());
+
+//    for (auto itr = j.begin(); itr != j.end() ; ++itr) {
+//
+//        auto obj = *itr;
+//        if(!obj.is_object())
+//            continue;
+//
+//        std::string  ref = obj["ref"].get<std::string>();
+//        bool is_exists = std::find(refs.begin(), refs.end(), ref) != refs.end();
+//        query.clear();
+//        query.use(obj);
+//        if(is_exists){
+//            query_strings.insert(query.update(table_name, true).where(json{
+//                    {"ref", obj["ref"].get<std::string>()}
+//            }, true).prepare());
+//        }else{
+//            query_strings.insert(query.insert(table_name, true).prepare());
+//        }
+//    }
+//    log("shared_state::file_to_database", "Применение изменений ...");
+
+//    if(query_strings.size() != 0){
+//        std::set<std::string> s;
+//
+//        int count = 0;
+//
+//        for (auto const& str : query_strings) {
+//            count++;
+//            if(count < 10000)
+//                s.insert(str);
+//            else{
+//                auto tr = soci::transaction(*sql);
+//                for (auto const& q : s) {
+//                    *sql << q;
+//                }
+//                tr.commit();
+//                count = 0;
+//                s.clear();
+//                s.insert(str);
+//                log("shared_state::file_to_database", "Успешно добавлено/обновлено 10000 записей ..");
+//            }
+//        }
+//        if(s.size() > 0){
+//            int count = (int)s.size();
+//            auto tr = soci::transaction(*sql);
+//            for (auto const& q : s) {
+//                *sql << q;
+//            }
+//            tr.commit();
+//            log("shared_state::file_to_database", arcirk::str_sample("Успешно добавлено/обновлено %1% записей ..", std::to_string(count)).c_str());
+//        }
+//    }
+
+//    log("shared_state::file_to_database", arcirk::str_sample("Загрузка данных из файла %1% в таблицу %2% окончена.", file.filename().string(), table_name));
+
+    m_worker->join();
+
+//    task_manager->run();
+//
+//    log("shared_state::file_to_database", "Все назначенные задания запущены.");
+
+    result.message = "OK";
+    return result;
+
+}
+
+void shared_state::start_tasks() {
+    if(!task_manager->is_started()){
+        task_manager->run();
+        log("shared_state::file_to_database", "Все назначенные задания запущены.");
+    }
+}
+
+arcirk::server::server_command_result shared_state::profile_directory_file_list(const variant_t &param, const variant_t &session_id) {
+
+    using namespace arcirk::database;
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::ProfileDirFileList, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto dir_name = param_.value("parent", "");
+    auto recursive = param_.value("recursive", true);
+    auto table = param_.value("table", true);
+    auto empty_col = param_.value("empty_column", false);
+
+    fs::path dir(sett.ServerWorkingDirectory);
+    dir /= sett.Version;
+    fs::path profile(dir);
+    if(!dir_name.empty())
+        profile /= dir_name;
+
+    if(!fs::is_directory(profile))
+        throw native_exception("Объект не является директорией или не существует!");
+
+    json res = nlohmann::json::object();
+    if(table){
+        auto columns = json::array();
+        if(empty_col)
+            columns += "empty";
+        std::vector<std::string> cls{"name", "path", "is_group", "parent", "size"};
+        for (auto const& it : cls) {
+            columns += it;
+        }
+        res["columns"] = columns;
+    }
+
+    auto rows = nlohmann::json::array();
+    if(recursive){
+        for (fs::recursive_directory_iterator it(profile), end; it != end; ++it) {
+            //std::cout << *it << std::endl;
+            auto row = json::object();
+            fs::path path_(*it);
+            auto pr = dir.string();
+            auto di = path_.string();
+            if(empty_col)
+                row["empty"] = " ";
+            row["name"] = path_.filename().string();
+            row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
+            row["is_group"] = fs::is_directory(path_) ? 1 : 0;
+            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            row["size"] = fs::is_directory(path_) ? 0 : (int)fs::file_size(*it);
+            rows += row;
+            //std::cout << row.dump() << std::endl;
+        }
+    }else{
+//        std::vector<boost::filesystem::path> files_in_directory;
+//        std::copy(fs::directory_iterator(profile), fs::directory_iterator(), std::back_inserter(files_in_directory));
+//        std::sort(files_in_directory.begin(), files_in_directory.end(),  [](auto const& a, auto const& b) {
+//            return fs::is_directory(a) && fs::is_directory(b);
+//        });
+        std::vector<fs::path> files;
+        std::vector<fs::path> folders;
+        std::vector<fs::path> rs;
+
+
+
+//        for (auto const& it : files_in_directory) {
+//            //std::cout << filename << std::endl; // printed in alphabetical order
+//            auto row = json::object();
+//            fs::path path_(it);
+//            auto pr = dir.string();
+//            auto di = path_.string();
+//            if(empty_col)
+//                row["empty"] = " ";
+//            row["name"] = path_.filename().string();
+//            row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
+//            row["is_group"] = fs::is_directory(path_) ? 1 : 0;
+//            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+//            rows += row;
+//        }
+        for (fs::directory_iterator it(profile), end; it != end; ++it) {
+            //std::cout << *it << std::endl;
+            if(fs::is_directory(*it))
+                folders.push_back(*it);
+            else
+                files.push_back(*it);
+            //std::cout << row.dump() << std::endl;
+        }
+
+        for (auto const& it: folders) {
+            rs.push_back(it);
+        }
+
+        for (auto const& it: files) {
+            rs.push_back(it);
+        }
+
+        for (auto const& it: rs) {
+            auto row = json::object();
+            fs::path path_(it);
+            auto pr = dir.string();
+            auto di = path_.string();
+            if(empty_col)
+                row["empty"] = " ";
+            row["name"] = path_.filename().string();
+            row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
+            row["is_group"] = fs::is_directory(path_) ? 1 : 0;
+            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            row["size"] = fs::is_directory(path_) ? 0 : (int)fs::file_size(it);
+            rows += row;
+        }
+
+    }
+    res["rows"] = rows;
+    result.message = "OK";
+    result.result = arcirk::base64::base64_encode(res.dump());
+    return result;
 }

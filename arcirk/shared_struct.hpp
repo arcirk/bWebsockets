@@ -177,11 +177,13 @@ namespace arcirk::server{
         SyncUpdateDataOnTheServer, //Обновляет данные на сервере по запросу клиента
         WebDavServiceConfiguration, //Получить настройки WebDav
         SyncUpdateBarcode, //синхронизирует на сервере штрихкод и номенклатуру по запросу клиента с сервером 1с
-        DownloadAppUpdateFile, //Загружает файл в каталог bin (каталог bin используется для хранения релизов клиентских программ)
+        DownloadFile, //Загружает файл на сервер
         GetInformationAboutFile, //получить информацию о файле
         CheckForUpdates, //поиск фалов обрновления
         UploadFile, //скачать файл
         GetDatabaseTables,
+        FileToDatabase, //Загрузка таблицы базы данных из файла
+        ProfileDirFileList,
         CMD_INVALID=-1,
     };
 
@@ -207,11 +209,13 @@ namespace arcirk::server{
         {SyncUpdateDataOnTheServer, "SyncUpdateDataOnTheServer"}    ,
         {WebDavServiceConfiguration, "WebDavServiceConfiguration"}    ,
         {SyncUpdateBarcode, "SyncUpdateBarcode"}    ,
-        {DownloadAppUpdateFile, "DownloadAppUpdateFile"}    ,
+        {DownloadFile, "DownloadFile"}    ,
         {GetInformationAboutFile, "GetInformationAboutFile"}    ,
         {CheckForUpdates, "CheckForUpdates"}    ,
         {UploadFile, "UploadFile"}    ,
         {GetDatabaseTables, "GetDatabaseTables"}    ,
+        {FileToDatabase, "FileToDatabase"}    ,
+        {ProfileDirFileList, "ProfileDirFileList"}    ,
     })
 
 }

@@ -151,17 +151,17 @@ std::string WebCore::get_server_commands() {
     json_nl commands = {
             {enum_synonym(server_commands::ServerVersion), enum_synonym(server_commands::ServerVersion)},
             {enum_synonym(server_commands::ServerOnlineClientsList), enum_synonym(server_commands::ServerVersion)},
-            {enum_synonym(server_commands::SetClientParam), enum_synonym(server_commands::ServerVersion)},
-            {enum_synonym(server_commands::ServerConfiguration), enum_synonym(server_commands::ServerConfiguration)},
-            {enum_synonym(server_commands::UserInfo), enum_synonym(server_commands::UserInfo)},
-            {enum_synonym(server_commands::InsertOrUpdateUser), enum_synonym(server_commands::InsertOrUpdateUser)},
-            {enum_synonym(server_commands::ExecuteSqlQuery), enum_synonym(server_commands::ExecuteSqlQuery)},
+            {enum_synonym(server_commands::SetClientParam),            enum_synonym(server_commands::ServerVersion)},
+            {enum_synonym(server_commands::ServerConfiguration),       enum_synonym(server_commands::ServerConfiguration)},
+            {enum_synonym(server_commands::UserInfo),                  enum_synonym(server_commands::UserInfo)},
+            {enum_synonym(server_commands::InsertOrUpdateUser),        enum_synonym(server_commands::InsertOrUpdateUser)},
+            {enum_synonym(server_commands::ExecuteSqlQuery),           enum_synonym(server_commands::ExecuteSqlQuery)},
             {enum_synonym(server_commands::UpdateServerConfiguration), enum_synonym(server_commands::UpdateServerConfiguration)},
             {enum_synonym(server_commands::InsertToDatabaseFromArray), enum_synonym(server_commands::InsertToDatabaseFromArray)},
-            {enum_synonym(server_commands::SetNewDeviceId), enum_synonym(server_commands::SetNewDeviceId)},
-            {enum_synonym(server_commands::ObjectSetToDatabase), enum_synonym(server_commands::ObjectSetToDatabase)},
-            {enum_synonym(server_commands::ObjectGetFromDatabase), enum_synonym(server_commands::ObjectGetFromDatabase)},
-            {enum_synonym(server_commands::DownloadAppUpdateFile), enum_synonym(server_commands::DownloadAppUpdateFile)},
+            {enum_synonym(server_commands::SetNewDeviceId),            enum_synonym(server_commands::SetNewDeviceId)},
+            {enum_synonym(server_commands::ObjectSetToDatabase),       enum_synonym(server_commands::ObjectSetToDatabase)},
+            {enum_synonym(server_commands::ObjectGetFromDatabase),     enum_synonym(server_commands::ObjectGetFromDatabase)},
+            {enum_synonym(server_commands::DownloadFile),              enum_synonym(server_commands::DownloadFile)},
     };
 
     return commands.dump();
