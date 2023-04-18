@@ -184,6 +184,7 @@ namespace arcirk::server{
         GetDatabaseTables,
         FileToDatabase, //Загрузка таблицы базы данных из файла
         ProfileDirFileList,
+        ProfileDeleteFile,
         CMD_INVALID=-1,
     };
 
@@ -216,6 +217,7 @@ namespace arcirk::server{
         {GetDatabaseTables, "GetDatabaseTables"}    ,
         {FileToDatabase, "FileToDatabase"}    ,
         {ProfileDirFileList, "ProfileDirFileList"}    ,
+        {ProfileDeleteFile, "ProfileDeleteFile"}    ,
     })
 
 }

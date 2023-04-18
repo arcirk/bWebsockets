@@ -113,7 +113,7 @@ class http_session
     // The parser is stored in an optional container so we can
     // construct it from scratch it at the beginning of each new message.
     boost::optional<http::request_parser<http::string_body>> parser_;
-
+    //boost::optional<http::request_parser<http::dynamic_body>> parser_;
 protected:
     beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
@@ -234,7 +234,13 @@ public:
                 const auto body = req_.body();
                 std::string result;
                 try{
-                    result = state_->handle_request(body, static_cast<std::string>(req_[http::field::authorization]));
+                    //auto body_s = boost::beast::buffers_to_string(buffer_.data());
+                    std::string content_type = static_cast<std::string>(req[http::field::content_type]);
+                    std::string content_disp = static_cast<std::string>(req[http::field::content_disposition]);
+                    if(content_type == "multipart/form-data"){
+                        result = state_->save_file(content_disp, body);
+                    }else
+                        result = state_->handle_request(body, static_cast<std::string>(req_[http::field::authorization]));
                 }catch (std::exception &e) {
                     return queue_(bad_request(e.what()));
                 }

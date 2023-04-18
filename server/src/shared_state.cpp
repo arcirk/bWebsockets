@@ -49,6 +49,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::GetDatabaseTables), this, &shared_state::get_database_tables);
     add_method(enum_synonym(server::server_commands::FileToDatabase), this, &shared_state::file_to_database);
     add_method(enum_synonym(server::server_commands::ProfileDirFileList), this, &shared_state::profile_directory_file_list);
+    add_method(enum_synonym(server::server_commands::ProfileDeleteFile), this, &shared_state::delete_file);
 
     run_server_tasks();
 
@@ -2372,6 +2373,8 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
     }
 
     std::string url_file = param_["file_name"];
+    std::string destantion = param_["destantion"];
+    ByteArray data = param_.value("data", ByteArray{});
 
     if(url_file.empty())
         throw native_exception("Не верные параметры команды!");
@@ -2382,7 +2385,8 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
 
     path catalog(sett.ServerWorkingDirectory);
     catalog /= sett.Version;
-    catalog /= "bin";
+    if(!destantion.empty())
+        catalog /= destantion;
 
     path file(url.Protocol != "file" ? url_file : url.Path);
     auto dest = catalog  /  file.filename();
@@ -2391,53 +2395,62 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
         throw native_exception("Не верная структура каталогов на сервере!");
     }
 
-    std::string protocol = url.Protocol;
-    if(protocol == "file"){
+    if(data.size() == 0){
+        //Записываем с
+        std::string protocol = url.Protocol;
+        if(protocol == "file"){
 
-        if(!exists(file)){
-            throw native_exception("Файл не найден!");
+            if(!exists(file)){
+                throw native_exception("Файл не найден!");
+            }else{
+                if(exists(dest))
+                    remove(dest);
+
+                copy_file(
+                        file,
+                        dest
+                );
+            }
         }else{
+            using namespace WebDAV;
+            auto dav_custom_param = param_.value("dav_param", nlohmann::json{});
+            dict_t dav_param;
+            if(!dav_custom_param.empty()){
+                dav_param.emplace("webdav_hostname", dav_custom_param["webdav_hostname"]);
+                dav_param.emplace("webdav_root", dav_custom_param["webdav_root"]);
+                dav_param.emplace("webdav_username", dav_custom_param["webdav_username"]);
+                dav_param.emplace("webdav_password", dav_custom_param["webdav_password"]);
+            }else{
+                dav_param.emplace("webdav_hostname", sett.WebDavHost);
+                dav_param.emplace("webdav_root", arcirk::str_sample("/remote.php/dav/files/%1%/", sett.WebDavUser));
+                dav_param.emplace("webdav_username", sett.WebDavUser);
+                dav_param.emplace("webdav_password", sett.WebDavPwd);
+            }
+
+            auto dav = Client(dav_param);
+            auto is_exists = dav.check(file.filename().string());
+
+            if(!is_exists)
+                throw native_exception("Файл на удаленном ресурсе не найден!");
+
             if(exists(dest))
                 remove(dest);
 
-            copy_file(
-                    file,
-                    dest
-            );
+            //Синхронно копируем файл
+            auto res = dav.download(file.filename().string(), dest.string());
+
+            if(!res){
+                result.message = "error";
+                return result;
+            }
         }
+
     }else{
-        using namespace WebDAV;
-        auto dav_custom_param = param_.value("dav_param", nlohmann::json{});
-        dict_t dav_param;
-        if(!dav_custom_param.empty()){
-            dav_param.emplace("webdav_hostname", dav_custom_param["webdav_hostname"]);
-            dav_param.emplace("webdav_root", dav_custom_param["webdav_root"]);
-            dav_param.emplace("webdav_username", dav_custom_param["webdav_username"]);
-            dav_param.emplace("webdav_password", dav_custom_param["webdav_password"]);
-        }else{
-            dav_param.emplace("webdav_hostname", sett.WebDavHost);
-            dav_param.emplace("webdav_root", arcirk::str_sample("/remote.php/dav/files/%1%/", sett.WebDavUser));
-            dav_param.emplace("webdav_username", sett.WebDavUser);
-            dav_param.emplace("webdav_password", sett.WebDavPwd);
-        }
 
-        auto dav = Client(dav_param);
-        auto is_exists = dav.check(file.filename().string());
+        arcirk::write_file(dest.string(), data);
 
-        if(!is_exists)
-            throw native_exception("Файл на удаленном ресурсе не найден!");
-
-        if(exists(dest))
-            remove(dest);
-
-        //Синхронно копируем файл
-        auto res = dav.download(file.filename().string(), dest.string());
-
-        if(!res){
-            result.message = "error";
-            return result;
-        }
     }
+
 
     result.message = "OK";
     return result;
@@ -2779,98 +2792,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
            }
     );
 
-//    log("shared_state::file_to_database", arcirk::str_sample("Начало загрузки данных из файла %1% в таблицу %2%.", file.filename().string(), table_name));
-//    log("shared_state::file_to_database", "Чтение файла ...");
-//    ByteArray data;
-//    arcirk::read_file(file.string(), data);
-//    if(data.empty())
-//        throw native_exception("Ошибка чтения файла!");
-//
-//    auto text = arcirk::byte_array_to_string(data);
-//
-//    log("shared_state::file_to_database", "Парсинг json ...");
-//    auto j = json::parse(text);
-//
-//    if(!j.is_array())
-//        throw native_exception("Ошибка формата файла!");
-//
-//
-//    auto sql = soci_initialize();
-//    std::set<std::string> query_strings;
-//
-//    auto query = builder::query_builder();
-//    query.set_databaseType((builder::sql_database_type)sett.SQLFormat);
-
-//    auto rs = query.select(json{"ref"}).from(table_name).exec(*sql);
-//    std::vector<std::string> refs;
-//    log("shared_state::file_to_database", "Подготовка к импорту ...");
-//
-//    for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
-//        row const& row = *itr;
-//        refs.push_back(row.get<std::string>(0));
-//    }
-//
-//    log("shared_state::file_to_database", arcirk::str_sample("Текущее количество записей в таблице %1%"), std::to_string((int)refs.size()).c_str());
-
-//    for (auto itr = j.begin(); itr != j.end() ; ++itr) {
-//
-//        auto obj = *itr;
-//        if(!obj.is_object())
-//            continue;
-//
-//        std::string  ref = obj["ref"].get<std::string>();
-//        bool is_exists = std::find(refs.begin(), refs.end(), ref) != refs.end();
-//        query.clear();
-//        query.use(obj);
-//        if(is_exists){
-//            query_strings.insert(query.update(table_name, true).where(json{
-//                    {"ref", obj["ref"].get<std::string>()}
-//            }, true).prepare());
-//        }else{
-//            query_strings.insert(query.insert(table_name, true).prepare());
-//        }
-//    }
-//    log("shared_state::file_to_database", "Применение изменений ...");
-
-//    if(query_strings.size() != 0){
-//        std::set<std::string> s;
-//
-//        int count = 0;
-//
-//        for (auto const& str : query_strings) {
-//            count++;
-//            if(count < 10000)
-//                s.insert(str);
-//            else{
-//                auto tr = soci::transaction(*sql);
-//                for (auto const& q : s) {
-//                    *sql << q;
-//                }
-//                tr.commit();
-//                count = 0;
-//                s.clear();
-//                s.insert(str);
-//                log("shared_state::file_to_database", "Успешно добавлено/обновлено 10000 записей ..");
-//            }
-//        }
-//        if(s.size() > 0){
-//            int count = (int)s.size();
-//            auto tr = soci::transaction(*sql);
-//            for (auto const& q : s) {
-//                *sql << q;
-//            }
-//            tr.commit();
-//            log("shared_state::file_to_database", arcirk::str_sample("Успешно добавлено/обновлено %1% записей ..", std::to_string(count)).c_str());
-//        }
-//    }
-
-//    log("shared_state::file_to_database", arcirk::str_sample("Загрузка данных из файла %1% в таблицу %2% окончена.", file.filename().string(), table_name));
-
     m_worker->join();
-
-//    task_manager->run();
-//
-//    log("shared_state::file_to_database", "Все назначенные задания запущены.");
 
     result.message = "OK";
     return result;
@@ -2929,7 +2851,7 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
     auto rows = nlohmann::json::array();
     if(recursive){
         for (fs::recursive_directory_iterator it(profile), end; it != end; ++it) {
-            //std::cout << *it << std::endl;
+            //ToDo: Исправить код
             auto row = json::object();
             fs::path path_(*it);
             auto pr = dir.string();
@@ -2945,31 +2867,11 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
             //std::cout << row.dump() << std::endl;
         }
     }else{
-//        std::vector<boost::filesystem::path> files_in_directory;
-//        std::copy(fs::directory_iterator(profile), fs::directory_iterator(), std::back_inserter(files_in_directory));
-//        std::sort(files_in_directory.begin(), files_in_directory.end(),  [](auto const& a, auto const& b) {
-//            return fs::is_directory(a) && fs::is_directory(b);
-//        });
+
         std::vector<fs::path> files;
         std::vector<fs::path> folders;
         std::vector<fs::path> rs;
 
-
-
-//        for (auto const& it : files_in_directory) {
-//            //std::cout << filename << std::endl; // printed in alphabetical order
-//            auto row = json::object();
-//            fs::path path_(it);
-//            auto pr = dir.string();
-//            auto di = path_.string();
-//            if(empty_col)
-//                row["empty"] = " ";
-//            row["name"] = path_.filename().string();
-//            row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
-//            row["is_group"] = fs::is_directory(path_) ? 1 : 0;
-//            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
-//            rows += row;
-//        }
         for (fs::directory_iterator it(profile), end; it != end; ++it) {
             //std::cout << *it << std::endl;
             if(fs::is_directory(*it))
@@ -3007,4 +2909,35 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
     result.message = "OK";
     result.result = arcirk::base64::base64_encode(res.dump());
     return result;
+}
+
+arcirk::server::server_command_result shared_state::delete_file(const variant_t &param, const variant_t &session_id) {
+
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::ProfileDeleteFile, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto file_name = param_.value("file_name", "");
+
+    fs::path file(sett.ServerWorkingDirectory);
+    file /= sett.Version;
+    file /= file_name;
+
+    if(!fs::exists(file))
+        throw native_exception("Файл не найден!");
+
+    bool res = fs::remove(file);
+
+    result.message = res ? "OK" : "error";
+    return result;
+
 }

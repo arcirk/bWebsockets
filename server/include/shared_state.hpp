@@ -171,6 +171,7 @@ public:
     arcirk::server::server_command_result get_database_tables(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result file_to_database(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result profile_directory_file_list(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result delete_file(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
@@ -198,6 +199,39 @@ public:
     bool edit_table_only_admin(const std::string& table_name);
 
     void start_tasks();
+
+    std::string save_file(const std::string& content_disp, const std::string& body) const{
+        T_vec vec = arcirk::split(content_disp, ";");
+        std::string file_name;
+        std::string destantion;
+        for (auto const& itr : vec) {
+            T_vec val = arcirk::split(itr, "=");
+            if(val.size() == 2){
+                if(val[0] == "file_name"){
+                    file_name = val[1];
+                    boost::erase_all(file_name, "\"");
+                }else if(val[0] == "destantion"){
+                    destantion = val[1];
+                    boost::erase_all(destantion, "\"");
+                }
+            }
+        }
+        namespace fs = boost::filesystem;
+        fs::path file(sett.ServerWorkingDirectory);
+        file /= sett.Version;
+        file /= destantion;
+        file /= file_name;
+
+        ByteArray bt = arcirk::string_to_byte_array(body);
+        arcirk::write_file(file.string(), bt);
+
+        arcirk::server::server_response resp;
+        resp.command = arcirk::enum_synonym(arcirk::server::server_commands::DownloadFile);
+        resp.message = "OK";
+        resp.result = "success";
+        resp.version = ARCIRK_VERSION;
+        return pre::json::to_json(resp).dump();
+    }
 
 private:
    //arcirk::database::soci_wrapper sql_wp;
