@@ -185,6 +185,7 @@ namespace arcirk::server{
         FileToDatabase, //Загрузка таблицы базы данных из файла
         ProfileDirFileList,
         ProfileDeleteFile,
+        DeviceGetFullInfo,
         CMD_INVALID=-1,
     };
 
@@ -218,6 +219,7 @@ namespace arcirk::server{
         {FileToDatabase, "FileToDatabase"}    ,
         {ProfileDirFileList, "ProfileDirFileList"}    ,
         {ProfileDeleteFile, "ProfileDeleteFile"}    ,
+        {DeviceGetFullInfo, "DeviceGetFullInfo"}    ,
     })
 
 }

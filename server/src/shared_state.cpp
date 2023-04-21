@@ -16,6 +16,8 @@
 
 #include <wdclient.hpp>
 
+typedef std::vector<arcirk::database::tables> Tables_v;
+
 shared_state::shared_state(){
 
     using namespace arcirk::server;
@@ -50,6 +52,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::FileToDatabase), this, &shared_state::file_to_database);
     add_method(enum_synonym(server::server_commands::ProfileDirFileList), this, &shared_state::profile_directory_file_list);
     add_method(enum_synonym(server::server_commands::ProfileDeleteFile), this, &shared_state::delete_file);
+    add_method(enum_synonym(server::server_commands::DeviceGetFullInfo), this, &shared_state::device_get_full_info);
 
     run_server_tasks();
 
@@ -1134,7 +1137,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                     result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text, line_number, empty_column));
                 else{
                     query.execute(*sql, {}, true);
-                    result.result = "{}";
+                    result.result = "success";
                 }
             }
         }
@@ -1874,10 +1877,12 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
                              ");\n", temp_table));
 
         temp_pref = "##";
-    }
 
-    *sql << sql_ddl;
+    }
     try {
+
+        *sql << sql_ddl;
+
         if (ext_table.is_array() && !ext_table.empty()) {
             for (auto itr = ext_table.begin(); itr != ext_table.end(); ++itr) {
                 nlohmann::json r = *itr;
@@ -1887,6 +1892,10 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
                 *sql << sql_ddl;
             }
         }
+        //std::cout << sql_ddl << std::endl;
+        //*sql << sql_ddl;
+        tr.commit();
+
     } catch (std::exception const &e) {
         fail("shared_state::sync_get_discrepancy_in_data", e.what());
         result.message = "error";
@@ -1894,9 +1903,7 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
     }
 
 
-    //std::cout << sql_ddl << std::endl;
-    *sql << sql_ddl;
-    tr.commit();
+
 
     sql_ddl = "";
 
@@ -1944,7 +1951,7 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
 //                       "       )\n"
 //                       " GROUP BY ref;");
 
-    nlohmann::json result_j{};
+    auto result_j = nlohmann::json::object();
     //std::cout << sql_ddl << std::endl;
     soci::rowset<soci::row> rs = (sql->prepare << sql_ddl);
 
@@ -2938,6 +2945,93 @@ arcirk::server::server_command_result shared_state::delete_file(const variant_t 
     bool res = fs::remove(file);
 
     result.message = res ? "OK" : "error";
+    result.result = res ? "success" : "error";
     return result;
 
+}
+
+arcirk::server::server_command_result shared_state::device_get_full_info(const variant_t &param,
+                                                                         const variant_t &session_id) {
+    using namespace arcirk::database;
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+    using namespace soci;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::DeviceGetFullInfo, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto device = param_.value("device", "");
+    if(device.empty())
+        throw native_exception("Не указано устройство!");
+
+    auto sql = soci_initialize();
+    auto query = builder::query_builder();
+    query.set_databaseType((builder::sql_database_type)sett.SQLFormat);
+    int count = 0;
+    *sql << "use arcirk_v110;";
+    auto rs = query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
+            {"ref", device}
+    }, true).exec(*sql, {}, true);
+//    soci::rowset<soci::row> rs = *sql << (sql->prepare <<  query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
+//            {"ref", device}
+//    }, true).prepare());
+//
+    json struct_dev{};
+    //получаем данные устройства
+    for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+        count++;
+        const soci::row &row_ = *itr;
+        struct_dev = database::row_to_json(row_);
+    }
+
+    if(count == 0)
+        throw native_exception("Устройство не найдено!");
+
+    //получаем данные подчиненных таблиц
+    Tables_v tables{};
+    tables.push_back(tables::tbOrganizations);
+    tables.push_back(tables::tbSubdivisions);
+    tables.push_back(tables::tbWarehouses);
+    tables.push_back(tables::tbPriceTypes);
+    tables.push_back(tables::tbWorkplaces);
+    tables.push_back(tables::tbDevicesType);
+
+    auto tables_j = json::object();
+
+    for (auto itr : tables) {
+        auto columns = json::array();
+        auto rows = json::array();
+        auto def_struct = database::table_default_json(itr);
+        auto items = def_struct.items();
+        for (auto it = items.begin();  it != items.end() ; ++it) {
+            columns += it.key();
+        }
+        query.clear();
+        auto rs_ = query.select().from(arcirk::enum_synonym(itr)).exec(*sql, {}, true);
+        for (rowset<row>::const_iterator row_it = rs_.begin(); row_it != rs_.end(); ++row_it) {
+            const soci::row &row_ = *row_it;
+            rows += database::row_to_json(row_);
+        }
+
+        tables_j[arcirk::enum_synonym(itr)] = json{
+                {"columns", columns},
+                {"rows", rows}
+        };
+    }
+
+    json res{
+            {"device", struct_dev},
+            {"tables", tables_j}
+    };
+
+    result.message = "OK";
+    result.result = arcirk::base64::base64_encode(res.dump());
+    return result;
 }

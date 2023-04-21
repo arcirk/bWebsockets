@@ -596,7 +596,7 @@ namespace arcirk::database{
                                                   "[second] [varchar](max) NULL,\n"
                                                   "[ref] [char](36) NOT NULL UNIQUE,\n"
                                                   "[cache] [text] NULL,\n"
-                                                  "[deviceType] [char](36) NULL,\n"
+                                                  "[deviceType] [varchar](max) NULL,\n"
                                                   "[address] [varchar](max) NULL,\n"
                                                   "[workplace] [char](36) NULL,\n"
                                                   "[price_type] [char](36) NULL,\n"
@@ -615,12 +615,14 @@ namespace arcirk::database{
 
     const std::string devises_view_ddl = "CREATE VIEW DevicesView AS\n"
                                          "    SELECT Devices.ref AS ref,\n"
+                                         "           Devices.[first] AS [first],\n"
+                                         "           Devices.second AS second,\n"
+                                         "           Devices.deviceType AS device_type,\n"
                                          "           Organizations.[first] AS organization,\n"
                                          "           Subdivisions.[first] AS subdivision,\n"
                                          "           Warehouses.[first] AS warehouse,\n"
                                          "           PriceTypes.[first] AS price,\n"
-                                         "           Workplaces.[first] AS workplace,\n"
-                                         "           Devices.deviceType AS device_type\n"
+                                         "           Workplaces.[first] AS workplace\n"
                                          "      FROM Devices\n"
                                          "           LEFT JOIN\n"
                                          "           Organizations ON Devices.organization = Organizations.ref\n"
@@ -749,7 +751,6 @@ namespace arcirk::database{
                                            "    ref             TEXT (36) UNIQUE\n"
                                            "                             NOT NULL,\n"
                                            "    barcode         TEXT (128) DEFAULT \"\",\n"
-                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                            "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                            "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
                                            "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
@@ -1056,6 +1057,56 @@ namespace arcirk::database{
         }
     }
 
+    static inline nlohmann::json row_to_json(const soci::row &row){
+        using json = nlohmann::json;
+        using namespace soci;
+
+        json values{};
+        for(std::size_t i = 0; i != row.size(); ++i) {
+            const column_properties & props = row.get_properties(i);
+            std::string column_name = props.get_name();
+            switch(props.get_data_type())
+            {
+                case dt_string:{
+                    auto val = get_value<std::string>(row, i);
+                    values[column_name] = val;
+                }
+                    break;
+                case dt_double:{
+                    auto val = get_value<double>(row, i);
+                    values[column_name] = val;
+                }
+                    break;
+                case dt_integer:{
+                    auto val = get_value<int>(row, i);
+                    values[column_name] = val;
+                }
+                    break;
+                case dt_long_long:{
+                    auto val = get_value<long long>(row, i);
+                    values[column_name] = val;
+                }
+                    break;
+                case dt_unsigned_long_long:{
+                    auto val = get_value<unsigned long long>(row, i);
+                    values[column_name] = val;
+                }
+                    break;
+                case dt_date:
+                    //std::tm when = r.get<std::tm>(i);
+                    values[column_name] = {};
+                    break;
+                case dt_blob:
+                    values[column_name] = {};
+                    break;
+                case dt_xml:
+                    values[column_name] = {};
+                    break;
+            }
+        }
+        return values;
+    }
+
     static inline std::string query_insert(const std::string& table_name, nlohmann::json values){
         std::string result = str_sample("insert into %1% (", table_name);
         std::string string_values;
@@ -1228,6 +1279,7 @@ namespace arcirk::database{
         }
         return result;
     }
+
     static inline void rebase(soci::session& sql, tables table, DatabaseType type, const std::string& database_name = ""){
 
         using namespace soci;

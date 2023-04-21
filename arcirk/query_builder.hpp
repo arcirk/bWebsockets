@@ -723,14 +723,70 @@ namespace arcirk::database::builder {
             }
         }
 
+        bool field_is_exists(const nlohmann::json &object, const std::string &name) {
+            auto itr = object.find(name);
+            return itr != object.end();
+        }
+
         template<typename T>
         std::vector<T> rows_to_array(soci::session& sql){
             if(!is_valid())
                 return std::vector<T>{};
-            soci::rowset<T> rs = (sql.prepare << result);
+            //soci::rowset<T> rs = (sql.prepare << result);
+            auto j = pre::json::to_json(T());
+            soci::rowset<soci::row> rs = (sql.prepare << result);
             std::vector<T> m_vec;
             for (auto it = rs.begin(); it != rs.end(); it++) {
-                T user_data = *it;
+                //T user_data = *it;
+                //T user_data = T();
+                //auto items = j.items();
+                row const& row = *it;
+                for(std::size_t i = 0; i != row.size(); ++i) {
+
+                    const column_properties &props = row.get_properties(i);
+                    std::string column_name = props.get_name();
+
+                    if(field_is_exists(j, column_name)){
+
+                        switch(props.get_data_type())
+                        {
+                            case dt_string:{
+                                auto val = get_value<std::string>(row, i);
+                                j[column_name] =  val;
+                            }
+                                break;
+                            case dt_double:{
+                                auto val = get_value<double>(row, i);
+                                j[column_name] =  val;
+                            }
+                                break;
+                            case dt_integer:{
+                                auto val = get_value<int>(row, i);
+                                j[column_name] =  val;
+                            }
+                                break;
+                            case dt_long_long:{
+                                auto val = get_value<long long>(row, i);
+                                j[column_name] =  val;
+                            }
+                                break;
+                            case dt_unsigned_long_long:{
+                                auto val = get_value<unsigned long long>(row, i);
+                                j[column_name] =  val;
+                            }
+                                break;
+                            case dt_date:
+                                //std::tm when = r.get<std::tm>(i);
+                                break;
+                            case dt_blob:
+                                break;
+                            case dt_xml:
+                                break;
+                        }
+                    }
+
+                }
+                auto user_data = pre::json::from_json<T>(j);
                 m_vec.emplace_back(user_data);
             }
             return m_vec;

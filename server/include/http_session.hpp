@@ -112,8 +112,8 @@ class http_session
 
     // The parser is stored in an optional container so we can
     // construct it from scratch it at the beginning of each new message.
-    boost::optional<http::request_parser<http::string_body>> parser_;
-    //boost::optional<http::request_parser<http::dynamic_body>> parser_;
+    //boost::optional<http::request_parser<http::string_body>> parser_;
+    boost::optional<http::request_parser<http::dynamic_body>> parser_;
 protected:
     beast::flat_buffer buffer_;
     boost::shared_ptr<shared_state> state_;
@@ -139,7 +139,8 @@ public:
 
         // Apply a reasonable limit to the allowed size
         // of the body in bytes to prevent abuse.
-        parser_->body_limit(10000);
+        //parser_->body_limit(10000);
+        parser_->body_limit((std::numeric_limits<std::uint64_t>::max)());
 
         // Set the timeout.
         beast::get_lowest_layer(
@@ -197,7 +198,8 @@ public:
                 //return handle_request(*doc_root_, parser_->release(), queue_, true);
                 if(target.empty() || target == "/")
                     return handle_request(*doc_root_, parser_->release(), queue_);
-                else if(target.substr(0, shared_files_dir.length()) == "/shared_files/releases"){
+                else if((target.substr(0, shared_files_dir.length()) == "/shared_files/releases") ||
+                        (target.substr(0, std::string ("/files").length()) == "/files")){
                     return handle_request(*doc_root_, parser_->release(), queue_);
                 }
             }
@@ -231,16 +233,40 @@ public:
                         return res;
                     };
             if(req_.method() == http::verb::post){
-                const auto body = req_.body();
+                //const auto body = req_.body();
+
                 std::string result;
                 try{
                     //auto body_s = boost::beast::buffers_to_string(buffer_.data());
                     std::string content_type = static_cast<std::string>(req[http::field::content_type]);
                     std::string content_disp = static_cast<std::string>(req[http::field::content_disposition]);
                     if(content_type == "multipart/form-data"){
-                        result = state_->save_file(content_disp, body);
-                    }else
+                        const auto data = req_.body().data();
+                        ByteArray bt(boost::asio::buffer_size(data));
+                        boost::asio::buffer_copy(boost::asio::buffer(bt), data);
+//                        nlohmann::json n_body{
+//                            ""
+//                        };
+//                        vector<unsigned char> data(boost::asio::buffer_size(buffers))
+//                        for (auto it = data.begin(); it != data.end(); it++)
+//                        {
+//                            boost::asio::const_buffer d = *it;
+//                            //const void* a = d.data();
+//                            //BYTE f = (unsigned char*) a;
+//                            bt.push_back((BYTE)d.data());
+//                            //outFile.write(f, d.size());
+//
+//                        }
+//                        //ByteArray bt{};
+//                        char* tempchar = new char[req_.body().data().buffer_bytes()];
+//                        //std::copy(data.begin(), data.end(), &bt);
+//                        boost::asio::buffer_copy(tempchar, data, data.buffer_bytes());
+//                        const auto body = boost::beast::buffers_to_string(data);
+                        result = state_->save_file(content_disp, bt);
+                    }else{
+                        const auto body = boost::beast::buffers_to_string(req_.body().data());
                         result = state_->handle_request(body, static_cast<std::string>(req_[http::field::authorization]));
+                    }
                 }catch (std::exception &e) {
                     return queue_(bad_request(e.what()));
                 }
