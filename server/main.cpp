@@ -285,12 +285,17 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
         std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", data.string());
         sql.open(soci::sqlite3, connection_string);
     }else{
+        if(sett.SQLHost.empty())
+            throw native_exception("Не указан адрес SQL сервера!");
+
         std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
                                                            "SERVER=%1%;Persist Security Info=true;"
                                                            "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, sett.SQLPassword);
         sql.open(soci::odbc, connection_string);
         if(sql.is_connected())
             is_odbc_database(sql);
+        else
+            throw native_exception("Ошибка подключения к серверу баз данных!");
     }
 
     if(!sql.is_connected()){

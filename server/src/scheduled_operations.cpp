@@ -25,11 +25,20 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     nlohmann::json standard_attributes = object.value("СтандартныеРеквизиты", nlohmann::json{});
     nlohmann::json attributes = object.value("Реквизиты", nlohmann::json{});
     struct_json["ref"] = get_string_value<std::string>(standard_attributes, "Ссылка");
-    if(field_is_exists(attributes, "Артикул"))
-        struct_json["first"] = get_string_value<std::string>(attributes, "Артикул");
-    else{
-        struct_json["first"] = get_string_value<std::string>(standard_attributes, "Наименование");
+
+    if(table_name != "Users"){
+        if(field_is_exists(standard_attributes, "Наименование"))
+            struct_json["first"] = get_string_value<std::string>(standard_attributes, "Наименование");
+    }else{
+        if(field_is_exists(standard_attributes, "Код"))
+            struct_json["first"] = get_string_value<std::string>(standard_attributes, "Код");
+        else
+            struct_json["first"] = get_string_value<std::string>(standard_attributes, "Наименование");
     }
+
+    if(field_is_exists(attributes, "Артикул") && field_is_exists(struct_json, "vendor_code"))
+        struct_json["vendor_code"] = get_string_value<std::string>(attributes, "Артикул");
+
     if(field_is_exists(attributes, "НаименованиеПолное"))
         struct_json["second"] = get_string_value<std::string>(attributes, "НаименованиеПолное");
     else
@@ -95,6 +104,11 @@ void scheduled_operations::add_query(const nlohmann::json &object,
     if(field_is_exists(struct_json, "hash")){
         std::string hash = arcirk::get_hash(struct_json["first"], struct_json["ref"]);
         struct_json["hash"] = hash;
+    }
+
+    if(table_name == "Users"){
+        if(struct_json.value("role", "") == "")
+            struct_json["role"] = "user";
     }
 
     soci::rowset<soci::row> rs = (sql.prepare << builder::query_builder().select(nlohmann::json{"*"}).from(table_name).where(nlohmann::json{
@@ -238,8 +252,10 @@ bool scheduled_operations::perform_data_exchange() {
 
 }
 
-scheduled_operations::scheduled_operations(const arcirk::server::server_config &sett) {
-    sett_ = sett;
+scheduled_operations::scheduled_operations(const arcirk::server::server_config &sett)
+: sett_(sett)
+{
+    //sett_ = sett;
     sql_sess = std::make_shared<soci::session>();
 }
 
@@ -261,8 +277,9 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-    std::string user_name = sett_.HSUser;
-    std::string user_pwd = sett_.HSPassword;
+     std::string user_name = sett_.HSUser;
+     const std::string pwd = sett_.HSPassword;
+     std::string user_pwd = arcirk::crypt(pwd, "my_key");
 //    if(!sett_.HSPassword.empty())
 //        user_pwd = arcirk::crypt(sett_.HSPassword, CRYPT_KEY);
 

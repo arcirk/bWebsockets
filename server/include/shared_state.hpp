@@ -173,6 +173,7 @@ public:
     arcirk::server::server_command_result profile_directory_file_list(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result delete_file(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result device_get_full_info(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_tasks(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();

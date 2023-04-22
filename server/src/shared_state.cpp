@@ -24,6 +24,9 @@ shared_state::shared_state(){
 
     sett = server::server_config();
     read_conf(sett, app_directory(), ARCIRK_SERVER_CONF);
+    if(sett.ServerUser.empty()){
+        sett.ServerUser = "admin";
+    }
     add_method(enum_synonym(server::server_commands::ServerVersion), this, &shared_state::server_version);
     add_method(enum_synonym(server::server_commands::ServerOnlineClientsList), this, &shared_state::get_clients_list);
     add_method(enum_synonym(server::server_commands::SetClientParam), this, &shared_state::set_client_param);
@@ -53,6 +56,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ProfileDirFileList), this, &shared_state::profile_directory_file_list);
     add_method(enum_synonym(server::server_commands::ProfileDeleteFile), this, &shared_state::delete_file);
     add_method(enum_synonym(server::server_commands::DeviceGetFullInfo), this, &shared_state::device_get_full_info);
+    add_method(enum_synonym(server::server_commands::GetTasks), this, &shared_state::get_tasks);
 
     run_server_tasks();
 
@@ -2147,7 +2151,7 @@ void shared_state::run_server_tasks() {
             }
         }
     } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        fail("shared_state::run_server_tasks", e.what()) ;
     }
 
     std::vector<arcirk::services::task_options> vec;
@@ -2191,6 +2195,22 @@ void shared_state::run_server_tasks() {
     });
 
     tr.detach();
+    try {
+        auto vec_t = nlohmann::json::array();
+        for (auto itr: vec) {
+            vec_t += pre::json::to_json(itr);
+        }
+
+        std::ofstream out;
+        out.open(conf.string());
+        if (out.is_open()) {
+            out << vec_t.dump();
+        }
+        out.close();
+    } catch (std::exception &e) {
+        fail("shared_state::run_server_tasks", e.what()) ;
+    }
+
 }
 
 void shared_state::exec_server_task(const arcirk::services::task_options &details) {
@@ -2475,6 +2495,8 @@ bool shared_state::init_default_result(arcirk::server::server_command_result &re
 
     std::string param_json = base64_to_string(std::get<std::string>(param_));
     param = nlohmann::json::parse(param_json);
+    if(param.empty())
+        param = nlohmann::json::object();
     result.uuid_form = param.value("uuid_form", arcirk::uuids::nil_string_uuid());
     return true;
 }
@@ -2638,7 +2660,7 @@ arcirk::server::server_command_result shared_state::get_database_tables(const va
                                                                         const variant_t &session_id) {
 
     using namespace arcirk::database;
-    using n_json = nlohmann::json;
+    using json = nlohmann::json;
 
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
@@ -2650,7 +2672,24 @@ arcirk::server::server_command_result shared_state::get_database_tables(const va
     auto sql = soci_initialize();
     auto version = arcirk::server::get_version();
     auto database_tables = arcirk::database::get_database_tables(*sql, arcirk::DatabaseType(sett.SQLFormat), pre::json::to_json(version));
-    auto j_res = nlohmann::json(database_tables);
+
+    auto j_res = json::object();
+    j_res["columns"] = json{
+            "name",
+            "rows_count"
+    };
+    auto rows = json::array();
+    for (auto const& table: database_tables) {
+        int count = 0;
+        *sql << builder::query_builder((builder::sql_database_type)sett.SQLFormat).row_count().from(table).prepare() , soci::into(count);
+        rows += json{
+                {"name", table},
+                {"rows_count", count}
+        };
+    }
+    j_res["rows"] = rows;
+
+    //auto j_res = nlohmann::json(database_tables);
     result.result = arcirk::base64::base64_encode(j_res.dump());
     result.command = enum_synonym(server::server_commands::GetDatabaseTables);
     result.message = "OK";
@@ -2975,7 +3014,7 @@ arcirk::server::server_command_result shared_state::device_get_full_info(const v
     auto query = builder::query_builder();
     query.set_databaseType((builder::sql_database_type)sett.SQLFormat);
     int count = 0;
-    *sql << "use arcirk_v110;";
+    //*sql << "use arcirk_v110;";
     auto rs = query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
             {"ref", device}
     }, true).exec(*sql, {}, true);
@@ -3033,5 +3072,50 @@ arcirk::server::server_command_result shared_state::device_get_full_info(const v
 
     result.message = "OK";
     result.result = arcirk::base64::base64_encode(res.dump());
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::get_tasks(const variant_t &param,
+                                                                         const variant_t &session_id) {
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::GetTasks, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    using namespace boost::filesystem;
+    using json = nlohmann::json;
+    using namespace arcirk::services;
+
+    auto root_conf = app_directory();
+    path file_name = "server_tasks.json";
+    json rows{};
+
+    path conf = root_conf /+ file_name.c_str();
+
+    if(exists(conf)){
+        std::ifstream file(conf.string(), std::ios_base::in);
+        std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+        if(!str.empty()){
+            rows = json::parse(str);
+        }
+    }
+
+    auto empty = pre::json::to_json(task_options());
+
+    auto columns = json::array();
+    auto items = empty.items();
+    for (auto itr = items.begin(); itr != items.end(); ++itr) {
+        columns += itr.key();
+    }
+    auto res = json::object();
+    res["columns"] = columns;
+    res["rows"] = rows;
+    result.result = arcirk::base64::base64_encode(res.dump());
+    result.message = "OK";
     return result;
 }

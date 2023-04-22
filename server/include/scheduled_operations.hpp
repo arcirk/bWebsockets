@@ -16,7 +16,7 @@ public:
     nlohmann::json exec_http_query(const std::string& command, const nlohmann::json& param);
 
 private:
-    arcirk::server::server_config sett_;
+   const arcirk::server::server_config& sett_;
     std::shared_ptr<soci::session> sql_sess;
 
     template<typename T>

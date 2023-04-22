@@ -186,6 +186,7 @@ namespace arcirk::server{
         ProfileDirFileList,
         ProfileDeleteFile,
         DeviceGetFullInfo,
+        GetTasks,
         CMD_INVALID=-1,
     };
 
@@ -220,6 +221,8 @@ namespace arcirk::server{
         {ProfileDirFileList, "ProfileDirFileList"}    ,
         {ProfileDeleteFile, "ProfileDeleteFile"}    ,
         {DeviceGetFullInfo, "DeviceGetFullInfo"}    ,
+        {GetTasks, "GetTasks"}    ,
+
     })
 
 }
