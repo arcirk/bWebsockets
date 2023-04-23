@@ -13,14 +13,15 @@ public:
     scheduled_operations(const arcirk::server::server_config& sett);
 
     bool perform_data_exchange();
+
     nlohmann::json exec_http_query(const std::string& command, const nlohmann::json& param);
 
 private:
    const arcirk::server::server_config& sett_;
     std::shared_ptr<soci::session> sql_sess;
 
-    template<typename T>
-    void add_query(const nlohmann::json& object, std::vector<std::string>& transaction_arr, soci::session& sql, const std::string& table_name);
+//    template<typename T>
+//    void add_query(const nlohmann::json& object, std::vector<std::string>& transaction_arr, soci::session& sql, const std::string& table_name);
 
     template<typename T>
     void add_information_register_record(const nlohmann::json& object, std::vector<std::string>& transaction_arr, soci::session& sql, const std::string& table_name);
@@ -40,6 +41,10 @@ private:
         else
             std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
     };
+
+    //void set_value(const nlohmann::json& source,  nlohmann::json& res,  const std::string& name, const std::string& dest_name);
+    void add_requests(const nlohmann::json &arr,
+                 std::vector<std::string> &transaction_arr, soci::session& sql);
 
     std::shared_ptr<soci::session> soci_initialize(){
         using namespace boost::filesystem;
