@@ -288,10 +288,16 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
         if(sett.SQLHost.empty())
             throw native_exception("Не указан адрес SQL сервера!");
 
+        const std::string pwd = sett.SQLPassword;
         std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
                                                            "SERVER=%1%;Persist Security Info=true;"
-                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, sett.SQLPassword);
-        sql.open(soci::odbc, connection_string);
+                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, arcirk::crypt(pwd, "my_key"));
+        try {
+            sql.open(soci::odbc, connection_string);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
+
         if(sql.is_connected())
             is_odbc_database(sql);
         else

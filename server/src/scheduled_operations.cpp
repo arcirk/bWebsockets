@@ -158,6 +158,7 @@ bool scheduled_operations::perform_data_exchange() {
     if(sett_.ExchangePlan.empty())
         throw native_exception("Не указан идентификатор плана обмена!");
 
+    log("scheduled_operations::perform_data_exchange", "Запрос информации о регистрации данных.");
     auto result = exec_http_query("ExchangePlanGetChange", nlohmann::json{{"ExchangePlan", sett_.ExchangePlan}});
 
     auto sql = soci_initialize();
@@ -165,6 +166,8 @@ bool scheduled_operations::perform_data_exchange() {
     std::vector<std::string> transaction_arr;
 
     if(result.is_array()){
+
+        log("scheduled_operations::perform_data_exchange", arcirk::str_sample("Информация получена. Объектов %1%", std::to_string(result.size())));
 
         for (auto itr = result.begin(); itr != result.end(); ++itr) {
 
@@ -204,8 +207,11 @@ bool scheduled_operations::perform_data_exchange() {
                         add_query<price_types>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbPriceTypes));
                     else if(xml_type == "CatalogRef.Подразделения" || xml_type == "CatalogObject.Подразделения")
                         add_query<subdivisions>(obj, transaction_arr, *sql, arcirk::enum_synonym(tables::tbSubdivisions));
-                    else
+                    else{
+                        fail("scheduled_operations::perform_data_exchange", arcirk::str_sample("Зарегистрирован не известный тип объекта %1%", xml_type));
                         continue;
+                    }
+
                 }
             }
         }
@@ -243,9 +249,11 @@ bool scheduled_operations::perform_data_exchange() {
             tr.commit();
         }
         log("scheduled_operations::perform_data_exchange", "Загрузка объектов завершена.");
-    }
+    }else
+        log("scheduled_operations::perform_data_exchange", "Данных для загрузки не поступило.");
 
     //очищаем регистрацию
+    log("ExchangePlanEraseChange", "Очистка регистрации.");
     exec_http_query("ExchangePlanEraseChange", nlohmann::json{{"ExchangePlan", sett_.ExchangePlan}});
 
     return true;

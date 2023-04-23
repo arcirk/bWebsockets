@@ -1263,9 +1263,10 @@ soci::session * shared_state::soci_initialize(){
             fail("shared_state::soci_initialize:error", e.what(), false);
         }
     }else{
+        const std::string pwd = sett.SQLPassword;
         std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
                                                            "SERVER=%1%;Persist Security Info=true;"
-                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, sett.SQLPassword);
+                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, arcirk::crypt(pwd, "my_key"));
         sql_sess->open(soci::odbc, connection_string);
         if(sql_sess->is_connected())
             *sql_sess << "use " + db_name;
@@ -2163,6 +2164,7 @@ void shared_state::run_server_tasks() {
         opt.name = "EraseDeletedMarkObjects";
         opt.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt.allowed = true;
+        opt.predefined = true;
         opt.synonum = "Очистка помеченных на удаление объектов.";
         vec.push_back(opt);
         arcirk::services::task_options opt1{};
@@ -2172,6 +2174,7 @@ void shared_state::run_server_tasks() {
         opt1.name = "ExchangePlan";
         opt1.uuid = boost::to_string(arcirk::uuids::random_uuid());
         opt1.allowed = true;
+        opt1.predefined = true;
         opt1.synonum = "Обмен по плану обмена.";
         vec.push_back(opt1);
     }else{
