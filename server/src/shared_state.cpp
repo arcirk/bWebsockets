@@ -2319,6 +2319,8 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
 
             int count = 0;
             auto obj = http_result.value("barcode", nlohmann::json{});
+            if(obj.empty())
+                throw native_exception("Штрихкод не найден!");
             auto stuct_br = pre::json::from_json<database::barcodes>(obj);
             auto stuct_n = pre::json::from_json<database::nomenclature>(http_result["nomenclature"]);
 
