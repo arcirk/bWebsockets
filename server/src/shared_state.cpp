@@ -1091,10 +1091,14 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto where_values = query_param.value("where_values", nlohmann::json::object());
             auto order_by = query_param.value("order_by", nlohmann::json::object());
             auto not_exists = query_param.value("not_exists", nlohmann::json::object());
+            auto representation = query_param.value("representation", nlohmann::json{});
 
             if(!table_name.empty()){
                 bool return_table = false;
                 auto query = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
+                if(!representation.empty())
+                    query.set_string_representation_template(representation);
+
                 if(query_type == "select"){
                     if(!values.empty())
                         query.select(values).from(table_name);
@@ -1136,7 +1140,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query_text = query.prepare(not_exists, true);
                     }
                 }
-                //std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
+                std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text, line_number, empty_column));
                 else{

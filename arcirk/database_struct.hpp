@@ -185,6 +185,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (double, price)
                 (double, quantity)
                 (std::string, barcode)
+                (std::string, vendor_code)
                 (std::string, product)
                 (std::string, parent)
                 (int, is_group)
@@ -216,6 +217,8 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, ref)
                 (std::string, barcode)
                 (std::string, parent)
+                (std::string, vendor_code)
+                (std::string, first_name)
                 (int, is_group)
                 (int, deletion_mark)
                 (int, version)
@@ -682,7 +685,8 @@ namespace arcirk::database{
                                                  "    cache           TEXT      DEFAULT \"\",\n"
                                                  "    price           DOUBLE DEFAULT (0),\n"
                                                  "    quantity        DOUBLE DEFAULT (0),\n"
-                                                 "    barcode         TEXT      DEFAULT \"\",\n"
+                                                 "    barcode         TEXT DEFAULT \"\",\n"
+                                                 "    vendor_code     TEXT DEFAULT \"\",\n"
                                                  "    product         TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                  "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                  "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
@@ -698,6 +702,7 @@ namespace arcirk::database{
                                                  "[price] [float] NOT NULL,\n"
                                                  "[quantity] [float] NOT NULL,\n"
                                                  "[barcode] [varchar](max) NULL,\n"
+                                                 "[vendor_code] [varchar](max) NULL,\n"
                                                  "[product] [char](36) NULL,\n"
                                                       "[parent] [char](36) NULL,\n"
                                                       "[is_group] [int] NOT NULL,\n"
@@ -751,6 +756,8 @@ namespace arcirk::database{
                                            "    ref             TEXT (36) UNIQUE\n"
                                            "                             NOT NULL,\n"
                                            "    barcode         TEXT (128) DEFAULT \"\",\n"
+                                           "    vendor_code     TEXT DEFAULT \"\",\n"
+                                           "    first_name      TEXT DEFAULT \"\",\n"
                                            "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                            "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
                                            "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
@@ -764,6 +771,8 @@ namespace arcirk::database{
                                             "[ref] [char](36) NOT NULL UNIQUE,\n"
                                             "[barcode][varchar](128) NULL,\n"
                                             "[parent] [char](36) NULL,\n"
+                                            "[vendor_code]     [varchar](max) NULL,\n"
+                                            "[first_name]     [varchar](max) NULL,\n"
                                             "[is_group] [int] NOT NULL,\n"
                                             "[deletion_mark] [int] NOT NULL,\n"
                                             "[version] [int] NOT NULL\n"
@@ -1160,13 +1169,13 @@ namespace arcirk::database{
         result.emplace(tables::tbMessages, 3);
         result.emplace(tables::tbUsers, 3);
         result.emplace(tables::tbDevicesType, 3);
-        result.emplace(tables::tbDocumentsTables, 4);
+        result.emplace(tables::tbDocumentsTables, 5);
         result.emplace(tables::tbOrganizations, 3);
         result.emplace(tables::tbPriceTypes, 3);
         result.emplace(tables::tbSubdivisions, 3);
         result.emplace(tables::tbWarehouses, 3);
         result.emplace(tables::tbWorkplaces, 3);
-        result.emplace(tables::tbBarcodes, 2);
+        result.emplace(tables::tbBarcodes, 3);
         return result;
     }
 
@@ -1273,6 +1282,8 @@ namespace arcirk::database{
             }
             else if(table == tables::tbBarcodes){
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "vendor_code", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "first_name", " "));
                 result.emplace(table, ddls);
             }else
                 result.emplace(table, ddls);

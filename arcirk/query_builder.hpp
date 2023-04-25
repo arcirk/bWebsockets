@@ -245,6 +245,11 @@ namespace arcirk::database::builder {
             }else
                 result.append(" * ");
 
+            if(!string_representation_template_.empty()){
+                result.append(",");
+                add_string_representation(result, table_name_);
+            }
+
             return *this;
         }
 
@@ -349,29 +354,48 @@ namespace arcirk::database::builder {
             return *this;
         }
 
+        std::string array_to_string(const json& arr) const{
+            std::string res;
+            for (auto itr = arr.begin();  itr != arr.end() ; ++itr) {
+                res.append(itr->get<std::string>());
+                if( itr != --arr.end()){
+                    res.append(",");
+                }
+            }
+            return res;
+        }
+
         query_builder& where(const json& values, bool use_values, bool use_table_name = true){
 
             std::vector<sql_compare_value> where_values;
-            auto items_ = values.items();
-            for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
-                sql_compare_value val{};
-                val.key = itr.key();
-                const json& f_value = itr.value();
-                if(!f_value.is_object()){
-                    val.compare = Equals;
-                    if(use_values)
+            if(values.is_object()){
+                auto items_ = values.items();
+                for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
+                    sql_compare_value val{};
+                    val.key = itr.key();
+                    const json& f_value = itr.value();
+                    if(f_value.is_object()){
+                        val.compare = (sql_type_of_comparison)f_value.value("compare", 0);
+                        if(use_values)
+                            val.value = f_value.value("value", json{});
+                        else
+                            val.value = "?";
+
+                    }if(f_value.is_array()) {
+                        val.compare = On_List;
                         val.value = f_value;
-                    else
-                        val.value = "?";
-                }else{
-                    val.compare = (sql_type_of_comparison)f_value.value("compare", 0);
-                    if(use_values)
-                        val.value = f_value.value("value", json{});
-                    else
-                        val.value = "?";
+                    }else{
+                        val.compare = Equals;
+                        if(use_values)
+                            val.value = f_value;
+                        else
+                            val.value = "?";
+
+                    }
+                    where_values.push_back(val);
                 }
-                where_values.push_back(val);
             }
+
 
             result.append("\nwhere ");
 
@@ -889,7 +913,33 @@ namespace arcirk::database::builder {
             table_name_ = "";
         }
 
+        void set_string_representation_template(const nlohmann::json& value){
+            string_representation_template_ = value;
+        }
 
+        void add_string_representation(std::string src, const std::string& t_name){
+            if(string_representation_template_.empty())
+                return;
+
+            try {
+                if(string_representation_template_.is_object()){
+                    std::string tmp = string_representation_template_["template"];
+                    auto arr = string_representation_template_["values"];
+                    if(!arr.is_array())
+                        return;
+                    for (auto it = arr.begin();  it != arr.end() ; ++it) {
+                        auto item = *it;
+                        if(!item.is_object())
+                            return;
+                        boost::replace_all(tmp, item["arg"].get<std::string>(), t_name + "." + item["column"].get<std::string>());
+                    }
+                    src.append("\n");
+                    src.append(tmp + " as representation");
+                }
+            } catch (const std::exception &e) {
+                native_exception(e.what());
+            }
+        }
 
     private:
         std::string result;
@@ -898,6 +948,7 @@ namespace arcirk::database::builder {
         sql_query_type queryType;
         sql_database_type databaseType;
         std::string table_name_;
+        nlohmann::json string_representation_template_;
     };
 
 
