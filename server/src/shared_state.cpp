@@ -1140,7 +1140,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                         query_text = query.prepare(not_exists, true);
                     }
                 }
-                std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
+                //std::cout << "shared_state::execute_sql_query: \n" << query_text << std::endl;
                 if(return_table)
                     result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text, line_number, empty_column));
                 else{
@@ -2314,8 +2314,6 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
         auto http_result = http_service.exec_http_query("ExecuteScript", param_http);
 
         if(http_result.is_object()){
-
-
 
             int count = 0;
             auto obj = http_result.value("barcode", nlohmann::json{});
