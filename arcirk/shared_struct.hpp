@@ -187,6 +187,7 @@ namespace arcirk::server{
         ProfileDeleteFile,
         DeviceGetFullInfo,
         GetTasks,
+        UpdateTaskOptions,
         CMD_INVALID=-1,
     };
 
@@ -222,7 +223,7 @@ namespace arcirk::server{
         {ProfileDeleteFile, "ProfileDeleteFile"}    ,
         {DeviceGetFullInfo, "DeviceGetFullInfo"}    ,
         {GetTasks, "GetTasks"}    ,
-
+        {UpdateTaskOptions, "UpdateTaskOptions"}    ,
     })
 
 }
@@ -263,6 +264,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (bool, AllowHistoryMessages)
         (std::string, ExchangePlan)
         (std::string, ServerProtocol)
+        (bool, WriteJournal)
 );
 
 #endif

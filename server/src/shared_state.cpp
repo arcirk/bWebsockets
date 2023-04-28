@@ -57,6 +57,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::ProfileDeleteFile), this, &shared_state::delete_file);
     add_method(enum_synonym(server::server_commands::DeviceGetFullInfo), this, &shared_state::device_get_full_info);
     add_method(enum_synonym(server::server_commands::GetTasks), this, &shared_state::get_tasks);
+    add_method(enum_synonym(server::server_commands::UpdateTaskOptions), this, &shared_state::update_task_options);
 
     run_server_tasks();
 
@@ -2311,7 +2312,12 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
                 {"privileged_mode", true}
         };
 
-        auto http_result = http_service.exec_http_query("ExecuteScript", param_http);
+        nlohmann::json http_result{};
+        try {
+            http_result = http_service.exec_http_query("ExecuteScript", param_http);
+        } catch (const std::exception &e) {
+            throw native_exception(e.what());
+        }
 
         if(http_result.is_object()){
 
@@ -3123,6 +3129,56 @@ arcirk::server::server_command_result shared_state::get_tasks(const variant_t &p
     res["columns"] = columns;
     res["rows"] = rows;
     result.result = arcirk::base64::base64_encode(res.dump());
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::update_task_options(const variant_t &param,
+                                                                        const variant_t &session_id) {
+
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::UpdateTaskOptions, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto task_options = param_.value("task_options", json{});
+    if(task_options.empty() || !task_options.is_array())
+        throw native_exception("Ошибка в параметрах команды!");
+
+    auto root_conf = app_directory();
+    fs::path file_name = "server_tasks.json";
+    nlohmann::json res{};
+
+    fs::path conf = root_conf /+ file_name.c_str();
+    std::vector<arcirk::services::task_options> vec;
+    for (auto itr = task_options.begin(); itr != task_options.end() ; ++itr) {
+        auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
+        vec.push_back(opt);
+    }
+
+    try {
+        auto vec_t = nlohmann::json::array();
+        for (const auto& itr: vec) {
+            vec_t += pre::json::to_json(itr);
+        }
+
+        std::ofstream out;
+        out.open(conf.string());
+        if (out.is_open()) {
+            out << vec_t.dump();
+        }
+        out.close();
+    } catch (std::exception &e) {
+        fail("shared_state::run_server_tasks", e.what()) ;
+    }
     result.message = "OK";
     return result;
 }

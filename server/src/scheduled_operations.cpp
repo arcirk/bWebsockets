@@ -507,7 +507,14 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     if(result_body == "error")
         throw native_exception("Ошибка на http сервисе!");
 
-    auto result = nlohmann::json::parse(result_body);
+    nlohmann::json result{};
+    try {
+        result = nlohmann::json::parse(result_body);
+    } catch (const std::exception& e) {
+        fail("exec_http_query", e.what());
+        if(!result_body.empty())
+            fail("exec_http_query:response", result_body);
+    }
 
     stream.close();
     //ioc.stop();
