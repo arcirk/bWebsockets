@@ -68,7 +68,7 @@ shared_state::shared_state(){
 void shared_state::join(subscriber *session) {
 
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(session->uuid_session(), session));
-    log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + session->address());
+    arcirk::log("shared_state::join", "client join: " + arcirk::uuids::uuid_to_string(session->uuid_session()) + " " + session->address(), true, sett.WriteJournal ? app_directory().string(): "");
 
     //Оповещаем всех пользователей об подключении нового клиента
     if(use_authorization())
@@ -111,7 +111,7 @@ void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::stri
     if (iter != sessions_.end() ){
         sessions_.erase(session_uuid);
     }
-    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" );
+    log("shared_state::leave", "client leave: " + user_name + " (" + arcirk::uuids::uuid_to_string(session_uuid) + ")" , true, sett.WriteJournal ? app_directory().string(): "");
 
     //Оповещаем всех пользователей об отключении клиента
     send_notify("Client Leave", nullptr, "ClientLeave", session_uuid);
@@ -129,7 +129,7 @@ void shared_state::deliver(const std::string &message, subscriber *session) {
 
     if(use_authorization()){
         if(!session->authorized() && message.find("SetClientParam") == std::string::npos)
-            return fail("shared_state::deliver", "Пользователь не авторизован! Команда отменена.");
+            return fail("shared_state::deliver", "Пользователь не авторизован! Команда отменена.", true, sett.WriteJournal ? app_directory().string(): "");
     }
 
     if(!is_cmd(message)){
@@ -150,7 +150,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
     arcirk::T_vec v = split(message, " ");
     if(v.size() < 3)
     {
-        fail("shared_state::forward_message:error", "Не верный формат сообщения!");
+        fail("shared_state::forward_message:error", "Не верный формат сообщения!", true, sett.WriteJournal ? app_directory().string(): "");
         return;
     }
 
@@ -177,13 +177,13 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
 
     boost::uuids::uuid receiver_{};
     if(!uuids::is_valid_uuid(receiver, receiver_)){
-        fail("shared_state::forward_message:error", "Не верный идентификатор получателя!");
+        fail("shared_state::forward_message:error", "Не верный идентификатор получателя!", true, sett.WriteJournal ? app_directory().string(): "");
         return;
     }
 
     const auto itr = sessions_.find(receiver_);
     if(itr == sessions_.cend()){
-        fail("shared_state::forward_message:error", "Не известный получатель!") ;
+        fail("shared_state::forward_message:error", "Не известный получатель!", true, sett.WriteJournal ? app_directory().string(): "") ;
         return;
     }
 
@@ -196,7 +196,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
             auto param_ = nlohmann::json::parse(arcirk::base64::base64_decode(param));
             content_type_ = param_.value("content_type", content_type_);
         }else
-            log("shared_state::forward_message", "Не указан тип сообщения, будет установлен по умолчанию 'Text'");
+            log("shared_state::forward_message", "Не указан тип сообщения, будет установлен по умолчанию 'Text'", true, sett.WriteJournal ? app_directory().string(): "");
 
         auto msg_struct = database::messages();
         msg_struct.ref = boost::to_string(uuids::random_uuid());
@@ -210,7 +210,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
             auto sql = soci_initialize();
             msg_struct.token  = get_channel_token(*sql, boost::to_string(session->user_uuid()), boost::to_string(itr->second->user_uuid()));
             if(msg_struct.token == "error"){
-                fail("shared_state::forward_message", "Ошибка генерации токена!");
+                fail("shared_state::forward_message", "Ошибка генерации токена!", true, sett.WriteJournal ? app_directory().string(): "");
                 return;
             }
             auto query = database::builder::query_builder((database::builder::sql_database_type)sett.SQLFormat);
@@ -254,12 +254,12 @@ std::string shared_state::get_channel_token(soci::session& sql, const std::strin
         }
 
     } catch (std::exception &e) {
-        fail("shared_state::get_channel_token", e.what());
+        fail("shared_state::get_channel_token", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         return "error";
     }
 
     if (refs.size() <= 1){//минимум 2 записи должно быть
-        fail("shared_state::get_channel_token", "Ошибка генерации токена!");
+        fail("shared_state::get_channel_token", "Ошибка генерации токена!", true, sett.WriteJournal ? app_directory().string(): "");
         return "error";
     }
 
@@ -273,13 +273,13 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
     arcirk::T_vec v = split(message, " ");
 
     if(v.size() < 2){
-        fail("shared_state::execute_command_handler:error", "Не верный формат команды!");
+        fail("shared_state::execute_command_handler:error", "Не верный формат команды!", true, sett.WriteJournal ? app_directory().string(): "");
         return;
     }
 
     long command_index = find_method(v[1]);
     if(command_index < 0){
-        fail("shared_state::execute_command_handler:error", arcirk::str_sample("Команда (%1%) не найдена!", v[1]));
+        fail("shared_state::execute_command_handler:error", arcirk::str_sample("Команда (%1%) не найдена!", v[1]), true, sett.WriteJournal ? app_directory().string(): "");
         return;
     }
 
@@ -292,7 +292,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 //            if(json_params.substr(json_params.length() - 1, 1) != "}")
 //                json_params.append("\"}");
         } catch (std::exception &e) {
-            fail("shared_state::execute_command_handler:parse_params:error", e.what(), false);
+            fail("shared_state::execute_command_handler:parse_params:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
             return;
         }
     }
@@ -318,7 +318,7 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
                 }
             }
         } catch (const std::exception &ex) {
-            fail("shared_state::execute_command_handler", ex.what());
+            fail("shared_state::execute_command_handler", ex.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
     }
 
@@ -328,9 +328,9 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
 
     long p_count = param_count(command_index);
     if(p_count != params_v.size())
-        return fail("shared_state::execute_command_handler", "Не верное количество аргументов!");
+        return fail("shared_state::execute_command_handler", "Не верное количество аргументов!", true, sett.WriteJournal ? app_directory().string(): "");
 
-    log("shared_state::execute_command_handler", get_method_name(command_index));
+    log("shared_state::execute_command_handler", get_method_name(command_index), true, sett.WriteJournal ? app_directory().string(): "");
 
     arcirk::server::server_command_result return_value;
     try {
@@ -340,13 +340,13 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         return_value.result = "error";
         return_value.uuid_form = ex.uuid_form();
         return_value.message = ex.what();
-        fail("shared_state::execute_command_handler::" + std::string(ex.command()), ex.what());
+        fail("shared_state::execute_command_handler::" + std::string(ex.command()), ex.what(), false, sett.WriteJournal ? app_directory().string(): "");
     }
     catch (const std::exception& ex) {
         return_value.result = "error";
         return_value.uuid_form = arcirk::uuids::nil_string_uuid();
         return_value.message = ex.what();
-        fail("shared_state::execute_command_handler", ex.what());
+        fail("shared_state::execute_command_handler", ex.what(), true, sett.WriteJournal ? app_directory().string(): "");
     }
 
 
@@ -443,7 +443,7 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
                     return false;
             }
         } catch (std::exception &e) {
-            fail("shared_state::verify_connection:error", e.what(), false);
+            fail("shared_state::verify_connection:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
     }
 
@@ -451,7 +451,7 @@ bool shared_state::verify_connection(const std::string &basic_auth) {
 }
 bool shared_state::verify_auth_from_hash(const std::string &hash) {
 
-    log("shared_state::verify_auth_from_hash", "verify_connection ... ");
+    log("shared_state::verify_auth_from_hash", "verify_connection ... ", true, sett.WriteJournal ? app_directory().string(): "");
 
     using namespace boost::filesystem;
     using namespace soci;
@@ -463,7 +463,7 @@ bool shared_state::verify_auth_from_hash(const std::string &hash) {
              *sql <<  builder::query_builder((builder::sql_database_type)sett.SQLFormat).row_count().from(enum_synonym(tables::tbUsers)).where(nlohmann::json{{"hash", hash}}, true).prepare(), soci::into(count);
             return count > 0;
         } catch (std::exception &e) {
-            fail("shared_state::verify_auth:error", e.what(), false);
+            arcirk::fail("shared_state::verify_auth:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
 
     //}
@@ -744,11 +744,11 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.hash);
                 if(!result_auth){
-                    fail("shared_state::set_client_param", "failed authorization");
+                    fail("shared_state::set_client_param", "failed authorization", true, sett.WriteJournal ? app_directory().string(): "");
                     result.message = "failed authorization";
                 }
                 else{
-                    log("shared_state::set_client_param", "successful authorization");
+                    log("shared_state::set_client_param", "successful authorization", true, sett.WriteJournal ? app_directory().string(): "");
                     session->set_authorized(true);
                     auto info = get_user_info(param_.hash);
                     //если используется авторизация устанавливаем параметры из базы данных
@@ -759,7 +759,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
                 }
 
             }else{
-                fail("shared_state::set_client_param", "failed authorization");
+                fail("shared_state::set_client_param", "failed authorization", true, sett.WriteJournal ? app_directory().string(): "");
                 result.message = "failed authorization";
             }
         }
@@ -767,7 +767,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         result.param = base64::base64_encode(pre::json::to_json(param_).dump());
 
     } catch (std::exception &e) {
-        fail("shared_state::set_client_param:error", e.what(), false);
+        fail("shared_state::set_client_param:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         result.result = "error";
     }
 
@@ -850,7 +850,7 @@ arcirk::database::user_info shared_state::get_user_info(const boost::uuids::uuid
             if(count < 0)
                 throw native_exception("Пользователь не найден!");
         } catch (std::exception &e) {
-            fail("shared_state::verify_auth:error", e.what(), false);
+            fail("shared_state::verify_auth:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
 
     //}
@@ -898,7 +898,7 @@ arcirk::database::user_info shared_state::get_user_info(const std::string &hash)
             if(count < 0)
                 throw native_exception("Пользователь не найден!");
         } catch (std::exception &e) {
-            fail("shared_state::get_user_info:error", e.what(), false);
+            fail("shared_state::get_user_info:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
 
    //}
@@ -1262,10 +1262,10 @@ soci::session * shared_state::soci_initialize(){
             std::string connection_string = arcirk::str_sample("db=%1% timeout=2 shared_cache=true", database.string());
             //return session{soci::sqlite3, connection_string};
             sql_sess->open(soci::sqlite3, connection_string);
-            log("soci_initialize", "Open sqlite3 database.");
+            log("soci_initialize", "Open sqlite3 database.", true, sett.WriteJournal ? app_directory().string(): "");
             return sql_sess;
         } catch (native_exception &e) {
-            fail("shared_state::soci_initialize:error", e.what(), false);
+            fail("shared_state::soci_initialize:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         }
     }else{
         const std::string pwd = sett.SQLPassword;
@@ -1275,7 +1275,7 @@ soci::session * shared_state::soci_initialize(){
         sql_sess->open(soci::odbc, connection_string);
         if(sql_sess->is_connected())
             *sql_sess << "use " + db_name;
-        log("soci_initialize", "Open odbc driver database.");
+        log("soci_initialize", "Open odbc driver database.", true, sett.WriteJournal ? app_directory().string(): "");
         return sql_sess;
     }
     return nullptr;
@@ -1298,7 +1298,7 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     std::string sender = param_.value("sender", "");
     std::string recipient = param_.value("recipient", "");
 
-    log("shared_state::get_messages", "sender: " + sender + " receiver:" + recipient);
+    arcirk::log("shared_state::get_messages", "sender: " + sender + " receiver:" + recipient, true, sett.WriteJournal ? app_directory().string(): "");
 
     if(sender.empty() || recipient.empty())
         throw native_exception("Не заданы параметры запроса!");
@@ -1907,7 +1907,7 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
         tr.commit();
 
     } catch (std::exception const &e) {
-        fail("shared_state::sync_get_discrepancy_in_data", e.what());
+        arcirk::fail("shared_state::sync_get_discrepancy_in_data", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         result.message = "error";
         return result;
     }
@@ -2157,7 +2157,7 @@ void shared_state::run_server_tasks() {
             }
         }
     } catch (std::exception &e) {
-        fail("shared_state::run_server_tasks", e.what()) ;
+        fail("shared_state::run_server_tasks", e.what(), false, sett.WriteJournal ? app_directory().string(): "") ;
     }
 
     std::vector<arcirk::services::task_options> vec;
@@ -2216,7 +2216,7 @@ void shared_state::run_server_tasks() {
         }
         out.close();
     } catch (std::exception &e) {
-        fail("shared_state::run_server_tasks", e.what()) ;
+        fail("shared_state::run_server_tasks", e.what(), false, sett.WriteJournal ? app_directory().string(): "") ;
     }
 
 }
@@ -2243,7 +2243,7 @@ void shared_state::erase_deleted_mark_objects() {
     *sql <<  "delete from DocumentsTables where DocumentsTables.parent in (select Documents.ref from Documents where Documents.deletion_mark = '1');";
     *sql << "delete from Documents where Documents.deletion_mark = '1';";
     tr.commit();
-    log("shared_state::erase_deleted_mark_objects", "Регламентная операция успешно завершена!");
+    arcirk::log("shared_state::erase_deleted_mark_objects", "Регламентная операция успешно завершена!", true, sett.WriteJournal ? app_directory().string(): "");
 }
 
 void shared_state::synchronize_objects_from_1c() {
@@ -2252,9 +2252,9 @@ void shared_state::synchronize_objects_from_1c() {
     try {
         bool result = sh_oper.perform_data_exchange();
         if(result)
-            log("shared_state::synchronize_objects_from_1c", "Регламентная операция успешно завершена!");
+            log("shared_state::synchronize_objects_from_1c", "Регламентная операция успешно завершена!", true, sett.WriteJournal ? app_directory().string(): "");
     } catch (const std::exception &err) {
-        fail("shared_state::synchronize_objects_from_1c", err.what());
+        fail("shared_state::synchronize_objects_from_1c", err.what(), false, sett.WriteJournal ? app_directory().string(): "");
     }
 
 }
@@ -2601,7 +2601,7 @@ arcirk::server::server_command_result
             if(vec.size() == 3){
                 int v_major = std::stoi(vec[0]);
                 int v_minor = std::stoi(vec[1]);
-                int v_path  = std::stoi(vec[0]);
+                int v_path  = std::stoi(vec[2]);
                 bool value_is_greater = false;
                 if(v_major > current_version.value("major", 0)){
                     value_is_greater = true;
@@ -2655,7 +2655,7 @@ arcirk::server::server_command_result
     file /= file_name;
 
     if(!fs::exists(file))
-        throw native_exception("Файл не найден!");
+        throw native_exception(arcirk::str_sample("Файл не найден! '%1%'" , file.string()).c_str());
 
     if(fs::is_directory(file))
         throw native_exception("Файл является директорией!");
@@ -2752,17 +2752,17 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
         throw native_exception("Файл является директорией!");
 
     task_manager->stop();
-    log("shared_state::file_to_database", "Все назначенные задания временно остановлены.");
+    arcirk::log("shared_state::file_to_database", "Все назначенные задания временно остановлены.");
 
     const auto sql_format = (builder::sql_database_type)sett.SQLFormat;
     auto sql = soci_initialize();
 
     auto callback = std::function<void()>(std::bind(&shared_state::start_tasks, this));
 
-    auto m_worker= new boost::thread([&file, &table_name, &sql_format, &sql, &callback]()
+    auto m_worker= new boost::thread([&file, &table_name, &sql_format, &sql, &callback, this]()
            {
-               log("shared_state::file_to_database", arcirk::str_sample("Начало загрузки данных из файла %1% в таблицу %2%.", file.filename().string(), table_name));
-               log("shared_state::file_to_database", "Чтение файла ...");
+               arcirk::log("shared_state::file_to_database", arcirk::str_sample("Начало загрузки данных из файла %1% в таблицу %2%.", file.filename().string(), table_name), true, sett.WriteJournal ? app_directory().string(): "");
+               arcirk::log("shared_state::file_to_database", "Чтение файла ...", true, sett.WriteJournal ? app_directory().string(): "");
 
                ByteArray data;
                arcirk::read_file(file.string(), data);
@@ -2771,7 +2771,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
 
                auto text = arcirk::byte_array_to_string(data);
 
-               log("shared_state::file_to_database", "Парсинг json ...");
+               arcirk::log("shared_state::file_to_database", "Парсинг json ...", true, sett.WriteJournal ? app_directory().string(): "");
                auto j = json::parse(text);
 
                if(!j.is_array())
@@ -2784,14 +2784,14 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
 
                auto rs = query.select(json{"ref"}).from(table_name).exec(*sql);
                std::vector<std::string> refs;
-               log("shared_state::file_to_database", "Подготовка к импорту ...");
+               arcirk::log("shared_state::file_to_database", "Подготовка к импорту ...", true, sett.WriteJournal ? app_directory().string(): "");
 
                for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
                    row const& row = *itr;
                    refs.push_back(row.get<std::string>(0));
                }
                int row_count = (int)refs.size();
-               log("shared_state::file_to_database", arcirk::str_sample("Текущее количество записей в таблице %1%", std::to_string(row_count).c_str()));
+               arcirk::log("shared_state::file_to_database", arcirk::str_sample("Текущее количество записей в таблице %1%", std::to_string(row_count).c_str()), true, sett.WriteJournal ? app_directory().string(): "");
 
                for (auto itr = j.begin(); itr != j.end() ; ++itr) {
 
@@ -2811,7 +2811,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
                        query_strings.insert(query.insert(table_name, true).prepare());
                    }
                }
-               log("shared_state::file_to_database", "Применение изменений ...");
+               arcirk::log("shared_state::file_to_database", "Применение изменений ...", true, sett.WriteJournal ? app_directory().string(): "");
 
                if((int)query_strings.size() != 0){
                    std::set<std::string> s;
@@ -2831,7 +2831,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
                            count = 0;
                            s.clear();
                            s.insert(str);
-                           log("shared_state::file_to_database", "Успешно добавлено/обновлено 10000 записей ..");
+                           arcirk::log("shared_state::file_to_database", "Успешно добавлено/обновлено 10000 записей ..", true, sett.WriteJournal ? app_directory().string(): "");
                        }
                    }
                    if(s.size() > 0){
@@ -2841,11 +2841,11 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
                            *sql << q;
                        }
                        tr.commit();
-                       log("shared_state::file_to_database", arcirk::str_sample("Успешно добавлено/обновлено %1% записей ..", std::to_string(count)).c_str());
+                       arcirk::log("shared_state::file_to_database", arcirk::str_sample("Успешно добавлено/обновлено %1% записей ..", std::to_string(count)).c_str(), true, sett.WriteJournal ? app_directory().string(): "");
                    }
                }
 
-               log("shared_state::file_to_database", arcirk::str_sample("Загрузка данных из файла %1% в таблицу %2% окончена.", file.filename().string(), table_name));
+               arcirk::log("shared_state::file_to_database", arcirk::str_sample("Загрузка данных из файла %1% в таблицу %2% окончена.", file.filename().string(), table_name), true, sett.WriteJournal ? app_directory().string(): "");
 
                callback();
            }
@@ -2861,7 +2861,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
 void shared_state::start_tasks() {
     if(!task_manager->is_started()){
         task_manager->run();
-        log("shared_state::file_to_database", "Все назначенные задания запущены.");
+        log("shared_state::file_to_database", "Все назначенные задания запущены.", true, sett.WriteJournal ? app_directory().string(): "");
     }
 }
 
@@ -3155,7 +3155,7 @@ arcirk::server::server_command_result shared_state::update_task_options(const va
 
     auto root_conf = app_directory();
     fs::path file_name = "server_tasks.json";
-    nlohmann::json res{};
+    json res{};
 
     fs::path conf = root_conf /+ file_name.c_str();
     std::vector<arcirk::services::task_options> vec;
@@ -3177,7 +3177,7 @@ arcirk::server::server_command_result shared_state::update_task_options(const va
         }
         out.close();
     } catch (std::exception &e) {
-        fail("shared_state::run_server_tasks", e.what()) ;
+        fail("shared_state::run_server_tasks", e.what(), false, sett.WriteJournal ? app_directory().string(): "") ;
     }
     result.message = "OK";
     return result;

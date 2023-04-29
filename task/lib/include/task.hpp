@@ -29,17 +29,17 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 namespace arcirk::services{
 
-    static inline void log_text(std::string const& text)
-    {
-//        auto t = std::time(nullptr);
-//        auto tm = *std::localtime(&t);
-//        std::cout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << " " << arcirk::local_8bit(text) << std::endl;
-        std::tm tm = arcirk::current_date();
-        char cur_date[100];
-        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-
-        std::cout << std::string(cur_date) << " " << "task manager" << ": " << arcirk::local_8bit(text) << std::endl;
-    }
+//    static inline void log_text(std::string const& text)
+//    {
+////        auto t = std::time(nullptr);
+////        auto tm = *std::localtime(&t);
+////        std::cout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << " " << arcirk::local_8bit(text) << std::endl;
+//        std::tm tm = arcirk::current_date();
+//        char cur_date[100];
+//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+//
+//        std::cout << std::string(cur_date) << " " << "task manager" << ": " << arcirk::local_8bit(text) << std::endl;
+//    }
 
     //typedef std::function<void(const boost::uuids::uuid&, const std::string&)> send_fn;
 
@@ -106,7 +106,7 @@ namespace arcirk::services{
 //
         void start()
         {
-            log_text("start task '" + opt_.synonum + "'");
+            arcirk::log("task::start", "start task '" + opt_.synonum + "'");
 
             workers_->post([=]
              {
@@ -125,7 +125,7 @@ namespace arcirk::services{
         }
 
         void stop(){
-            log_text("stop task '" + opt_.synonum + "'");
+            arcirk::log("task::stop","stop task '" + opt_.synonum + "'");
             timer.cancel();
         };
 
@@ -163,7 +163,7 @@ namespace arcirk::services{
         {
             if(is_started_)
             {
-                log_text("service already started");
+                arcirk::log("task_scheduler::run","service already started");
                 return;
             }
             is_started_ = true;
@@ -171,7 +171,7 @@ namespace arcirk::services{
         }
 
         void stop(){
-            log_text("stop all tasks");
+            arcirk::log("task_scheduler::stop","stop all tasks");
             is_started_ = false;
             io_service.stop();
         }
@@ -179,7 +179,7 @@ namespace arcirk::services{
         void clear(){
             if(is_started_)
             {
-                log_text("service already started");
+                arcirk::log("task_scheduler::stop","service already started");
                 return;
             }
             workers_.reset();

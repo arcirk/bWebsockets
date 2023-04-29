@@ -255,10 +255,12 @@ bool is_odbc_database(soci::session& sql){
             sql << arcirk::str_sample("CREATE DATABASE %1%", db_name);
             sql << builder.prepare(), into(count);
             if (count > 0){
-                std::cout << arcirk::local_8bit("База данных успешно создана!") << std::endl;
+                //std::cout << arcirk::local_8bit("База данных успешно создана!") << std::endl;
+                arcirk::log("main::is_odbc_database", "База данных успешно создана!");
                 return true;
             }else{
-                std::cerr << arcirk::local_8bit("Ошибка создания базы данных!!") << std::endl;
+                //std::cerr << arcirk::local_8bit("Ошибка создания базы данных!!") << std::endl;
+                arcirk::fail("main::is_odbc_database", "База данных успешно создана!");
                 return false;
             }
         }

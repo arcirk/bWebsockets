@@ -194,6 +194,21 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), document_marked_table,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, qr_code)
+        (std::string, document_ref)
+        (std::string, parent)
+        (int, quantity)
+        (int, is_group)
+        (int, deletion_mark)
+        (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), nomenclature,
                 (int, _id)
                 (std::string, first) // Наименование
@@ -204,6 +219,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, vendor_code)
                 (std::string, trademark)
                 (std::string, unit)
+                (int, is_marked)
                 (int, is_group)
                 (int, deletion_mark)
                 (int, version)
@@ -297,6 +313,7 @@ namespace arcirk::database{
         tbNomenclature,
         tbDatabaseConfig,
         tbBarcodes,
+        tbDocumentsMarkedTables,
         tables_INVALID=-1,
     };
 
@@ -316,6 +333,7 @@ namespace arcirk::database{
         {tbNomenclature, "Nomenclature"}  ,
         {tbDatabaseConfig, "DatabaseConfig"}  ,
         {tbBarcodes, "Barcodes"}  ,
+        {tbDocumentsMarkedTables, "DocumentsMarkedTables"}  ,
     })
 
     enum views{
@@ -714,6 +732,37 @@ namespace arcirk::database{
                                                  ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
                                                  ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
+    const std::string document_table_marked_table_ddl = "CREATE TABLE DocumentsMarkedTables (\n"
+                                                 "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                 "    [first]         TEXT,\n"
+                                                 "    second          TEXT,\n"
+                                                 "    ref             TEXT (36) UNIQUE\n"
+                                                 "                             NOT NULL,\n"
+                                                 "    qr_code         TEXT,\n"
+                                                 "    document_ref    TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000] NOT NULL,\n"
+                                                 "    quantity        INTEGER DEFAULT (1),\n"
+                                                 "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000] NOT NULL,\n"
+                                                 "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                 "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                 "    version         INTEGER NOT NULL DEFAULT(0)\n"
+                                                 ");";
+    const std::string document_table_odbc_marked_table_ddl = "CREATE TABLE [dbo].[DocumentsMarkedTables](\n"
+                                                      "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                      "[first] [varchar](max) NULL,\n"
+                                                      "[second] [varchar](max) NULL,\n"
+                                                      "[ref] [char](36) NOT NULL UNIQUE,\n"
+                                                      "[qr_code] [varchar](max) NULL,\n"
+                                                      "[document_ref] [char](36) NOT NULL UNIQUE,\n"
+                                                      "[quantity] [float] NOT NULL,\n"
+                                                      "[parent] [char](36) NULL,\n"
+                                                      "[is_group] [int] NOT NULL,\n"
+                                                      "[deletion_mark] [int] NOT NULL,\n"
+                                                      "[version] [int] NOT NULL\n"
+                                                      "CONSTRAINT [PK_DocumentsMarkedTables] PRIMARY KEY CLUSTERED\n"
+                                                      "(\n"
+                                                      "[_id] ASC\n"
+                                                      ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                      ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
     const std::string nomenclature_table_ddl = "CREATE TABLE Nomenclature (\n"
                                                "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
                                                "    [first]         TEXT,\n"
@@ -725,6 +774,7 @@ namespace arcirk::database{
                                                "    trademark       TEXT DEFAULT \"\",\n"
                                                "    unit            TEXT DEFAULT \"шт.\",\n"
                                                "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_marked       INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    version         INTEGER NOT NULL DEFAULT(0)\n"
@@ -740,6 +790,7 @@ namespace arcirk::database{
                                                 "[trademark] [varchar](max) NULL,\n"
                                                 "[unit] [varchar](max) NULL,\n"
                                                 "[parent] [char](36) NULL,\n"
+                                                "[is_marked] [int] NOT NULL,\n"
                                                 "[is_group] [int] NOT NULL,\n"
                                                 "[deletion_mark] [int] NOT NULL,\n"
                                                 "[version] [int] NOT NULL\n"
@@ -805,36 +856,132 @@ namespace arcirk::database{
 
 
     const std::string documents_table_view_ddl = "CREATE VIEW DocumentsTableView AS\n"
-                                                "    SELECT DocumentsTables.barcode AS barcode,\n"
-                                                "           Barcodes.parent AS nomenclature,\n"
-                                                "           DocumentsTables.parent AS document,\n"
-                                                "           DocumentsTables.quantity AS quantity\n"
-                                                "      FROM DocumentsTables AS DocumentsTables\n"
-                                                "           LEFT JOIN\n"
-                                                "           Barcodes AS Barcodes ON DocumentsTables.barcode = Barcodes.barcode;";
+                                                 "    SELECT DocumentsTables._id,\n"
+                                                 "           DocumentsTables.[first],\n"
+                                                 "           DocumentsTables.second,\n"
+                                                 "           DocumentsTables.ref,\n"
+                                                 "           DocumentsTables.cache,\n"
+                                                 "           DocumentsTables.price,\n"
+                                                 "           DocumentsTables.quantity,\n"
+                                                 "           DocumentsTables.barcode,\n"
+                                                 "           DocumentsTables.product,\n"
+                                                 "           DocumentsTables.parent,\n"
+                                                 "           DocumentsTables.is_group,\n"
+                                                 "           DocumentsTables.deletion_mark,\n"
+                                                 "           DocumentsTables.version,\n"
+                                                 "           IFNULL(Barcodes.parent, \"\") AS nomenclature,\n"
+                                                 "           IFNULL(Nomenclature.is_marked, 0) AS is_marked,\n"
+                                                 "           IFNULL(Nomenclature.trademark, \"\") AS trademark,\n"
+                                                 "           IFNULL(Nomenclature.unit, \"шт.\") AS unit,\n"
+                                                 "           IFNULL(Nomenclature.vendor_code, \"\") AS vendor_code,\n"
+                                                 "           IFNULL(Nomenclature.[first], \"\") AS good,\n"
+                                                 "           DocumentsTables.barcode || \"/\" || IFNULL(Nomenclature.vendor_code, \"\") AS representation,\n"
+                                                 "           COUNT(DocumentsMarkedTables._id) AS marked_quantity\n"
+                                                 "      FROM DocumentsTables AS DocumentsTables\n"
+                                                 "           LEFT JOIN\n"
+                                                 "           Barcodes AS Barcodes ON DocumentsTables.barcode = Barcodes.barcode\n"
+                                                 "           LEFT JOIN\n"
+                                                 "           Nomenclature AS Nomenclature ON Barcodes.parent = Nomenclature.ref\n"
+                                                 "           LEFT JOIN\n"
+                                                 "           DocumentsMarkedTables AS DocumentsMarkedTables ON DocumentsTables.ref = DocumentsMarkedTables.parent\n"
+                                                 "     GROUP BY DocumentsTables.ref;";
 
 
-    static inline void fail(const std::string& what, const std::string& error, bool conv = true){
-        std::tm tm = arcirk::current_date();
-        char cur_date[100];
-        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-
-        if(conv)
-            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
-        else
-            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
-    };
-
-    static inline void log(const std::string& what, const std::string& message, bool conv = true){
-        std::tm tm = arcirk::current_date();
-        char cur_date[100];
-        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-
-        if(conv)
-            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
-        else
-            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
-    };
+//    static inline void fail(const std::string& what, const std::string& error, bool conv = true, const std::string& log_folder = ""){
+//        std::tm tm = arcirk::current_date();
+//        char cur_date[100];
+//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+//        std::string res = std::string(cur_date);
+//        res.append(" " + what + ": ");
+//
+//        if(conv)
+//            res.append(arcirk::local_8bit(error));
+//        else
+//            res.append(error);
+//
+//        std::cerr << res << std::endl;
+//
+//        if(log_folder.empty())
+//            return;
+//
+//        namespace fs = boost::filesystem;
+//
+//        fs::path log_dir(log_folder);
+//        log_dir /= "errors";
+//        if(!fs::exists(log_dir)){
+//            try {
+//                fs::create_directories(log_dir);
+//            } catch (const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                return;
+//            }
+//        }
+//        char date_string[100];
+//        strftime(date_string, sizeof(date_string), "%u_%m_%Y", &tm);
+//
+//        fs::path file = log_dir / (std::string(date_string) + ".log");
+//
+//        std::ofstream out;			// поток для записи
+//        out.open(file.string(), std::ios::app); 		// открываем файл для записи
+//        if (out.is_open())
+//        {
+//            out << res << '\n';
+//        }
+//        out.close();
+//
+////        if(conv)
+////            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
+////        else
+////            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
+//    };
+//
+//    static inline void log(const std::string& what, const std::string& message, bool conv = true, const std::string& log_folder = ""){
+//        std::tm tm = arcirk::current_date();
+//        char cur_date[100];
+//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+//        std::string res = std::string(cur_date);
+//        res.append(" " + what + ": ");
+//
+//        if(conv)
+//            res.append(arcirk::local_8bit(message));
+//        else
+//            res.append(message);
+//
+//        std::cout << res << std::endl;
+//
+//        if(log_folder.empty())
+//            return;
+//
+//        namespace fs = boost::filesystem;
+//
+//        fs::path log_dir(log_folder);
+//        log_dir /= "days";
+//        if(!fs::exists(log_dir)){
+//            try {
+//                fs::create_directories(log_dir);
+//            } catch (const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                return;
+//            }
+//        }
+//        char date_string[100];
+//        strftime(date_string, sizeof(date_string), "%u_%m_%Y", &tm);
+//
+//        fs::path file = log_dir / (std::string(date_string) + ".log");
+//        //std::cout << file << std::endl;
+//
+//        std::ofstream out;			// поток для записи
+//        out.open(file.string(), std::ios::app); 		// открываем файл для записи
+//        if (out.is_open())
+//        {
+//            out << res  << '\n';
+//        }
+//        out.close();
+////        if(conv)
+////            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
+////        else
+////            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
+//    };
 
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
@@ -939,6 +1086,16 @@ namespace arcirk::database{
 //                std::string tbl_json = to_string(pre::json::to_json(tbl));
 //                return tbl_json;
             }
+            case tbDocumentsMarkedTables: {
+                auto tbl = document_marked_table();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.quantity = 1;
+                tbl.document_ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
+                return pre::json::to_json(tbl);
+            }
             case tbDocuments: {
                 auto tbl = documents();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
@@ -1007,6 +1164,7 @@ namespace arcirk::database{
             case tbDatabaseConfig: return type == DatabaseType::dbTypeSQLite ? database_config_table_ddl : database_config_odbc_table_ddl;
             case tbDevicesType:  return type == DatabaseType::dbTypeSQLite ? devices_type_table_ddl : devices_type_odbc_table_ddl;
             case tbBarcodes:  return type == DatabaseType::dbTypeSQLite ? barcodes_table_ddl : barcodes_odbc_table_ddl;
+            case tbDocumentsMarkedTables:  return type == DatabaseType::dbTypeSQLite ? document_table_marked_table_ddl : document_table_odbc_marked_table_ddl;
             case tables_INVALID:{
                 break;
             }
@@ -1163,7 +1321,7 @@ namespace arcirk::database{
     static inline std::map<tables, int> get_release_tables_versions(){
         std::map<tables, int> result;
         result.emplace(tables::tbDatabaseConfig, 2);
-        result.emplace(tables::tbNomenclature, 7);
+        result.emplace(tables::tbNomenclature, 8);
         result.emplace(tables::tbDocuments, 4);
         result.emplace(tables::tbDevices, 3);
         result.emplace(tables::tbMessages, 3);
@@ -1176,6 +1334,7 @@ namespace arcirk::database{
         result.emplace(tables::tbWarehouses, 3);
         result.emplace(tables::tbWorkplaces, 3);
         result.emplace(tables::tbBarcodes, 3);
+        result.emplace(tables::tbDocumentsMarkedTables, 1);
         return result;
     }
 
@@ -1194,7 +1353,8 @@ namespace arcirk::database{
                 tbDocumentsTables,
                 tbNomenclature,
                 tbDatabaseConfig,
-                tbBarcodes
+                tbBarcodes,
+                tbDocumentsMarkedTables
         };
         return result;
     }
@@ -1261,6 +1421,7 @@ namespace arcirk::database{
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "vendor_code", " "));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "trademark", " "));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "unit", "шт."));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "is_marked", 0));
                 }
             }
             else if(table == tables::tbDocuments){
@@ -1277,6 +1438,13 @@ namespace arcirk::database{
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "barcode", " "));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "price", 0));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "quantity", 0));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "product", "00000000-0000-0000-0000-000000000000"));
+                result.emplace(table, ddls);
+            }
+            else if(table == tables::tbDocumentsMarkedTables){
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "document_ref", "00000000-0000-0000-0000-000000000000"));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "qr_code", " "));
+                ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "quantity", 1));
                 ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "product", "00000000-0000-0000-0000-000000000000"));
                 result.emplace(table, ddls);
             }

@@ -116,8 +116,6 @@ class shared_state
     std::map<boost::uuids::uuid, std::vector<subscriber*>> user_sessions;
     std::mutex mutex_;
 
-    //arcirk::services::service_task_scheduler server_task_ = arcirk::services::service_task_scheduler();
-
 public:
     explicit
     shared_state();
@@ -254,7 +252,7 @@ public:
     }
 
 private:
-   //arcirk::database::soci_wrapper sql_wp;
+
     soci::session * sql_sess;
 
     std::shared_ptr<arcirk::services::task_scheduler> task_manager;
@@ -294,28 +292,104 @@ private:
 
 
    soci::session * soci_initialize();
-
-    static void fail(const std::string& what, const std::string& error, bool conv = true){
-        std::tm tm = arcirk::current_date();
-        char cur_date[100];
-        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-
-        if(conv)
-            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
-        else
-            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
-    };
-
-    static void log(const std::string& what, const std::string& message, bool conv = true){
-        std::tm tm = arcirk::current_date();
-        char cur_date[100];
-        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-
-        if(conv)
-            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
-        else
-            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
-    };
+//
+//    static void fail(const std::string& what, const std::string& error, bool conv = true, const std::string& log_folder = ""){
+//        std::tm tm = arcirk::current_date();
+//        char cur_date[100];
+//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+//
+//        std::string res = std::string(cur_date);
+//        res.append(" " + what + ": ");
+//        if(conv)
+//            res.append(arcirk::local_8bit(error));
+//        else
+//            res.append(error);
+//
+//        std::cerr << res << std::endl;
+//
+//        if(log_folder.empty())
+//            return;
+//
+//        namespace fs = boost::filesystem;
+//
+//        fs::path log_dir(log_folder);
+//        log_dir /= "errors";
+//        if(!fs::exists(log_dir)){
+//            try {
+//                fs::create_directories(log_dir);
+//            } catch (const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                return;
+//            }
+//        }
+//        char date_string[100];
+//        strftime(date_string, sizeof(date_string), "%u_%m_%Y", &tm);
+//
+//        fs::path file = log_dir / (std::string(date_string) + ".log");
+//
+//        std::ofstream out;			// поток для записи
+//        out.open(file.string(), std::ios::app); 		// открываем файл для записи
+//        if (out.is_open())
+//        {
+//            out << res << '\n';
+//        }
+//        out.close();
+//
+//        //std::cerr << file << std::endl;
+////        if(conv)
+////            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
+////        else
+////            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
+//    };
+//
+//    static void log(const std::string& what, const std::string& message, bool conv = true, const std::string& log_folder = ""){
+//        std::tm tm = arcirk::current_date();
+//        char cur_date[100];
+//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
+//
+//        std::string res = std::string(cur_date);
+//        res.append(" " + what + ": ");
+//        if(conv)
+//            res.append(arcirk::local_8bit(message));
+//        else
+//            res.append(message);
+//
+//        std::cout << res << std::endl;
+//
+//        if(log_folder.empty())
+//            return;
+//
+//        namespace fs = boost::filesystem;
+//
+//        fs::path log_dir(log_folder);
+//        log_dir /= "days";
+//        if(!fs::exists(log_dir)){
+//            try {
+//                fs::create_directories(log_dir);
+//            } catch (const std::exception &e) {
+//                std::cerr << e.what() << std::endl;
+//                return;
+//            }
+//        }
+//        char date_string[100];
+//        strftime(date_string, sizeof(date_string), "%u_%m_%Y", &tm);
+//
+//        fs::path file = log_dir / (std::string(date_string) + ".log");
+//        //std::cout << file << std::endl;
+//
+//        std::ofstream out;			// поток для записи
+//        out.open(file.string(), std::ios::app); 		// открываем файл для записи
+//        if (out.is_open())
+//        {
+//            out << res  << '\n';
+//        }
+//        out.close();
+//
+////        if(conv)
+////            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
+////        else
+////            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
+//    };
 
     [[nodiscard]] long param_count(const long& method_num) const;
 
