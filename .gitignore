@@ -99,3 +99,6 @@
 /task/x64/
 /task/lib/cmake-build-release/
 /task/cmake-build-release/
+/task/cmake-build-release/
+/tests/database/cmake-build-debug/
+/tests/database/x64/
