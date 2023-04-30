@@ -1,6 +1,7 @@
 //
 // Created by admin on 22.03.2023.
 //
+#include <arcirk.hpp>
 #include "../include/scheduled_operations.hpp"
 #include <net.hpp>
 #include <beast.hpp>
@@ -148,7 +149,7 @@ bool scheduled_operations::perform_data_exchange() {
     using json = nlohmann::json;
 
     if(sett_.ExchangePlan.empty())
-        throw native_exception("Не указан идентификатор плана обмена!");
+        throw native_exception(arcirk::local_8bit("Не указан идентификатор плана обмена!").c_str());
 
     arcirk::log("scheduled_operations::perform_data_exchange", "Запрос информации о регистрации данных.");
     auto result = exec_http_query("ExchangePlanGetChange", nlohmann::json{{"ExchangePlan", sett_.ExchangePlan}});

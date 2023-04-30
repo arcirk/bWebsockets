@@ -1,6 +1,7 @@
 #ifndef ARCIRK_SHARED_MODULE_HPP
 #define ARCIRK_SHARED_MODULE_HPP
 
+#include "arcirk.hpp"
 #include "includes.hpp"
 
 #define ARCIRK_VERSION "1.1.0"
@@ -188,6 +189,9 @@ namespace arcirk::server{
         DeviceGetFullInfo,
         GetTasks,
         UpdateTaskOptions,
+        TasksRestart,
+        RunTask,
+        StopTask,
         CMD_INVALID=-1,
     };
 
@@ -224,6 +228,9 @@ namespace arcirk::server{
         {DeviceGetFullInfo, "DeviceGetFullInfo"}    ,
         {GetTasks, "GetTasks"}    ,
         {UpdateTaskOptions, "UpdateTaskOptions"}    ,
+        {TasksRestart, "TasksRestart"}    ,
+        {RunTask, "RunTask"}    ,
+        {StopTask, "StopTask"}    ,
     })
 
 }

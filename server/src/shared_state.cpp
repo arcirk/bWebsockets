@@ -58,6 +58,8 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::DeviceGetFullInfo), this, &shared_state::device_get_full_info);
     add_method(enum_synonym(server::server_commands::GetTasks), this, &shared_state::get_tasks);
     add_method(enum_synonym(server::server_commands::UpdateTaskOptions), this, &shared_state::update_task_options);
+    add_method(enum_synonym(server::server_commands::RunTask), this, &shared_state::run_task);
+    add_method(enum_synonym(server::server_commands::StopTask), this, &shared_state::stop_task);
 
     run_server_tasks();
 
@@ -3179,6 +3181,78 @@ arcirk::server::server_command_result shared_state::update_task_options(const va
     } catch (std::exception &e) {
         fail("shared_state::run_server_tasks", e.what(), false, sett.WriteJournal ? app_directory().string(): "") ;
     }
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::task_restart(const variant_t &param, const variant_t &session_id) {
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    if(task_manager){
+        if(task_manager->is_started())
+            task_manager->stop();
+
+        task_manager->run();
+    }
+
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::run_task(const variant_t &param, const variant_t &session_id) {
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    std::string  id = param_.value("task_uuid", "");
+    auto custom_interval = param_.value("custom_interval", -1);
+    if(id.empty())
+        throw native_exception(arcirk::local_8bit("Не указан идентификатор задачи!").c_str());
+
+    if(task_manager){
+        if(task_manager->is_started())
+            task_manager->start_task_now(arcirk::uuids::string_to_uuid(id), custom_interval);
+    }
+
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::stop_task(const variant_t &param, const variant_t &session_id) {
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    std::string  id = param_.value("task_uuid", "");
+    if(id.empty())
+        throw native_exception(arcirk::local_8bit("Не указан идентификатор задачи!").c_str());
+
+    if(task_manager){
+        if(task_manager->is_started())
+            task_manager->stop_task(arcirk::uuids::string_to_uuid(id));
+    }
+
     result.message = "OK";
     return result;
 }

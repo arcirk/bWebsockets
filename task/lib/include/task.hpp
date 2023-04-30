@@ -121,6 +121,30 @@ namespace arcirk::services{
             workers_->wait();
 
             timer.expires_from_now(boost::posix_time::seconds(interval));
+
+            start_wait();
+        }
+
+        void start_now(const int custom_interval)
+        {
+            arcirk::log("task::start", "start task '" + opt_.synonum + "'");
+
+            workers_->post([=]
+                           {
+                               //auto guard = std::lock_guard(output_mutex);
+                               //task_(opt_);
+                           });
+
+            auto val = workers_->submit([]
+                                        {
+                                            return "ok!";
+                                        });
+            workers_->wait();
+
+            if(custom_interval == -1)
+                timer.expires_from_now(boost::posix_time::seconds(interval));
+            else
+                timer.expires_from_now(boost::posix_time::seconds(custom_interval));
             start_wait();
         }
 
@@ -166,6 +190,7 @@ namespace arcirk::services{
                 arcirk::log("task_scheduler::run","service already started");
                 return;
             }
+            arcirk::log("task_scheduler::run","run all tasks");
             is_started_ = true;
             io_service.run();
         }
@@ -196,6 +221,12 @@ namespace arcirk::services{
             auto itr = tasks.find(uuid);
             if(itr != tasks.end())
                 itr->second->start();
+        }
+
+        void start_task_now(const boost::uuids::uuid& uuid, int custom_interval){
+            auto itr = tasks.find(uuid);
+            if(itr != tasks.end())
+                itr->second->start_now(custom_interval);
         }
 
         void add_task(std::string const& name
