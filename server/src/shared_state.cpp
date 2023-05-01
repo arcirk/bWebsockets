@@ -1595,7 +1595,8 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
 
     if(enm_val == tbDocuments){
         query.clear();
-        *sql << query.remove().from("DocumentsTables").where({{"parent", ref}}, true).prepare();
+        *sql << query.remove().from(arcirk::enum_synonym(database::tables::tbDocumentsTables)).where({{"parent", ref}}, true).prepare();
+        *sql << query.remove().from(arcirk::enum_synonym(database::tables::tbDocumentsMarkedTables)).where({{"document_ref", ref}}, true).prepare();
     }
 
     auto tabular_sections = object.value("TabularSections", nlohmann::json{});
@@ -1603,7 +1604,8 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
         for (auto itr = tabular_sections.begin();  itr != tabular_sections.end() ; ++itr) {
             nlohmann::json table_section = *itr;
             if(table_section.is_object()){
-                std::string name = table_section.value("name", "");
+                auto name_ts = table_section["name"];
+                auto table = name_ts.get<database::tables>();
                 auto rows = table_section.value("strings", nlohmann::json{});
                 if(rows.is_array()){
                     //auto rows_items = rows.items();
@@ -1613,7 +1615,7 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
                             query.clear();
                             query.use(row_);
                             if(enm_val == tbDocuments){
-                                std::string query_text = query.insert("DocumentsTables", true).prepare();
+                                std::string query_text = query.insert(arcirk::enum_synonym(table), true).prepare();
                                 *sql << query_text;
                             }
 
@@ -1697,13 +1699,31 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
                                                                                      true).rows_to_array<database::document_table>(
                     *sql);
             nlohmann::json n_json_table{};
-            for (const auto itr : m_vec_table) {
+            for (const auto& itr : m_vec_table) {
                 n_json_table += pre::json::to_json<database::document_table>(itr);
             }
-            j_object["object"]["TabularSections"] = n_json_table;
-//            j_object["object"] += {
-//                    {"TabularSections", n_json_table}
-//            };
+
+            j_object["object"]["TabularSections"] +=  nlohmann::json{
+                    {"name", arcirk::enum_synonym(database::tables::tbDocumentsTables)},
+                    {"strings", n_json_table}
+            };
+
+
+            query.clear();
+            std::vector<database::document_marked_table> m_vec_table_m = query.select({"*"}).from(
+                    arcirk::enum_synonym(database::tables::tbDocumentsMarkedTables)).where({{"document_ref", ref}},
+                                                                                           true).rows_to_array<database::document_marked_table>(
+                    *sql);
+            nlohmann::json n_json_table_m{};
+            for(const auto& itr : m_vec_table_m) {
+                n_json_table_m += pre::json::to_json<database::document_marked_table>(itr);
+            }
+
+            j_object["object"]["TabularSections"] +=  nlohmann::json{
+                    {"name", arcirk::enum_synonym(database::tables::tbDocumentsMarkedTables)},
+                    {"strings", n_json_table_m}
+            };
+
         }
     }else if(o_table == database::tbDevices){
         std::vector<database::devices> m_vec = query.select({"*"}).from(table_name).where({{"ref", ref}},

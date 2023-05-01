@@ -823,11 +823,12 @@ namespace arcirk::database::builder {
 
             // std::cout << query_text << std::endl;
 
-            json columns = {};
+            //json columns = {};
+            std::set<std::string> columns;
             if(add_line_number)
-                columns += "line_number";
+                columns.insert("line_number") ;//columns += "line_number";
             if(add_empty_column)
-                columns += "empty";
+                columns.insert("empty") ; //+= "empty";
             json roms = {};
             int line_number = 0;
 
@@ -845,10 +846,10 @@ namespace arcirk::database::builder {
                 {
                     const column_properties & props = row.get_properties(i);
                     std::string column_name = props.get_name();
-
-                    if((columns.size() -1) != row.size()){
-                        columns.push_back(column_name);
-                    }
+                    columns.insert(column_name);
+//                    if(columns.find(column_name) == columns.end()){
+//                        columns.push_back(column_name);
+//                    }
 
                     if(std::find(column_ignore.begin(), column_ignore.end(), column_name) != column_ignore.end()){
                         j_row += {column_name, ""};
