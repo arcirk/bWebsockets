@@ -5,6 +5,7 @@
 #include "includes.hpp"
 
 #define ARCIRK_VERSION "1.1.0"
+#define CLIENT_VERSION 1
 #define ARCIRK_SERVER_CONF "server_conf.json"
 
 typedef std::function<void(const std::string&)> callback_message;
@@ -32,6 +33,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, session_uuid)
         (std::string, system_user)
         (std::string, device_id)
+        (int, version)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(

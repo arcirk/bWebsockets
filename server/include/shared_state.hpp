@@ -133,6 +133,8 @@ public:
 
     void send_notify(const std::string& message, subscriber* skip_session = nullptr, const std::string& notify_command = "notify", const boost::uuids::uuid& sender_uuid = boost::uuids::nil_uuid());
 
+    void system_message(const std::string& message, subscriber* session, const std::string& res = "OK");
+
     [[nodiscard]] bool use_authorization() const;
 
     [[nodiscard]] bool allow_delayed_authorization() const;

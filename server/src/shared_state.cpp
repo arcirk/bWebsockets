@@ -108,6 +108,26 @@ void shared_state::send_notify(const std::string &message, subscriber *sender, c
 
 }
 
+void shared_state::system_message(const std::string &message, subscriber *session, const std::string& res) {
+
+    server::server_response resp;
+    resp.command = "system_message";
+    resp.message = message;
+    resp.result = res;
+    resp.version = ARCIRK_VERSION;
+
+    std::string response =  pre::json::to_json(resp).dump();
+
+    if(sett.ResponseTransferToBase64){
+        auto const ss = boost::make_shared<std::string const>(base64::base64_encode(response));
+        session->send(ss);
+    }else{
+        auto const ss = boost::make_shared<std::string const>(response);
+        session->send(ss);
+    }
+
+}
+
 void shared_state::leave(const boost::uuids::uuid& session_uuid, const std::string& user_name) {
     auto iter = sessions_.find(session_uuid);
     if (iter != sessions_.end() ){
@@ -721,6 +741,8 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
     auto session = get_session(uuid_);
 
     using namespace arcirk::server;
+    using json = nlohmann::json;
+
     server::server_command_result result;
     result.command = enum_synonym(server::server_commands::SetClientParam);
 
@@ -729,8 +751,24 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         return result;
     }
 
+    json param_j = json::parse(base64_to_string(std::get<std::string>(param)));
+    auto param_ = client::client_param();
     try {
-        auto param_ = pre::json::from_json<client::client_param>(base64_to_string(std::get<std::string>(param)));
+        param_ = pre::json::from_json<client::client_param>(param_j);
+    } catch (...) {
+        auto tmp = pre::json::to_json(param_);
+        auto items = param_j.items();
+        for (auto it = items.begin(); it != items.end() ; ++it) {
+            if(tmp.find(it.key()) != tmp.end())
+                tmp[it.key()] = it.value();
+        }
+        param_ = pre::json::from_json<client::client_param>(tmp);
+    }
+
+    bool is_check_version = param_.version != CLIENT_VERSION;
+
+    try {
+        //auto param_ = pre::json::from_json<client::client_param>(base64_to_string(std::get<std::string>(param)));
         if(!param_.user_name.empty())
             session->set_user_name(param_.user_name);
         if(!param_.user_uuid.empty()){
@@ -768,10 +806,15 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
 
         result.param = base64::base64_encode(pre::json::to_json(param_).dump());
 
+        if(is_check_version && session->authorized()){
+            system_message("Требуется обновить приложение!", session);
+        }
+
     } catch (std::exception &e) {
         fail("shared_state::set_client_param:error", e.what(), false, sett.WriteJournal ? app_directory().string(): "");
         result.result = "error";
     }
+
 
     return result;
 }
