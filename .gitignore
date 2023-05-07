@@ -102,3 +102,6 @@
 /task/cmake-build-release/
 /tests/database/cmake-build-debug/
 /tests/database/x64/
+/web_admin/build-waAdmin-Qt_5_15_2_WebAssembly-Debug/
+/web_admin/build-waAdmin-WebAssembly_Qt_6_4_2-Debug/
+/web_admin/build-waAdmin-WebAssembly_Qt_6_4_2-Release/

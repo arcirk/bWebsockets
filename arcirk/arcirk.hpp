@@ -346,7 +346,7 @@ namespace arcirk {
         };
     }
 
-    static inline void fail(const std::string& what, const std::string& error, bool conv = true, const std::string& log_folder = ""){
+    static inline void fail(const std::string& what, const std::string& error, bool conv = true, const std::string& log_folder = "logs"){
         std::tm tm = arcirk::current_date();
         char cur_date[100];
         std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
@@ -395,7 +395,7 @@ namespace arcirk {
 //            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
     };
 
-    static inline void log(const std::string& what, const std::string& message, bool conv = true, const std::string& log_folder = ""){
+    static inline void log(const std::string& what, const std::string& message, bool conv = true, const std::string& log_folder = "logs"){
         std::tm tm = arcirk::current_date();
         char cur_date[100];
         std::strftime(cur_date, sizeof(cur_date), "%c", &tm);

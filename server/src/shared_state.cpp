@@ -1108,14 +1108,17 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
     result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
 
     std::string query_text = param_.value("query_text", "");
+    bool empty_column = false;
+
     auto sql = soci_initialize();
     if(!query_text.empty()){
+        empty_column = param_.value("empty_column", false);
         //произвольный запрос только с правами администратора
         bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
         if (!operation_available)
             throw native_exception("Не достаточно прав доступа!");
 
-        result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text)); //текст запроса передан в параметрах
+        result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text, false, empty_column)); //текст запроса передан в параметрах
     }
     else{
         std::string base64_query_param = param_.value("query_param", "");
@@ -1126,7 +1129,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             std::string table_name = query_param.value("table_name", "");
             std::string query_type = query_param.value("query_type", "");
             bool line_number = query_param.value("line_number", false);
-            bool empty_column = query_param.value("empty_column", false);
+            empty_column = query_param.value("empty_column", false);
 
             if(query_type.empty())
                 throw native_exception("Не указан тип запроса!");
@@ -1991,14 +1994,15 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
         return result;
     }
 
-
-
-
     sql_ddl = "";
 
     nlohmann::json where_values = {
             {"device_id", device_id}
     };
+
+    if(table_name == arcirk::enum_synonym(tables::tbDocuments))
+        where_values["deletion_mark"] = 0;
+
     if (!workplace.empty())
         where_values["workplace"] = workplace;
 
@@ -3072,11 +3076,14 @@ arcirk::server::server_command_result shared_state::delete_file(const variant_t 
 
     if(!fs::exists(file))
         throw native_exception("Файл не найден!");
+    try {
+        bool res = fs::remove(file);
+        result.message = res ? "OK" : "error";
+        result.result = res ? "success" : "error";
+    }catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
 
-    bool res = fs::remove(file);
-
-    result.message = res ? "OK" : "error";
-    result.result = res ? "success" : "error";
     return result;
 
 }

@@ -96,7 +96,7 @@ void scheduled_operations::add_requests(const nlohmann::json &arr,
         }
 
         if(m_types[type_xml] == tbUsers){
-            if(struct_json.value("role", "") == "")
+            if(struct_json.value("role", "").empty())
                 struct_json["role"] = "user";
             if(field_is_exists(struct_json, "hash")){
                 auto val = struct_json["hash"].get<std::string>();
@@ -184,6 +184,8 @@ bool scheduled_operations::perform_data_exchange() {
         std::string ref = item.value("Object", "");
         std::string xml_type = item.value("Type", "");
 
+        arcirk::log("scheduled_operations::perform_data_exchange", arcirk::str_sample("Обработка объекта: %1%", xml_type));
+
         //данных по штрихкодам достаточно, поэтому продолжаем
         if(xml_type == "InformationRegisterRecord.Штрихкоды"){
             std::string obj_str = item.value("Object", "");
@@ -230,8 +232,6 @@ bool scheduled_operations::perform_data_exchange() {
         int max = (int)transaction_arr.size();
         int step = 0;
         for (auto const& query_text : transaction_arr) {
-            //sql << query_text;
-            //lenght--;
             count++;
             current_queries.push_back(query_text);
             if(count == 10000){
@@ -294,8 +294,6 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
      std::string user_name = sett_.HSUser;
      const std::string pwd = sett_.HSPassword;
      std::string user_pwd = arcirk::crypt(pwd, "my_key");
-//    if(!sett_.HSPassword.empty())
-//        user_pwd = arcirk::crypt(sett_.HSPassword, CRYPT_KEY);
 
     std::string auth = user_name;
     auth.append(":");
@@ -317,9 +315,6 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     http::response_parser<http::dynamic_body> res;
     res.body_limit((std::numeric_limits<std::uint64_t>::max)());
     http::read(stream, buffer, res);
-
-    //std::cout << res << std::endl;
-    //auto req_status = res.result();
 
     auto res_ = res.get();
 
