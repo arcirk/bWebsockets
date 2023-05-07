@@ -54,6 +54,7 @@ void scheduled_operations::add_requests(const nlohmann::json &arr,
     m_field_matching.emplace("Наименование", "first");
     m_field_matching.emplace("Ссылка", "ref");
     m_field_matching.emplace("is_marked", "is_marked");
+    m_field_matching.emplace("hash", "hash");
 
     for (auto itr = arr.begin(); itr != arr.end() ; ++itr) {
         json object = *itr;
@@ -66,10 +67,11 @@ void scheduled_operations::add_requests(const nlohmann::json &arr,
         auto table_name = arcirk::enum_synonym(m_types[type_xml]);
 
         for (auto it = m_field_matching.begin();  it != m_field_matching.end() ; ++it) {
-            if(it->first == "Наименование" &&m_types[type_xml] == tbUsers){
-                if(field_is_exists(standard_attributes, "Код"))
+            if(it->first == "Наименование" &&m_types[type_xml] == tbUsers) {
+                if (field_is_exists(standard_attributes, "Код")){
                     struct_json[it->second] = get_string_value<std::string>(standard_attributes, "Код");
-                else
+                    struct_json["second"] = get_string_value<std::string>(standard_attributes, "Наименование");
+                }else
                     struct_json[it->second] = get_string_value<std::string>(standard_attributes, it->first);
             }else{
                 if(field_is_exists(standard_attributes, it->first) && field_is_exists(struct_json, it->second)){
@@ -97,8 +99,13 @@ void scheduled_operations::add_requests(const nlohmann::json &arr,
             if(struct_json.value("role", "") == "")
                 struct_json["role"] = "user";
             if(field_is_exists(struct_json, "hash")){
-                std::string hash = arcirk::get_hash(struct_json["first"], struct_json["ref"]);
-                struct_json["hash"] = hash;
+                auto val = struct_json["hash"].get<std::string>();
+                if(val.empty()){
+                    auto usr = arcirk::local_8bit(struct_json["first"].get<std::string>());
+                    auto pwd = arcirk::local_8bit(struct_json["ref"].get<std::string>());
+                    std::string hash = arcirk::get_hash(usr, pwd);
+                    struct_json["hash"] = hash;
+                }
             }
         }
 

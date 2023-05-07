@@ -103,19 +103,23 @@ void shared_state::command_to_client(const std::string &receiver, const std::str
     if(command.empty() || receiver.empty())
         return;
 
-    std::string cmd = "cmd " + enum_synonym(arcirk::server::server_commands::CommandToClient) + receiver;
+    std::string cmd = "cmd " + enum_synonym(arcirk::server::server_commands::CommandToClient) + " " +receiver;
 
-    if(!param.empty()){
-        using json_nl = nlohmann::json;
+    //if(!param.empty()){
+        using json = nlohmann::json;
         std::string private_param = arcirk::base64::base64_encode(param);
-        json_nl param_ = {
-                {"parameters", private_param},
+        json param_ = {
+                {"param", private_param},
                 {"recipient", receiver},
                 {"command", command}
         };
-        cmd.append(" ");
-        cmd.append(arcirk::base64::base64_encode(param_.dump()));
-    }
+    json p = {
+            {enum_synonym(arcirk::server::server_commands::CommandToClient), arcirk::base64::base64_encode(param_.dump())}
+    };
+
+    cmd.append(" ");
+    cmd.append(arcirk::base64::base64_encode(p.dump()));
+    //}
 
     auto const ss = boost::make_shared<std::string const>(std::move(cmd));
     send(ss);

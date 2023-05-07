@@ -194,6 +194,7 @@ namespace arcirk::server{
         TasksRestart,
         RunTask,
         StopTask,
+        SendNotify,
         CMD_INVALID=-1,
     };
 
@@ -233,6 +234,7 @@ namespace arcirk::server{
         {TasksRestart, "TasksRestart"}    ,
         {RunTask, "RunTask"}    ,
         {StopTask, "StopTask"}    ,
+        {SendNotify, "SendNotify"}    ,
     })
 
 }

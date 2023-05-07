@@ -13,7 +13,7 @@
 #include <boost/beast/ssl.hpp>
 
 class WebCore final : public Component {
-
+    std::mutex mutex_;
 public:
     const char *Version = u8"1.1.0";
     const std::string version = "1.1.0";
@@ -38,6 +38,9 @@ private:
     bool auto_reconnect;
     bool allow_delayed_authorization;
     boost::uuids::uuid default_form{};
+
+    bool is_authorized;
+    bool is_notify_on_connect;
 
 //    std::string _client_param;
 

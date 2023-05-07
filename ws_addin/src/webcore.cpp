@@ -45,6 +45,9 @@ WebCore::WebCore(){
 
     ssl::context ctx{ssl::context::tlsv12_client};
 
+    is_authorized = false;
+    is_notify_on_connect = false;
+
     client_param = client::client_param();
     client_param.app_name = application_name;
     client_param.user_uuid = arcirk::uuids::nil_string_uuid();
@@ -162,6 +165,7 @@ std::string WebCore::get_server_commands() {
             {enum_synonym(server_commands::ObjectSetToDatabase),       enum_synonym(server_commands::ObjectSetToDatabase)},
             {enum_synonym(server_commands::ObjectGetFromDatabase),     enum_synonym(server_commands::ObjectGetFromDatabase)},
             {enum_synonym(server_commands::DownloadFile),              enum_synonym(server_commands::DownloadFile)},
+            {enum_synonym(server_commands::SendNotify),                enum_synonym(server_commands::SendNotify)},
     };
 
     return commands.dump();
@@ -242,12 +246,24 @@ void WebCore::emit(const std::string& command, const std::string &resp) {
 //        source_event = uuid_form;
 //    }
     //this->CleanEventBuffer();
-    long sz = this->GetEventBufferDepth();
-    if(sz == 1)
-        this->SetEventBufferDepth(sz + 1);
-    //const long sz = 5;
+    std::lock_guard<std::mutex> lock(mutex_);
 
-    this->ExternalEvent(source_event, command, resp);
+//    long sz = this->GetEventBufferDepth();
+//    if(sz == 1)
+//        this->SetEventBufferDepth(sz + 1);
+
+
+//    if(command == "WebCore::StatusChanged")
+//        return;
+
+    auto result = this->ExternalEvent(source_event, command, resp);
+    if(!result){
+        long sz = this->GetEventBufferDepth();
+        this->SetEventBufferDepth(sz + 1);
+        this->ExternalEvent(source_event, command, resp);
+    }
+
+    arcirk::log("WebCore::emit", command + " " + std::to_string(this->GetEventBufferDepth()), true, "C:/src/bWebsockets/bin/logs");
 }
 
 void WebCore::close(const variant_t &exit_base) {
@@ -265,6 +281,7 @@ void WebCore::open(const variant_t &url) {
         error(arcirk::to_utf("WebCore::open"), arcirk::to_utf("Клиент уже запущен!"));
         return;
     }
+    is_authorized = false;
     m_client->set_auto_reconnect(auto_reconnect);
     m_client->update_client_param(client_param);
     url_ = std::get<std::string>(url);
@@ -289,6 +306,8 @@ std::string WebCore::session_uuid() {
 }
 
 void WebCore::on_connect(){
+//    if(!is_notify_on_connect)
+//        return;
     try {
         auto response = arcirk::server::server_response();
         response.command = "on_connect";
@@ -344,6 +363,9 @@ WebCore::on_error(const std::string &what, const std::string &err, int code){
 }
 
 void WebCore::on_status_changed(bool status){
+//    if(!is_authorized){
+//        return;
+//    }
     try {
         auto response = arcirk::server::server_response();
         response.command = "on_status_changed";
@@ -395,6 +417,7 @@ void WebCore::on_successful_authorization() {
         response.uuid_form = uuids::uuid_to_string(default_form);
         response.version = ARCIRK_VERSION;
         std::string msg = arcirk::base64::base64_encode(pre::json::to_json(response).dump());
+        is_authorized = true;
         emit(enum_synonym(arcirk::client::client_events::wsSuccessfulAuthorization), msg);
     } catch (const std::exception &e) {
         auto w = e.what();

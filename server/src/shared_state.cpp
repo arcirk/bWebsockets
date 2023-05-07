@@ -60,6 +60,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::UpdateTaskOptions), this, &shared_state::update_task_options);
     add_method(enum_synonym(server::server_commands::RunTask), this, &shared_state::run_task);
     add_method(enum_synonym(server::server_commands::StopTask), this, &shared_state::stop_task);
+    add_method(enum_synonym(server::server_commands::SendNotify), this, &shared_state::send_all_notify);
 
     run_server_tasks();
 
@@ -80,13 +81,18 @@ void shared_state::join(subscriber *session) {
             send_notify("Client Join", session, "ClientJoin");
 }
 
-void shared_state::send_notify(const std::string &message, subscriber *sender, const std::string& notify_command, const boost::uuids::uuid& sender_uuid) {
+void shared_state::send_notify(const std::string &message, subscriber *sender
+                               , const std::string& notify_command
+                               , const boost::uuids::uuid& sender_uuid
+                               , const std::vector<std::string>& filter
+                               , const std::string& base64_param) {
 
     server::server_response resp;
     resp.command = notify_command;
     resp.message = message;
     resp.result = "OK";
     resp.version = ARCIRK_VERSION;
+    resp.param = base64_param;
     if(sender){
         resp.sender = arcirk::uuids::uuid_to_string(sender->uuid_session());
         resp.app_name = sender->app_name();
@@ -98,12 +104,12 @@ void shared_state::send_notify(const std::string &message, subscriber *sender, c
 
     if(sender){
         if(sender->is_ssl())
-            send<ssl_websocket_session>(response, sender);
+            send<ssl_websocket_session>(response, sender, filter);
         else
-            send<plain_websocket_session>(response, sender);
+            send<plain_websocket_session>(response, sender, filter);
     }else{
-        send<ssl_websocket_session>(response);
-        send<plain_websocket_session>(response);
+        send<ssl_websocket_session>(response, nullptr, filter);
+        send<plain_websocket_session>(response, nullptr, filter);
     }
 
 }
@@ -415,7 +421,7 @@ bool shared_state::use_authorization() const{
 }
 
 template<typename T>
-void shared_state::send(const std::string &message, subscriber* skip_session) {
+void shared_state::send(const std::string &message, subscriber* skip_session, const std::vector<std::string>& filter) {
 
     bool ssl_ = typeid(T) == typeid(ssl_websocket_session);
 
@@ -426,8 +432,14 @@ void shared_state::send(const std::string &message, subscriber* skip_session) {
         for(auto p : sessions_){
             if(ssl_ != p.second->is_ssl())
                 continue;
-            if(p.second != skip_session)
+            if(p.second != skip_session){
+                if(!filter.empty()){
+                    if(std::find(filter.begin(), filter.end(), p.second->app_name()) == filter.end())
+                        continue;
+                }
                 v.emplace_back(p.second->template derived<T>().weak_from_this());
+            }
+
         }
 
     }
@@ -601,7 +613,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
 
     using namespace arcirk::database;
     using namespace arcirk::server;
-    using n_json = nlohmann::json;
+    using json = nlohmann::json;
 
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
     bool operation_available = is_operation_available(uuid, roles::dbUser);
@@ -616,10 +628,18 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         bool is_table = param_.value("table", false);
         bool empty_column = param_.value("empty_column", false); //пустой первый столбец в модели QT
         result.uuid_form = param_.value("uuid_form", arcirk::uuids::nil_string_uuid());
+        auto filter = param_.value("app_filter", json::array());
 
-        auto table_object = n_json::object();
+        std::vector<std::string> m_filer{};
+        if(!filter.empty()){
+            for (auto itr = filter.begin(); itr != filter.end() ; ++itr) {
+                m_filer.push_back(*itr);
+            }
+        }
 
-        auto columns = n_json::array();
+        auto table_object = json::object();
+
+        auto columns = json::array();
 
         if(is_table) {
             std::vector<std::string> m_cols{"session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role", "device_id", "address"};
@@ -633,17 +653,22 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
             table_object["columns"] = columns;
         }
 
-        auto rows = n_json::array();
+        auto rows = json::array();
 
         for (auto itr = sessions_.cbegin(); itr != sessions_.cend() ; ++itr) {
             if(sett.UseAuthorization && !itr->second->authorized())
                 continue;
+
+            if(m_filer.size() > 0)
+                if(std::find(m_filer.begin(), m_filer.end(), itr->second->app_name()) == m_filer.end())
+                    continue;
+
             char cur_date[100];
             auto tm = itr->second->start_date();
             std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
             std::string dt = arcirk::to_utf(cur_date);
 
-            n_json row = n_json::object();
+            auto row = json::object();
             if(empty_column){
                 row["empty"] = " ";
             }
@@ -656,17 +681,6 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
             row["device_id"] = arcirk::uuids::uuid_to_string(itr->second->device_id());
             row["address"] = itr->second->address();
 
-//            n_json row = {
-//                    {"empty", " "},
-//                    {"session_uuid", arcirk::uuids::uuid_to_string(itr->second->uuid_session())},
-//                    {"user_name", itr->second->user_name()},
-//                    {"user_uuid", arcirk::uuids::uuid_to_string(itr->second->user_uuid())},
-//                    {"start_date", dt},
-//                    {"app_name", itr->second->app_name()},
-//                    {"role", itr->second->role()},
-//                    {"device_id", arcirk::uuids::uuid_to_string(itr->second->device_id())},
-//                    {"address", itr->second->address()}
-//            };
             rows += row;
         }
         table_object["rows"] = rows;
@@ -3314,6 +3328,45 @@ arcirk::server::server_command_result shared_state::stop_task(const variant_t &p
     if(task_manager){
         if(task_manager->is_started())
             task_manager->stop_task(arcirk::uuids::string_to_uuid(id));
+    }
+
+    result.message = "OK";
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::send_all_notify(const variant_t &param,
+                                                                   const variant_t &session_id) {
+
+    using json = nlohmann::json;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::SendNotify, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto app_filter = param_.value("app_filter", json::array());
+    std::string command = param_.value("command", "");
+    std::string message = param_.value("message", "");
+    auto command_param = param_.value("param", json{});
+
+    if(command.empty() && message.empty())
+        throw native_exception(arcirk::local_8bit("Не верные параметры команды!").c_str());
+
+    std::vector<std::string> apps{};
+    if(!app_filter.empty()){
+        for (auto itr = app_filter.begin(); itr != app_filter.end() ; ++itr) {
+            apps.push_back(*itr);
+        }
+    }
+
+    auto session = get_session(uuid);
+    if(session){
+        send_notify(message, session, command, uuid, apps, arcirk::base64::base64_encode(command_param.dump()));
     }
 
     result.message = "OK";
