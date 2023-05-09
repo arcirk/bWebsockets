@@ -5,7 +5,7 @@
 #include "includes.hpp"
 
 #define ARCIRK_VERSION "1.1.0"
-#define CLIENT_VERSION 1
+#define CLIENT_VERSION 2
 #define ARCIRK_SERVER_CONF "server_conf.json"
 
 typedef std::function<void(const std::string&)> callback_message;
