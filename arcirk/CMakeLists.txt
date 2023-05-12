@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 project(arcirk)
 
-if (MSVC)
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
-    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
-else()
-    set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
-            CACHE STRING "Vcpkg toolchain file")
-endif()
+#if (MSVC)
+#    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+#    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+#else()
+#    set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
+#            CACHE STRING "Vcpkg toolchain file")
+#endif()
 
 set(CMAKE_CXX_STANDARD 17)
 

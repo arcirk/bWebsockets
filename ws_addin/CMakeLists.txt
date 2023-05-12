@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 
-if (MSVC)
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
-    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
-endif ()
+#if (MSVC)
+#    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+#    include(C:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+#endif ()
 
 project(webcore)
 
