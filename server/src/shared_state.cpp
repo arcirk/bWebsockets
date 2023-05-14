@@ -405,14 +405,19 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         response = arcirk::base64::base64_encode(response);
     }
 
-    auto const ss = boost::make_shared<std::string const>(response);
-    if(!is_command_to_client){
-        session->send(ss);
-    }else{
-        auto session_receiver = get_session(arcirk::uuids::string_to_uuid(session_id_receiver));
-        if(session_receiver)
-            session_receiver->send(ss);
+    try {
+        auto const ss = boost::make_shared<std::string const>(std::string(response.c_str()));
+        if(!is_command_to_client){
+            session->send(ss);
+        }else{
+            auto session_receiver = get_session(arcirk::uuids::string_to_uuid(session_id_receiver));
+            if(session_receiver)
+                session_receiver->send(ss);
+        }
+    } catch (const std::exception &e) {
+        fail("shared_state::execute_command_handler", e.what(), true, sett.WriteJournal ? app_directory().string(): "");
     }
+
 
 }
 
@@ -2130,8 +2135,6 @@ arcirk::server::server_command_result shared_state::sync_update_data_on_the_serv
         }
     }
 
-
-
     result.result = "success";
     result.message = "OK";
 
@@ -2187,30 +2190,43 @@ std::string shared_state::handle_request(const std::string &body, const std::str
         std::string command = http_body["command"];
         std::string param = http_body["param"];
         std::string recipient = http_body.value("recipient", "");
+        std::string sender = http_body.value("sender", ""); //подмена отправителя ToDo: требуется проверка сессии на соответствие сессий пользователя
 
         nlohmann::json parameters = {
                 {"parameters", param}
         };
 
-        if(recipient.empty())
-            execute_command_handler("cmd " + command + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
-        else
-            execute_command_handler("cmd " + command + " " + recipient + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
+        if(!sender.empty()){
+            auto sender_session = get_session(arcirk::uuids::string_to_uuid(sender));
+            if(!sender_session)
+                return "fail sender session";
+            if(recipient.empty())
+                execute_command_handler("cmd " + command + " " + arcirk::base64::base64_encode(parameters.dump()), sender_session);
+            else
+                execute_command_handler("cmd " + command + " " + recipient + " " + arcirk::base64::base64_encode(parameters.dump()), sender_session);
+        }else{
+            if(recipient.empty())
+                execute_command_handler("cmd " + command + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
+            else
+                execute_command_handler("cmd " + command + " " + recipient + " " + arcirk::base64::base64_encode(parameters.dump()), http_session.get());
+        }
 
 //    } catch (std::exception &e) {
 //        return std::string("shared_state::verify_auth:error ") + e.what();
 //    }
-
     sessions_.erase(http_session->uuid_session());
+    if(command != arcirk::enum_synonym(arcirk::server::server_commands::CommandToClient)){
+        auto result = http_session->get_result();
+        info("handle_request", "close http client");
+        if(result->empty())
+            return "error";
 
-    info("handle_request", "close http client");
+        return result->c_str();
+    }else{
+        info("handle_request", "close http client");
+        return "OK";
+    }
 
-    auto result = http_session->get_result();
-
-    if(result->empty())
-        return "error";
-
-    return result->c_str();
 }
 
 //Запуск планировщика задач
