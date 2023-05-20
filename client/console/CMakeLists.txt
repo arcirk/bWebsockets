@@ -135,6 +135,7 @@ target_link_libraries(${TARGET} PRIVATE
         Boost::system
         Boost::thread
         Boost::locale
+        Boost::regex
         OpenSSL::SSL
         OpenSSL::Crypto
         arcirk

@@ -24,6 +24,10 @@ public:
         return start_date_;
    }
 
+    [[nodiscard]] virtual std::string info_base() const{
+        return _info_base;
+    }
+
     [[nodiscard]] virtual std::string user_name() const{
         return _user_name;
     }
@@ -55,8 +59,13 @@ public:
     virtual void set_full_name(const std::string& value){
         _full_name = value;
     }
+
+    virtual void set_info_base(const std::string& value){
+       _info_base = value;
+    }
+
     virtual void set_app_name(const std::string& value){
-       _app_name = value;
+        _app_name = value;
     }
 
     virtual void set_uuid_session(const boost::uuids::uuid& value){
@@ -115,6 +124,7 @@ protected:
     std::string _address;
     boost::uuids::uuid _device_id{};
     bool _is_template_http_client = false;
+    std::string _info_base = "";
 
     void set_template_http_client(bool value){
         _is_template_http_client = value;

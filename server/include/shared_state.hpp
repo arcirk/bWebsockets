@@ -213,48 +213,95 @@ public:
 
     void start_tasks();
 
-    std::string save_file(const std::string& content_disp, ByteArray& data) const{
+    std::string save_blob(arcirk::database::tables table, const nlohmann::json& where, const ByteArray& data);
+
+    std::string save_file(const std::string& content_disp, ByteArray& data){
+
+        using json = nlohmann::json;
 
         arcirk::server::server_response resp;
         resp.command = arcirk::enum_synonym(arcirk::server::server_commands::DownloadFile);
         resp.version = ARCIRK_VERSION;
 
         try {
-            T_vec vec = arcirk::split(content_disp, ";");
+            //T_vec vec = arcirk::split(content_disp, ";");
+            T_list vec = arcirk::parse_section_ini(content_disp, ";");
             std::string file_name;
             std::string destantion;
             for (auto const& itr : vec) {
-                T_vec val = arcirk::split(itr, "=");
-                if(val.size() == 2){
-                    if(val[0] == "file_name"){
-                        file_name = val[1];
-                        boost::erase_all(file_name, "\"");
-                    }else if(val[0] == "destantion"){
-                        destantion = val[1];
-                        boost::erase_all(destantion, "\"");
-                    }
+                if(itr.first == "file_name"){
+                    file_name = itr.second;
+                  boost::erase_all(file_name, "\"");
+                }else if(itr.first == "destantion"){
+                    destantion = itr.second;;
+                    boost::erase_all(destantion, "\"");
                 }
+
+//                T_vec val = arcirk::split(itr, "=");
+//                if(val.size() == 2){
+//                    if(val[0] == "file_name"){
+//                        file_name = val[1];
+//                        boost::erase_all(file_name, "\"");
+//                    }else if(val[0] == "destantion"){
+//                        destantion = val[1];
+//                        boost::erase_all(destantion, "\"");
+//                    }
+//                }
             }
-            namespace fs = boost::filesystem;
-            fs::path dir(sett.ServerWorkingDirectory);
-            dir /= sett.Version;
-            fs::path file(dir);
-            file /= destantion;
-            file /= file_name;
 
-            arcirk::write_file(file.string(), data);
+            if(destantion.empty()){
+                resp.result = "error";
+                resp.message = "Конечное местоположение не задано!";
+                return pre::json::to_json(resp).dump();
+            }
 
-            auto row = nlohmann::json::object();
-            row["name"] = file.filename().string();
-            row["path"] = file.string().substr(dir.string().length(), file.string().length() - dir.string().length());
-            row["is_group"] = 0;
-            row["parent"] = file.parent_path().string().substr(dir.string().length(), file.parent_path().string().length() - dir.string().length());
-            row["size"] = fs::is_directory(file) ? 0 : (int)fs::file_size(file);
+            if(!arcirk::base64::is_base64(destantion)){
+                resp.result = "error";
+                resp.message = "Местоположение файла должно быть закодировано в base64!";
+                return pre::json::to_json(resp).dump();
+            }
+
+            std::string destantion_ = arcirk::base64::base64_decode(destantion);
+            json dest_data{};
+
+            std::string table_name;
+            json where{};
+
+            if(nlohmann::json::accept(destantion_))
+                dest_data = json::parse(destantion_);
+            else
+                dest_data = destantion_;
+
+            if(dest_data.is_object()){
+                table_name = dest_data.value("table_name", "");
+                where = dest_data.value("where_values", json::object());
+                if(table_name.empty())
+                    resp.result = "error";
+                else{
+                    json table = table_name;
+                    resp.result = save_blob(table.get<arcirk::database::tables>(), where, data);
+                }
+            }else{
+                namespace fs = boost::filesystem;
+                fs::path dir(sett.ServerWorkingDirectory);
+                dir /= sett.Version;
+                fs::path file(dir);
+                file /= destantion_;
+                file /= file_name;
+
+                arcirk::write_file(file.string(), data);
+
+                auto row = nlohmann::json::object();
+                row["name"] = file.filename().string();
+                row["path"] = file.string().substr(dir.string().length(), file.string().length() - dir.string().length());
+                row["is_group"] = 0;
+                row["parent"] = file.parent_path().string().substr(dir.string().length(), file.parent_path().string().length() - dir.string().length());
+                row["size"] = fs::is_directory(file) ? 0 : (int)fs::file_size(file);
 
 
-            resp.message = "OK";
-            resp.result = arcirk::base64::base64_encode(row.dump());
-
+                resp.message = "OK";
+                resp.result = arcirk::base64::base64_encode(row.dump());
+            }
         } catch (const std::exception &e) {
             resp.message = e.what();
             resp.result = "error";

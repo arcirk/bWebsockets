@@ -33,6 +33,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, session_uuid)
         (std::string, system_user)
         (std::string, device_id)
+        (std::string, info_base)
         (int, version)
 )
 

@@ -6,20 +6,15 @@ import QtQuick.Layouts 1.12
 
 ApplicationWindow {
 
-    visible: true
-    title: qsTr("arcirk WebSocket Server")
+    GridLayout{
 
-    StackView{
-
-        id: stackView
         anchors.fill: parent
+        columns: 3
 
-        initialItem: PageStart{
-            id: pageStart
-            objectName: "pageStart"
-
+        Text{
+            text: "test page"
         }
 
-
     }
+
 }

@@ -647,14 +647,21 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
         auto columns = json::array();
 
         if(is_table) {
-            std::vector<std::string> m_cols{"session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role", "device_id", "address"};
+            std::vector<std::string> m_cols{"session_uuid",
+                                            "user_name",
+                                            "user_uuid",
+                                            "start_date",
+                                            "app_name",
+                                            "role",
+                                            "device_id",
+                                            "address",
+                                            "info_base"};
             if(empty_column){
                 m_cols.insert(m_cols.cbegin(), "empty");
             }
             for (auto const& itr : m_cols) {
                 columns += itr;
             }
-            //auto j = n_json{"empty", "session_uuid", "user_name", "user_uuid", "start_date", "app_name", "role", "device_id", "address"};
             table_object["columns"] = columns;
         }
 
@@ -685,6 +692,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
             row["role"] = itr->second->role();
             row["device_id"] = arcirk::uuids::uuid_to_string(itr->second->device_id());
             row["address"] = itr->second->address();
+            row["info_base"] = itr->second->info_base();
 
             rows += row;
         }
@@ -799,6 +807,8 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         result.result = arcirk::base64::base64_encode(pre::json::to_json(param_).dump() );
         session->set_app_name(param_.app_name);
         session->set_device_id(uuids::string_to_uuid(param_.device_id));
+        session->set_info_base(param_.info_base);
+
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.hash);
@@ -1144,7 +1154,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)
                    &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocuments)&&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables)){
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables)&&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsMarkedTables)&&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbBarcodes)){
                     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
                     if (!operation_available)
                         throw native_exception("Не достаточно прав доступа!");
@@ -1194,7 +1206,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                     }
                 }else if(query_type == "delete"){
                     query.remove().from(table_name);
-                }
+                }else
+                    throw native_exception("Не известный тип запроса!");
+
                 if(query.is_valid()){
                     if(!where_values.empty()){
                         query.where(where_values, true);
@@ -3393,5 +3407,33 @@ arcirk::server::server_command_result shared_state::send_all_notify(const varian
     }
 
     result.message = "OK";
+    return result;
+}
+
+std::string shared_state::save_blob(arcirk::database::tables table, const nlohmann::json& where, const ByteArray &data) {
+
+    using namespace soci;
+    using query_builder = arcirk::database::builder::query_builder;
+
+    if(table == arcirk::database::tables::tables_INVALID)
+        return "error";
+
+    std::string result;
+
+    try {
+        auto sql = soci_initialize();
+        soci::blob b(*sql);
+        //auto buf = reinterpret_cast<char*>(data.data());
+        //b.write_from_start((char*)&data, data.size());
+        b.write(0, reinterpret_cast<const char*>( data.data() ), data.size());
+        auto query = query_builder();
+        query.use(nlohmann::json{"data"});
+        *sql << query.update(arcirk::enum_synonym(table), false).where(where, true).prepare(), soci::use(b);
+        result = "success";
+    } catch (const std::exception &e) {
+        fail("shared_state::save_blob", arcirk::to_utf(e.what()));
+        result = "error";
+    }
+
     return result;
 }

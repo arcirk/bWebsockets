@@ -610,6 +610,35 @@ namespace arcirk::database::builder {
             return *this;
         }
 
+//        query_builder& update(const std::string& table_name, const nlohmann::json fields, bool skip_id = true){
+//            queryType = Update;
+//            if(databaseType == type_Sqlite3)
+//                table_name_ = table_name;
+//            else
+//                table_name_ = "dbo.[" + table_name + "]";
+//            result = str_sample("update %1% set ", table_name_);
+//            if(fields.is_array()){
+//                for (auto itr = fields.begin(); itr != fields.end() ; ++itr) {
+//                    if(*itr == "_id" && skip_id)
+//                        continue;
+//                    result.append("[" + *itr + "]");
+//                    if(itr == --fields.end())
+//                        result.append(",\n");
+//                }
+//            }else if(fields.is_object()){
+//               auto items = fields.items();
+//                for (auto itr = items.begin(); itr != items.end() ; ++itr) {
+//                    if(itr.key() == "_id" && skip_id)
+//                        continue;
+//                    result.append("[" + itr.key() + "]");
+//                    if(itr == --items.end())
+//                        result.append(",\n");
+//                }
+//            }
+//
+//            return *this;
+//        }
+
         query_builder& insert(const std::string& table_name, bool use_values, bool skip_id = true){
             queryType = Insert;
 

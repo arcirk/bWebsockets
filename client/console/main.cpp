@@ -143,6 +143,14 @@ main(int argc, char* argv[]){
 
     setlocale(LC_ALL, "Russian");
 
+    std::string s = "Тестовая";
+    std::string s_b = arcirk::base64::base64_encode(s);
+
+    std::cout << arcirk::base64::is_base64(s) << std::endl;
+    std::cout << arcirk::base64::is_base64(s_b) << std::endl;
+
+    return EXIT_SUCCESS;
+
 //    try {
 //        //http тест
 //        const std::string host_1 = "http://192.168.43.25/trade";

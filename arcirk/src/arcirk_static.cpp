@@ -264,7 +264,7 @@ namespace arcirk{
         return (h-1) * 3600 + m * 60;
     }
 
-    long int add_day(const long int dt, const int quantity){
+    long int add_day(const long int& dt, const int& quantity){
         return dt + (quantity * (60*60*24));
     }
 
@@ -305,5 +305,30 @@ namespace arcirk{
 
     ByteArray string_to_byte_array(const std::string& str){
         return ByteArray(str.begin(), str.end());
+    }
+
+    std::string left(const std::string &source, const std::string::size_type& count){
+        return  source.substr(0, count);
+    }
+
+    std::string right(const std::string &source, const std::string::size_type& start){
+        return  source.substr(start, source.length());
+    }
+
+    T_list parse_section_ini(const std::string& source, const std::string& sep){
+
+        T_vec vec = split(source, sep);
+
+        T_list result;
+
+        for (auto itr = vec.begin(); itr != vec.end() ; ++itr) {
+            auto index = itr->find_first_of('=');
+            if(index != std::string::npos){
+                auto first = left(*itr, index);
+                auto second = right(*itr, index + 1);
+                result.push_back(std::pair<T_str,T_str>(first, second));
+            }
+        }
+        return result;
     }
 }

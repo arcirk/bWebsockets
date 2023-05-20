@@ -1,4 +1,11 @@
-QT += quick
+QT += quick widgets
+QT += websockets network sql
+QT += quickcontrols2
+QT += core-private
+QT += core
+QT += svg
+
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.

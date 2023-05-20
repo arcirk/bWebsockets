@@ -244,24 +244,6 @@ public:
                         const auto data = req_.body().data();
                         ByteArray bt(boost::asio::buffer_size(data));
                         boost::asio::buffer_copy(boost::asio::buffer(bt), data);
-//                        nlohmann::json n_body{
-//                            ""
-//                        };
-//                        vector<unsigned char> data(boost::asio::buffer_size(buffers))
-//                        for (auto it = data.begin(); it != data.end(); it++)
-//                        {
-//                            boost::asio::const_buffer d = *it;
-//                            //const void* a = d.data();
-//                            //BYTE f = (unsigned char*) a;
-//                            bt.push_back((BYTE)d.data());
-//                            //outFile.write(f, d.size());
-//
-//                        }
-//                        //ByteArray bt{};
-//                        char* tempchar = new char[req_.body().data().buffer_bytes()];
-//                        //std::copy(data.begin(), data.end(), &bt);
-//                        boost::asio::buffer_copy(tempchar, data, data.buffer_bytes());
-//                        const auto body = boost::beast::buffers_to_string(data);
                         result = state_->save_file(content_disp, bt);
                     }else{
                         const auto body = boost::beast::buffers_to_string(req_.body().data());

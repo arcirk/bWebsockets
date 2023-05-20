@@ -204,7 +204,7 @@ void WebCore::send_message(const variant_t &receiver, const variant_t &message, 
 
 }
 
-void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName) {
+void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName, const variant_t &infoBase) {
     if(!std::get<std::string>(userName).empty())
         client_param.user_name = std::get<std::string>(userName);
     if(!std::get<std::string>(userHash).empty())
@@ -213,6 +213,8 @@ void WebCore::set_client_param(const variant_t &userName, const variant_t &userH
         client_param.user_uuid = std::get<std::string>(userUuid);
     if(!std::get<std::string>(appName).empty())
         client_param.app_name = std::get<std::string>(appName);
+    if(!std::get<std::string>(infoBase).empty())
+        client_param.info_base = std::get<std::string>(infoBase);
 
     if(m_client){
         try {

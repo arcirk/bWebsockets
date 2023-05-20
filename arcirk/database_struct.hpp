@@ -241,6 +241,45 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
+                (arcirk::database), certificates,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (arcirk::ByteArray, data)
+                (std::string, private_key)
+                (std::string, subject)
+                (std::string, issuer)
+                (std::string, not_valid_before)
+                (std::string, not_valid_after)
+                (std::string, parent_user)
+                (std::string, serial)
+                (std::string, suffix)
+                (std::string, sha1)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
+                (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+                (arcirk::database), cert_users,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, cache)
+                (std::string, uuid)
+                (std::string, sid)
+                (std::string, host)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
+                (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), table_info_sqlite,
                 (int, cid)
                 (std::string, name)
@@ -248,6 +287,26 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, notnull)
                 (std::string, dflt_value)
                 (int, bk)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), containers,
+        (int, _id)
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, cache)
+        (arcirk::ByteArray, data)
+        (std::string, subject)
+        (std::string, issuer)
+        (std::string, not_valid_before)
+        (std::string, not_valid_after)
+        (std::string, parent_user)
+        (std::string, sha1)
+        (std::string, parent)
+        (int, is_group)
+        (int, deletion_mark)
+        (int, version)
 );
 
 namespace arcirk::database{
@@ -314,6 +373,9 @@ namespace arcirk::database{
         tbDatabaseConfig,
         tbBarcodes,
         tbDocumentsMarkedTables,
+        tbCertificates,
+        tbCertUsers,
+        tbContainers,
         tables_INVALID=-1,
     };
 
@@ -334,6 +396,9 @@ namespace arcirk::database{
         {tbDatabaseConfig, "DatabaseConfig"}  ,
         {tbBarcodes, "Barcodes"}  ,
         {tbDocumentsMarkedTables, "DocumentsMarkedTables"}  ,
+        {tbCertificates, "Certificates"}  ,
+        {tbCertUsers, "CertUsers"}  ,
+        {tbContainers, "Containers"}  ,
     })
 
     enum views{
@@ -887,6 +952,136 @@ namespace arcirk::database{
                                                  "     GROUP BY DocumentsTables.ref;";
 
 
+    const std::string certificates_odbc_table_ddl = "CREATE TABLE [dbo].[Certificates](\n"
+                                                    "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                    "[first] [varchar](max) NULL,\n"
+                                                    "[second] [varchar](max) NULL,\n"
+                                                    "[ref] [char](36) NOT NULL,\n"
+                                                    "[cache] [text] NULL,\n"
+                                                    "[data] [varbinary](max) NULL,\n"
+                                                    "[private_key] [char](36) NULL,\n"
+                                                    "[subject] [varchar](max) NULL,\n"
+                                                    "[issuer] [varchar](max) NULL,\n"
+                                                    "[not_valid_before] [varchar](max) NULL,\n"
+                                                    "[not_valid_after] [varchar](max) NULL,\n"
+                                                    "[parent_user] [varchar](max) NULL,\n"
+                                                    "[serial] [varchar](max) NULL,\n"
+                                                    "[suffix] [char](3) NULL,\n"
+                                                    "[sha1] [varchar](max) NULL,\n"
+                                                    "[parent] [char](36) NULL,\n"
+                                                    "[is_group] [int] NOT NULL,\n"
+                                                    "[deletion_mark] [int] NOT NULL,\n"
+                                                    "[version] [int] NOT NULL\n"
+                                                    " CONSTRAINT [PK_Certificates] PRIMARY KEY CLUSTERED \n"
+                                                    "(\n"
+                                                    "\t[_id] ASC\n"
+                                                    ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                    ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
+    const std::string certificates_table_ddl = "CREATE TABLE Certificates (\n"
+                                               "    _id              INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]          TEXT,\n"
+                                               "    second           TEXT,\n"
+                                               "    ref              TEXT (36) UNIQUE\n"
+                                               "                               NOT NULL,\n"
+                                               "    cache            TEXT      DEFAULT \"\",\n"
+                                               "    data             BLOB      DEFAULT (0) \n"
+                                               "                               NOT NULL,\n"
+                                               "    private_key      TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    subject          TEXT      DEFAULT \"\",\n"
+                                               "    issuer           TEXT      DEFAULT \"\",\n"
+                                               "    not_valid_before TEXT      DEFAULT \"\",\n"
+                                               "    not_valid_after  TEXT      DEFAULT \"\",\n"
+                                               "    parent_user      TEXT      DEFAULT \"\",\n"
+                                               "    serial           TEXT      DEFAULT \"\",\n"
+                                               "    suffix           TEXT (3)  DEFAULT \"\",\n"
+                                               "    sha1             TEXT      DEFAULT \"\",\n"
+                                               "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    version          INTEGER   NOT NULL\n"
+                                               "                               DEFAULT (0) \n"
+                                               ");";
+
+    const std::string cert_users_odbc_table_ddl = "CREATE TABLE [dbo].[CertUsers](\n"
+                                                  "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                  "[first] [varchar](max) NULL,\n"
+                                                  "[second] [varchar](max) NULL,\n"
+                                                  "[ref] [char](36) NOT NULL,\n"
+                                                  "[cache] [text] NULL,\n"
+                                                  "[uuid] [char](38) NULL,\n"
+                                                  "[sid] [varchar](136) NULL,\n"
+                                                  "[host] [varchar](max) NULL,\n"
+                                                  "[parent] [char](36) NULL,\n"
+                                                  "[is_group] [int] NOT NULL,\n"
+                                                  "[deletion_mark] [int] NOT NULL,\n"
+                                                  "[version] [int] NOT NULL\n"
+                                                  " CONSTRAINT [PK_CertUsers] PRIMARY KEY CLUSTERED \n"
+                                                  "(\n"
+                                                  "[_id] ASC\n"
+                                                  ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                  ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
+    const std::string cert_users_table_ddl = "CREATE TABLE CertUsers (\n"
+                                               "    _id              INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                               "    [first]          TEXT,\n"
+                                               "    second           TEXT,\n"
+                                               "    ref              TEXT (36) UNIQUE\n"
+                                               "                               NOT NULL,\n"
+                                               "    cache            TEXT      DEFAULT \"\",\n"
+                                               "    uuid             TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    sid              TEXT (136)      DEFAULT \"\",\n"
+                                               "    host             TEXT      DEFAULT \"\",\n"
+                                             "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                             "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    version          INTEGER   NOT NULL\n"
+                                               "                               DEFAULT (0) \n"
+                                               ");";
+
+    const std::string containers_odbc_table_ddl = "CREATE TABLE [dbo].[Containers](\n"
+                                             "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                             "[first] [varchar](max) NULL,\n"
+                                             "[second] [varchar](max) NULL,\n"
+                                             "[ref] [char](36) NOT NULL,\n"
+                                             "[cache] [text] NULL,\n"
+                                             "[data] [varbinary](max) NULL,\n"
+                                             "[subject] [varchar](max) NULL,\n"
+                                             "[issuer] [varchar](max) NULL,\n"
+                                             "[not_valid_before] [varchar](max) NULL,\n"
+                                             "[not_valid_after] [varchar](max) NULL,\n"
+                                             "[parent_user] [varchar](max) NULL,\n"
+                                             "[sha1] [varchar](max) NULL,\n"
+                                             "[parent] [char](36) NULL,\n"
+                                             "[is_group] [int] NOT NULL,\n"
+                                             "[deletion_mark] [int] NOT NULL,\n"
+                                             "[version] [int] NOT NULL\n"
+                                             " CONSTRAINT [PK_Containers] PRIMARY KEY CLUSTERED \n"
+                                             "(\n"
+                                             "[_id] ASC\n"
+                                             ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                             ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
+
+    const std::string containers_table_ddl = "CREATE TABLE Containers (\n"
+                                             "    _id              INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                             "    [first]          TEXT,\n"
+                                             "    second           TEXT,\n"
+                                             "    ref              TEXT (36) UNIQUE\n"
+                                             "                               NOT NULL,\n"
+                                             "    cache            TEXT      DEFAULT \"\",\n"
+                                             "    data             BLOB      DEFAULT (0),\n"
+                                             "    subject          TEXT      DEFAULT \"\",\n"
+                                             "    issuer           TEXT      DEFAULT \"\",\n"
+                                             "    not_valid_before TEXT      DEFAULT \"\",\n"
+                                             "    not_valid_after  TEXT      DEFAULT \"\",\n"
+                                             "    parent_user      TEXT      DEFAULT \"\",\n"
+                                             "    sha1             TEXT      DEFAULT \"\",\n"
+                                             "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                             "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                             "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                             "    version          INTEGER   NOT NULL\n"
+                                             "                               DEFAULT (0) \n"
+                                             ");";
     static inline nlohmann::json table_default_json(arcirk::database::tables table) {
 
         //using namespace arcirk::database;
@@ -1024,14 +1219,41 @@ namespace arcirk::database{
                 auto tbl = barcodes();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.parent = arcirk::uuids::nil_string_uuid();
-                tbl.parent = arcirk::uuids::nil_string_uuid();
                 tbl.is_group = 0;
                 tbl.deletion_mark = 0;
+                tbl.version = 0;
                 return pre::json::to_json(tbl);
             }
             case tbDatabaseConfig: {
                 auto tbl = database_config();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.version = 0;
+                return pre::json::to_json(tbl);
+            }
+            case tbCertificates: {
+                auto tbl = certificates();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
+                tbl.version = 0;
+                return pre::json::to_json(tbl);
+            }
+            case tbCertUsers: {
+                auto tbl = cert_users();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
+                tbl.version = 0;
+                return pre::json::to_json(tbl);
+            }
+            case tbContainers: {
+                auto tbl = containers();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
                 tbl.version = 0;
                 return pre::json::to_json(tbl);
             }
@@ -1069,6 +1291,9 @@ namespace arcirk::database{
             case tbDevicesType:  return type == DatabaseType::dbTypeSQLite ? devices_type_table_ddl : devices_type_odbc_table_ddl;
             case tbBarcodes:  return type == DatabaseType::dbTypeSQLite ? barcodes_table_ddl : barcodes_odbc_table_ddl;
             case tbDocumentsMarkedTables:  return type == DatabaseType::dbTypeSQLite ? document_table_marked_table_ddl : document_table_odbc_marked_table_ddl;
+            case tbCertificates:  return type == DatabaseType::dbTypeSQLite ? certificates_table_ddl : certificates_odbc_table_ddl;
+            case tbCertUsers:  return type == DatabaseType::dbTypeSQLite ? cert_users_table_ddl : cert_users_odbc_table_ddl;
+            case tbContainers:  return type == DatabaseType::dbTypeSQLite ? containers_table_ddl : containers_odbc_table_ddl;
             case tables_INVALID:{
                 break;
             }
@@ -1239,6 +1464,9 @@ namespace arcirk::database{
         result.emplace(tables::tbWorkplaces, 3);
         result.emplace(tables::tbBarcodes, 3);
         result.emplace(tables::tbDocumentsMarkedTables, 1);
+        result.emplace(tables::tbCertificates, 1);
+        result.emplace(tables::tbCertUsers, 1);
+        result.emplace(tables::tbContainers, 1);
         return result;
     }
 
@@ -1258,7 +1486,10 @@ namespace arcirk::database{
                 tbNomenclature,
                 tbDatabaseConfig,
                 tbBarcodes,
-                tbDocumentsMarkedTables
+                tbDocumentsMarkedTables,
+                tbCertificates,
+                tbCertUsers,
+                tbContainers
         };
         return result;
     }

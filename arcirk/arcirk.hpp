@@ -55,6 +55,7 @@ namespace arcirk {
     typedef boost::variant<std::string, long int, bool, double, boost::uuids::uuid, std::vector<BYTE>> Variant;
     typedef std::string T_str;
     typedef std::vector<T_str> T_vec;
+    typedef std::vector<std::pair<T_str, T_str>> T_list;
 
     std::string local_8bit(const std::string& source);
     std::string to_utf(const std::string& source);
@@ -64,15 +65,17 @@ namespace arcirk {
     void trim(std::string& source);
     void to_upper(std::string& source);
     void to_lower(std::string& source);
-
     std::string sample(const std::string& format_string, const std::vector<std::string>& args);
     template<typename... Arguments>
     std::string str_sample(const std::string& format_string, const Arguments&... args){return boost::str((boost::format(format_string) % ... % args));}
+    std::string left(const std::string &source, const std::string::size_type& count);
+    std::string right(const std::string &source, const std::string::size_type& start);
 
     std::tm current_date();
     long int date_to_seconds(const tm& dt = {}, bool offset = false);
     long int tz_offset(time_t when = NULL_TIME);
-    long int add_day(const long int dt, const int quantity);
+    long int add_day(const long int& dt, const int& quantity);
+
 
     std::string crypt(const std::string &source, const std::string& key);
     //void* _crypt(void* data, unsigned data_size, void* key, unsigned key_size);
@@ -82,6 +85,8 @@ namespace arcirk {
 
     std::string byte_array_to_string(const ByteArray& data);
     ByteArray string_to_byte_array(const std::string& str);
+
+    T_list parse_section_ini(const std::string& source, const std::string& sep = "\n");
 
     namespace uuids{
         bool is_valid_uuid(std::string const& maybe_uuid, boost::uuids::uuid& result);
@@ -113,6 +118,7 @@ namespace arcirk {
         void readFile(const std::string &filename, ByteArray &result);
         std::string base64_encode(const std::string &s);
         std::string base64_decode(const std::string &s);
+        bool is_base64(const std::string& source);
     };
 
     class bVariant {

@@ -182,5 +182,16 @@ namespace arcirk{
             }
         }
 
+        bool is_base64(const std::string& source){
+            boost::regex rx("[^a-zA-Z0-9+/=]");
+            boost::smatch xResults;
+            if(!boost::regex_search(source, xResults, rx, boost::match_extra) && (source.length()%4) == 0 && source.length()>=4){
+                return true;
+            }
+
+            return false;
+        }
     }
+
+
 }
