@@ -35,15 +35,9 @@ void verify_directories(const std::string& working_directory_dir = ""){
     using namespace boost::filesystem;
 
     if(!working_directory_dir.empty()){
-        //path app_conf(working_directory_dir);
-        //app_conf /= ARCIRK_VERSION;
-        //m_root_conf = app_conf;
         m_root_conf = path(working_directory_dir);
         m_root_conf /= ARCIRK_VERSION;
     }else{
-//        path app_conf(program_data());
-//        app_conf /= ARCIRK_VERSION;
-//        m_root_conf = app_conf;
         m_root_conf = path(program_data());
         m_root_conf /= ARCIRK_VERSION;
     }
@@ -150,95 +144,6 @@ void load_certs(boost::asio::ssl::context& ctx, const std::string& cert, const s
     load_server_certificate(ctx, _cert, _key);
 }
 
-//std::vector<std::string> get_tables(soci::session& sql){
-//
-//    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='table';");
-//    std::vector<std::string> result;
-//    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
-//    {
-//        soci::row const& row = *it;
-//        result.push_back(row.get<std::string>(0));
-//    }
-//
-//    return result;
-//}
-//
-//std::vector<std::string> get_views(soci::session& sql){
-//
-//    soci::rowset<soci::row> rs = (sql.prepare << "SELECT name FROM sqlite_master WHERE type='view';");
-//    std::vector<std::string> result;
-//    for (soci::rowset<soci::row>::const_iterator it = rs.begin(); it != rs.end(); ++it)
-//    {
-//        soci::row const& row = *it;
-//        result.push_back(row.get<std::string>(0));
-//    }
-//
-//    return result;
-//}
-//
-//void verify_table_users(soci::session& sql, const std::vector<std::string>& tables_arr){
-//
-//    using namespace soci;
-//
-//    if(std::find(tables_arr.begin(), tables_arr.end(), "Users") == tables_arr.end()){
-//        try {
-//            sql << database::users_table_ddl;
-//        } catch (std::exception &e) {
-//            std::cerr << e.what() << std::endl;
-//            return;
-//        }
-//
-//        database::user_info u;
-//        u.ref = to_string(uuids::random_uuid());
-//        u.first = "admin";
-//        u.hash = arcirk::get_hash("admin", "admin");
-//        u.parent = arcirk::uuids::nil_string_uuid();
-//        u.role = enum_synonym(database::dbAdministrator);
-//
-//        try {
-//            //Хотя бы одна учетная запись с ролью 'admin' должна быть
-//            int count = -1;
-//            sql << "select count(*) from Users where role = " <<  "'" << u.role << "'" , into(count);
-//            if(count <= 0){
-//                //Добавить учетную запись по умолчанию
-//                sql << "INSERT INTO Users(ref, first, hash, parent, role) VALUES(?, ?, ?, ?, ?)", soci::use(u.ref), soci::use(u.first), soci::use(u.hash), soci::use(u.parent), soci::use(u.role);
-//            }
-//        } catch (std::exception &e) {
-//            std::cerr << e.what() << std::endl;
-//        }
-//    }
-//
-//}
-//
-//void verify_table_messages(soci::session& sql, const std::vector<std::string>& tables_arr){
-//    using namespace soci;
-//
-//    if(std::find(tables_arr.begin(), tables_arr.end(), "Messages") == tables_arr.end()) {
-//        try {
-//            sql << database::messages_table_ddl;
-//        } catch (std::exception &e) {
-//            std::cerr << e.what() << std::endl;
-//            return;
-//        }
-//    }
-//}
-//
-//void verify_tables(soci::session& sql, const std::vector<std::string>& tables_arr, std::map<std::string, std::string>& t_ddl){
-//    using namespace soci;
-//
-//    for (auto itr = t_ddl.begin(); itr != t_ddl.end() ; ++itr) {
-//        if(std::find(tables_arr.begin(), tables_arr.end(), itr->first) == tables_arr.end()) {
-//            try {
-//                sql << itr->second;
-//            } catch (std::exception &e) {
-//                std::cerr << e.what() << std::endl;
-//                continue;
-//            }
-//        }
-//    }
-//
-//}
-
 bool is_odbc_database(soci::session& sql){
     using namespace soci;
     using namespace arcirk::database;
@@ -256,11 +161,11 @@ bool is_odbc_database(soci::session& sql){
             sql << builder.prepare(), into(count);
             if (count > 0){
                 //std::cout << arcirk::local_8bit("База данных успешно создана!") << std::endl;
-                arcirk::log("main::is_odbc_database", "База данных успешно создана!");
+                arcirk::log(__FUNCTION__, "База данных успешно создана!");
                 return true;
             }else{
                 //std::cerr << arcirk::local_8bit("Ошибка создания базы данных!!") << std::endl;
-                arcirk::fail("main::is_odbc_database", "База данных успешно создана!");
+                arcirk::fail(__FUNCTION__, "База данных успешно создана!");
                 return false;
             }
         }
@@ -307,7 +212,7 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
     }
 
     if(!sql.is_connected()){
-        std::cerr << "Error connection database!" << std::endl;
+        fail(__FUNCTION__, "Error connection database!");
         return;
     }
 
@@ -315,7 +220,7 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
         verify_database(sql, type, pre::json::to_json(version));
         sql.close();
     }catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        fail(__FUNCTION__, e.what());
     }
 
 }

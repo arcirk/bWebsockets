@@ -1,5 +1,5 @@
 QT += quick widgets
-QT += websockets network sql
+QT += websockets network
 QT += quickcontrols2
 QT += core-private
 QT += core

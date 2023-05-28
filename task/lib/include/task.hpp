@@ -106,7 +106,7 @@ namespace arcirk::services{
 //
         void start()
         {
-            arcirk::log("task::start", "start task '" + opt_.synonum + "'");
+            arcirk::log(__FUNCTION__, "start task '" + opt_.synonum + "'");
 
             workers_->post([=]
              {
@@ -127,7 +127,7 @@ namespace arcirk::services{
 
         void start_now(const int custom_interval)
         {
-            arcirk::log("task::start", "start task '" + opt_.synonum + "'");
+            arcirk::log(__FUNCTION__, "start task '" + opt_.synonum + "'");
 
             workers_->post([=]
                            {
@@ -149,7 +149,7 @@ namespace arcirk::services{
         }
 
         void stop(){
-            arcirk::log("task::stop","stop task '" + opt_.synonum + "'");
+            arcirk::log(__FUNCTION__,"stop task '" + opt_.synonum + "'");
             timer.cancel();
         };
 
@@ -187,16 +187,16 @@ namespace arcirk::services{
         {
             if(is_started_)
             {
-                arcirk::log("task_scheduler::run","service already started");
+                arcirk::log(__FUNCTION__,"service already started");
                 return;
             }
-            arcirk::log("task_scheduler::run","run all tasks");
+            arcirk::log(__FUNCTION__,"run all tasks");
             is_started_ = true;
             io_service.run();
         }
 
         void stop(){
-            arcirk::log("task_scheduler::stop","stop all tasks");
+            arcirk::log(__FUNCTION__,"stop all tasks");
             is_started_ = false;
             io_service.stop();
         }
@@ -204,7 +204,7 @@ namespace arcirk::services{
         void clear(){
             if(is_started_)
             {
-                arcirk::log("task_scheduler::stop","service already started");
+                arcirk::log(__FUNCTION__,"service already started");
                 return;
             }
             workers_.reset();

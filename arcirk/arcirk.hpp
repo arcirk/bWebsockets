@@ -103,6 +103,7 @@ namespace arcirk {
         std::string home();
         std::string home_roaming_dir();
         std::string home_local_dir();
+        std::string temporary_dir();
         std::string program_data_dir();
         bool verify_directory(const std::string& dir);
         bool verify_directory(const boost::filesystem::path& dir_path);

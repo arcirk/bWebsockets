@@ -215,6 +215,8 @@ public:
 
     std::string save_blob(arcirk::database::tables table, const nlohmann::json& where, const ByteArray& data);
 
+    ByteArray get_blob(arcirk::database::tables table, const nlohmann::json& where);
+
     std::string save_file(const std::string& content_disp, ByteArray& data){
 
         using json = nlohmann::json;
@@ -224,7 +226,6 @@ public:
         resp.version = ARCIRK_VERSION;
 
         try {
-            //T_vec vec = arcirk::split(content_disp, ";");
             T_list vec = arcirk::parse_section_ini(content_disp, ";");
             std::string file_name;
             std::string destantion;
@@ -236,17 +237,6 @@ public:
                     destantion = itr.second;;
                     boost::erase_all(destantion, "\"");
                 }
-
-//                T_vec val = arcirk::split(itr, "=");
-//                if(val.size() == 2){
-//                    if(val[0] == "file_name"){
-//                        file_name = val[1];
-//                        boost::erase_all(file_name, "\"");
-//                    }else if(val[0] == "destantion"){
-//                        destantion = val[1];
-//                        boost::erase_all(destantion, "\"");
-//                    }
-//                }
             }
 
             if(destantion.empty()){
@@ -309,6 +299,8 @@ public:
 
         return pre::json::to_json(resp).dump();
     }
+
+    std::string handle_request_get_blob(const std::string& content_disposition);
 
 private:
 

@@ -265,7 +265,7 @@ void WebCore::emit(const std::string& command, const std::string &resp) {
         this->ExternalEvent(source_event, command, resp);
     }
 
-    arcirk::log("WebCore::emit", command + " " + std::to_string(this->GetEventBufferDepth()), true, "C:/src/bWebsockets/bin/logs");
+    arcirk::log(__FUNCTION__, command + " " + std::to_string(this->GetEventBufferDepth()), true, "C:/src/bWebsockets/bin/logs");
 }
 
 void WebCore::close(const variant_t &exit_base) {

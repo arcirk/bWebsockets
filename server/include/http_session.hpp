@@ -261,9 +261,49 @@ public:
                 res.body() = result;
                 res.prepare_payload();
                 queue_(std::move(res));
-            }else{
+            }else if(req.method() == http::verb::get)  {
+                std::string content_type = static_cast<std::string>(req[http::field::content_type]);
+                std::string content_disp = static_cast<std::string>(req[http::field::content_disposition]);
+                if (content_type == "multipart/form-data" && !content_disp.empty()) {
+                    auto temp_file = state_->handle_request_get_blob(content_disp);
+                    if(temp_file.empty())
+                        return queue_(bad_request("Ошибка получения бинарных данных!"));
+                    else{
+                        namespace fs = boost::filesystem;
+                        fs::path file(temp_file);
+                        if(!fs::exists(file))
+                            return queue_(bad_request("Ошибка получения бинарных данных!"));
+
+                        beast::error_code ec;
+                        http::file_body::value_type body;
+                        body.open(temp_file.c_str(), beast::file_mode::scan, ec);
+
+                        // Handle the case where the file doesn't exist
+                        if(ec == beast::errc::no_such_file_or_directory)
+                            return queue_(bad_request("Ошибка получения бинарных данных!"));
+
+                        // Handle an unknown error
+                        if(ec)
+                            return queue_(bad_request("Ошибка получения бинарных данных!"));
+
+                        // Cache the size since we need it after the move
+                        auto const size = body.size();
+
+                        http::response<http::file_body> res{
+                                std::piecewise_construct,
+                                std::make_tuple(std::move(body)),
+                                std::make_tuple(http::status::ok, req.version())};
+                        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                        res.set(http::field::content_type, mime_type(temp_file));
+                        res.content_length(size);
+                        res.keep_alive(req.keep_alive());
+                        queue_(std::move(res));
+
+                    }
+                } else
+                    handle_request(*doc_root_, parser_->release(), queue_);
+            }else
                 handle_request(*doc_root_, parser_->release(), queue_);
-            }
         }
         // If we aren't at the queue limit, try to pipeline another request
         if(! queue_.is_full())

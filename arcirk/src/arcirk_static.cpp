@@ -86,6 +86,10 @@ namespace arcirk{
 #endif
         }
 
+        std::string temporary_dir(){
+            return boost::filesystem::temp_directory_path().string();
+        }
+
         std::string home_local_dir(){
             using namespace boost::filesystem;
 #ifdef _WINDOWS
@@ -331,4 +335,5 @@ namespace arcirk{
         }
         return result;
     }
+
 }

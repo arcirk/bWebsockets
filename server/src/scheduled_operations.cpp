@@ -13,11 +13,6 @@ bool scheduled_operations::field_is_exists(const nlohmann::json &object, const s
     return itr != object.end();
 }
 
-//void scheduled_operations::set_value(const nlohmann::json& source,  nlohmann::json& res,  const std::string& name, const std::string& dest_name){
-//    if(field_is_exists(source, name) && field_is_exists(res, dest_name))
-//        res[dest_name] = get_string_value<std::string>(source, name);
-//}
-
 void scheduled_operations::add_requests(const nlohmann::json &arr,
                                      std::vector<std::string> &transaction_arr, soci::session& sql) {
     using namespace arcirk::database;
@@ -156,16 +151,16 @@ bool scheduled_operations::perform_data_exchange() {
     using json = nlohmann::json;
 
     if(sett_.ExchangePlan.empty())
-        throw native_exception(arcirk::local_8bit("Не указан идентификатор плана обмена!").c_str());
+        throw native_exception(__FUNCTION__, arcirk::local_8bit("Не указан идентификатор плана обмена!").c_str());
 
-    arcirk::log("scheduled_operations::perform_data_exchange", "Запрос информации о регистрации данных.");
+    arcirk::log(__FUNCTION__ , "Запрос информации о регистрации данных.");
     auto result = exec_http_query("ExchangePlanGetChange", nlohmann::json{{"ExchangePlan", sett_.ExchangePlan}});
     if(!result.is_array()){
         return false;
     }
     auto sql = soci_initialize();
     std::vector<std::string> transaction_arr;
-    arcirk::log("scheduled_operations::perform_data_exchange", arcirk::str_sample("Информация получена. Объектов %1%", std::to_string(result.size())));
+    arcirk::log(__FUNCTION__, arcirk::str_sample("Информация получена. Объектов %1%", std::to_string(result.size())));
 
     int max_objects = 1000;
     int count = 0;
@@ -184,7 +179,7 @@ bool scheduled_operations::perform_data_exchange() {
         std::string ref = item.value("Object", "");
         std::string xml_type = item.value("Type", "");
 
-        arcirk::log("scheduled_operations::perform_data_exchange", arcirk::str_sample("Обработка объекта: %1%", xml_type));
+        //arcirk::log("scheduled_operations::perform_data_exchange", arcirk::str_sample("Обработка объекта: %1%", xml_type));
 
         //данных по штрихкодам достаточно, поэтому продолжаем
         if(xml_type == "InformationRegisterRecord.Штрихкоды"){
@@ -240,7 +235,7 @@ bool scheduled_operations::perform_data_exchange() {
                     *sql << current_text;
                 }
                 step += count;
-                arcirk::log("scheduled_operations::perform_data_exchange", arcirk::str_sample("commit %1% elements in %2%", std::to_string(step), std::to_string(max)));
+                arcirk::log(__FUNCTION__, arcirk::str_sample("commit %1% elements in %2%", std::to_string(step), std::to_string(max)));
                 tr.commit();
                 current_queries.clear();
                 count = 0;
@@ -254,12 +249,12 @@ bool scheduled_operations::perform_data_exchange() {
             }
             tr.commit();
         }
-        arcirk::log("scheduled_operations::perform_data_exchange", "Загрузка объектов завершена.");
+        arcirk::log(__FUNCTION__, "Загрузка объектов завершена.");
     }else
-        arcirk::log("scheduled_operations::perform_data_exchange", "Данных для загрузки не поступило.");
+        arcirk::log(__FUNCTION__, "Данных для загрузки не поступило.");
 
     //очищаем регистрацию
-    arcirk::log("ExchangePlanEraseChange", "Очистка регистрации.");
+    arcirk::log(__FUNCTION__, "Очистка регистрации.");
     exec_http_query("ExchangePlanEraseChange", nlohmann::json{{"ExchangePlan", sett_.ExchangePlan}});
 
     return true;
@@ -319,7 +314,7 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     auto res_ = res.get();
 
     if(res_.result() == http::status::unauthorized)
-        throw native_exception(arcirk::local_8bit("Ошибка авторизации на http сервисе!").c_str());
+        throw native_exception(__FUNCTION__, arcirk::local_8bit("Ошибка авторизации на http сервисе!").c_str());
 
     std::string result_body = boost::beast::buffers_to_string(res_.body().data());
     beast::error_code ec;
@@ -328,15 +323,16 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
         throw beast::system_error{ec};
 
     if(result_body == "error")
-        throw native_exception("Ошибка на http сервисе!");
+        throw native_exception(__FUNCTION__, "Ошибка на http сервисе!");
 
     nlohmann::json result{};
     try {
+        //std::cout << arcirk::local_8bit(result_body) << std::endl;
         result = nlohmann::json::parse(result_body);
     } catch (const std::exception& e) {
-        arcirk::fail("exec_http_query", e.what());
+        arcirk::fail(__FUNCTION__, e.what());
         if(!result_body.empty())
-            arcirk:: fail("exec_http_query:response", result_body);
+            arcirk:: fail(__FUNCTION__, result_body);
     }
 
     stream.close();

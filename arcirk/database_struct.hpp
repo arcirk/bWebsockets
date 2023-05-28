@@ -1599,7 +1599,7 @@ namespace arcirk::database{
         using namespace soci;
 
         std::string table_name = arcirk::enum_synonym(table);
-        log("rebase", "start rebase table " + table_name);
+        log(__FUNCTION__, "start rebase table " + table_name);
 
         if(type == DatabaseType::dbTypeODBC){
             sql << "use " + database_name;
@@ -1699,7 +1699,7 @@ namespace arcirk::database{
 
         tr_.commit();
 
-        log("rebase", "end rebase table " + table_name);
+        log(__FUNCTION__, "end rebase table " + table_name);
     }
 
     static inline std::vector<std::string> get_database_tables(soci::session& sql, DatabaseType type, const nlohmann::json& version){
@@ -1889,10 +1889,20 @@ class native_exception : public std::exception
 {
 public:
     explicit native_exception(const char *msg) : message(msg) {}
+    explicit native_exception(const char *fun, const char *msg) : message(fun), func(fun) {}
     virtual ~native_exception() throw() {}
-    virtual const char *what() const throw() { return message.c_str(); }
+    virtual const char *what() const throw() {
+        if(func.empty())
+            return message.c_str();
+        else{
+            std::string r = func + ": " + message;
+            return r.c_str();
+        }
+
+    }
 protected:
     const std::string message;
+    const std::string func;
 };
 
 #endif

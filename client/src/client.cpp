@@ -83,7 +83,7 @@ void websocket_client::start(arcirk::Uri &url) {
 
     state_ = nullptr;
 
-    log("websocket_client::start", "exit thread" );
+    log(__FUNCTION__, "exit thread" );
 
     if(!_disable_notify_on_close){
         on_status_changed(false);
@@ -105,7 +105,7 @@ void websocket_client::set_certificates(ssl::context& ctx) {
     _cert = c_oss.str();
 
     if(_cert.empty()){
-        fail("websocket_client::set_certificates", "error read certificate files");
+        fail(__FUNCTION__, "error read certificate files");
         return;
     }
 
@@ -171,12 +171,12 @@ void websocket_client::on_message(const std::string &message) {
                         on_error(resp.command, "failed authorization", 0);
                     else
                         on_successful_authorization();
-                    log("websocket_client::on_message", resp.command + ": session uuid " +  client_param_.session_uuid + ": user uuid " + client_param_.user_uuid);
+                    log(__FUNCTION__, resp.command + ": session uuid " +  client_param_.session_uuid + ": user uuid " + client_param_.user_uuid);
                     return;
                 }
             }
         } catch (std::exception &e) {
-            return fail("websocket_client::on_message", e.what(), false);
+            return fail(__FUNCTION__, e.what(), false);
         }
     }
 
@@ -213,7 +213,7 @@ void websocket_client::send_message(const std::string &message) {
 void websocket_client::send_message(const std::string &message, const std::string &receiver, const std::string &param) {
 
     if(receiver.empty() || message.empty()){
-        fail("websocket_client::send_message", "Не верные параметры сообщения!");
+        fail(__FUNCTION__, "Не верные параметры сообщения!");
         return;
     }
 
@@ -241,13 +241,13 @@ void websocket_client::send_command_to_client(const std::string &receiver, const
         return;
 
     if(command.empty()){
-        fail("websocket_client::send_command_to_client", "Не корректная команда!");
+        fail(__FUNCTION__, "Не корректная команда!");
         return;
     }
 
     boost::uuids::uuid uuid{};
     if(!uuids::is_valid_uuid(receiver, uuid)){
-        fail("websocket_client::send_command_to_client", "Не корректный идентификатор получателя!");
+        fail(__FUNCTION__, "Не корректный идентификатор получателя!");
         return;
     }else{
         state_->command_to_client(receiver, command, param);
@@ -286,11 +286,11 @@ websocket_client::check_connection(
     if(started()){
         tmr->expires_at((steady_timer::time_point::max)());
         tmr->cancel();
-        log("websocket_client::check_connection", "stop check connection");
+        log(__FUNCTION__, "stop check connection");
     }else{
         if (tmr->expiry() <= steady_timer::clock_type::now())
         {
-            log("websocket_client::check_connection", "timer start");
+            log(__FUNCTION__, "timer start");
             tmr->expires_after(std::chrono::seconds(60));
             tmr->async_wait(boost::bind(&websocket_client::check_connection, this, tmr));
             open(arcirk::Uri::Parse(url_));
@@ -304,13 +304,13 @@ void websocket_client::start_reconnect(bool* is_run) {
     if(*is_run)
         return;
     *is_run = true;
-    log("websocket_client::start_reconnect", "timer start");
+    log(__FUNCTION__, "timer start");
     net::io_context ioc_parent;
     net::steady_timer connection_timer(ioc_parent);
     connection_timer.expires_after(std::chrono::seconds(60));
     connection_timer.async_wait(boost::bind(&websocket_client::check_connection, this, &connection_timer));
     ioc_parent.run();
-    log("websocket_client::start_reconnect", "timer stop");
+    log(__FUNCTION__, "timer stop");
     *is_run = false;
 }
 
