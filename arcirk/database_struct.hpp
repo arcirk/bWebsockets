@@ -1544,7 +1544,7 @@ namespace arcirk::database{
                 if(table == tables::tbWorkplaces)
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "server", "00000000-0000-0000-0000-000000000000"));
                 else if(table == tables::tbDevices) {
-                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deviceType", "00000000-0000-0000-0000-000000000000"));
+                    ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "deviceType", ""));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "workplace", "00000000-0000-0000-0000-000000000000"));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "price_type", "00000000-0000-0000-0000-000000000000"));
                     ddls.push_back(default_value_ddl(arcirk::enum_synonym(table), "warehouse", "00000000-0000-0000-0000-000000000000"));

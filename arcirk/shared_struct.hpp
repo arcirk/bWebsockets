@@ -34,7 +34,23 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, system_user)
         (std::string, device_id)
         (std::string, info_base)
+        (std::string, product)
         (int, version)
+)
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::client), session_info,
+        (std::string, session_uuid)
+        (std::string, user_name)
+        (std::string, user_uuid)
+        (std::string, start_date)
+        (std::string, app_name)
+        (std::string, role)
+        (std::string, device_id)
+        (std::string, address)
+        (std::string, info_base)
+        (std::string, host_name)
+        (std::string, product)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(

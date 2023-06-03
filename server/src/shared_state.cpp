@@ -650,16 +650,26 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
 
         auto columns = json::array();
 
+        auto tmp = pre::json::to_json(arcirk::client::session_info());
+
         if(is_table) {
-            std::vector<std::string> m_cols{"session_uuid",
-                                            "user_name",
-                                            "user_uuid",
-                                            "start_date",
-                                            "app_name",
-                                            "role",
-                                            "device_id",
-                                            "address",
-                                            "info_base"};
+//            std::vector<std::string> m_cols{"session_uuid",
+//                                            "user_name",
+//                                            "user_uuid",
+//                                            "start_date",
+//                                            "app_name",
+//                                            "role",
+//                                            "device_id",
+//                                            "address",
+//                                            "info_base",
+//                                            "host_name",
+//                                            "product"};
+            std::vector<std::string> m_cols{};
+            auto items = tmp.items();
+            for (auto itr = items.begin(); itr != items.end() ; ++itr) {
+                m_cols.push_back(itr.key());
+            }
+
             if(empty_column){
                 m_cols.insert(m_cols.cbegin(), "empty");
             }
@@ -684,21 +694,39 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
             std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
             std::string dt = arcirk::to_utf(cur_date);
 
-            auto row = json::object();
-            if(empty_column){
-                row["empty"] = " ";
-            }
-            row["session_uuid"] = arcirk::uuids::uuid_to_string(itr->second->uuid_session());
-            row["user_name"] = itr->second->user_name();
-            row["user_uuid"] = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
-            row["start_date"] = dt;
-            row["app_name"] = itr->second->app_name();
-            row["role"] = itr->second->role();
-            row["device_id"] = arcirk::uuids::uuid_to_string(itr->second->device_id());
-            row["address"] = itr->second->address();
-            row["info_base"] = itr->second->info_base();
+//            auto row = json::object();
+//            if(empty_column){
+//                row["empty"] = " ";
+//            }
+//            row["session_uuid"] = arcirk::uuids::uuid_to_string(itr->second->uuid_session());
+//            row["user_name"] = itr->second->user_name();
+//            row["user_uuid"] = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
+//            row["start_date"] = dt;
+//            row["app_name"] = itr->second->app_name();
+//            row["role"] = itr->second->role();
+//            row["device_id"] = arcirk::uuids::uuid_to_string(itr->second->device_id());
+//            row["address"] = itr->second->address();
+//            row["info_base"] = itr->second->info_base();
+//            row["host_name"] = itr->second->host_name();
+//            row["product"] = itr->second->product();
 
-            rows += row;
+            auto row = arcirk::client::session_info();
+            row.session_uuid = arcirk::uuids::uuid_to_string(itr->second->uuid_session());
+            row.user_name = itr->second->user_name();
+            row.user_uuid = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
+            row.start_date = dt;
+            row.app_name = itr->second->app_name();
+            row.role = itr->second->role();
+            row.device_id = arcirk::uuids::uuid_to_string(itr->second->device_id());
+            row.address = itr->second->address();
+            row.info_base = itr->second->info_base();
+            row.product = itr->second->product();
+            row.host_name = itr->second->host_name();
+            auto row_ = pre::json::to_json(row);
+            if(empty_column)
+                row_.insert(row_.begin(), json{{"empty", " "}});
+
+            rows += row_;
         }
         table_object["rows"] = rows;
 
@@ -812,6 +840,8 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         session->set_app_name(param_.app_name);
         session->set_device_id(uuids::string_to_uuid(param_.device_id));
         session->set_info_base(param_.info_base);
+        session->set_host_name(param_.host_name);
+        session->set_product(param_.product);
 
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){

@@ -82,6 +82,12 @@ public:
     virtual void set_user_uuid(const boost::uuids::uuid& value){
         _user_uuid = value;
     }
+    virtual void set_host_name(const std::string& value){
+        _host_name = value;
+    }
+    virtual void set_product(const std::string& value){
+        _product = value;
+    }
     virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
 
     virtual bool is_ssl() = 0;
@@ -104,6 +110,13 @@ public:
         return _address;
     }
 
+    virtual std::string product() const{
+        return _product;
+    }
+    virtual std::string host_name() const{
+        return _host_name;
+    }
+
     [[nodiscard]] virtual boost::uuids::uuid device_id() const {
         return _device_id;
     }
@@ -121,10 +134,12 @@ protected:
     std::string _app_name = UnknownApplication;
     std::string _role = "user";
     std::string _full_name;
+    std::string _host_name;
+    std::string _product;
     std::string _address;
     boost::uuids::uuid _device_id{};
     bool _is_template_http_client = false;
-    std::string _info_base = "";
+    std::string _info_base{};
 
     void set_template_http_client(bool value){
         _is_template_http_client = value;
