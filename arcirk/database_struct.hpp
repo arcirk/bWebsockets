@@ -272,6 +272,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, cache)
                 (std::string, uuid)
                 (std::string, sid)
+                (std::string, system_user)
                 (std::string, host)
                 (std::string, parent)
                 (int, is_group)
@@ -1011,6 +1012,7 @@ namespace arcirk::database{
                                                   "[cache] [text] NULL,\n"
                                                   "[uuid] [char](38) NULL,\n"
                                                   "[sid] [varchar](136) NULL,\n"
+                                                  "[system_user] [text] NULL,\n"
                                                   "[host] [varchar](max) NULL,\n"
                                                   "[parent] [char](36) NULL,\n"
                                                   "[is_group] [int] NOT NULL,\n"
@@ -1031,10 +1033,11 @@ namespace arcirk::database{
                                                "    cache            TEXT      DEFAULT \"\",\n"
                                                "    uuid             TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
                                                "    sid              TEXT (136)      DEFAULT \"\",\n"
+                                               "    system_user      TEXT (136)      DEFAULT \"\",\n"
                                                "    host             TEXT      DEFAULT \"\",\n"
-                                             "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
-                                             "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
-                                             "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    parent           TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                               "    is_group         INTEGER   DEFAULT (0) NOT NULL,\n"
+                                               "    deletion_mark    INTEGER   DEFAULT (0) NOT NULL,\n"
                                                "    version          INTEGER   NOT NULL\n"
                                                "                               DEFAULT (0) \n"
                                                ");";
@@ -1465,7 +1468,7 @@ namespace arcirk::database{
         result.emplace(tables::tbBarcodes, 3);
         result.emplace(tables::tbDocumentsMarkedTables, 1);
         result.emplace(tables::tbCertificates, 1);
-        result.emplace(tables::tbCertUsers, 1);
+        result.emplace(tables::tbCertUsers, 2);
         result.emplace(tables::tbContainers, 1);
         return result;
     }
