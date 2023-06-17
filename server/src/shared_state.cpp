@@ -2177,35 +2177,35 @@ std::string shared_state::handle_request(const std::string &body, const std::str
 
     arcirk::T_vec v = split(basic_auth, " ");
 
-        if(v.size() == 2){
-            const std::string base64 = v[1];
-            std::string auth = arcirk::base64::base64_decode(base64);
-            arcirk::T_vec m_auth = split(auth, ":");
-            std::string hash;
-            if(m_auth.size() == 1){
-                auto source = v[0];
-                arcirk::trim(source);
-                arcirk::to_lower(source);
-                if( source == "token"){
-                    hash =m_auth[0];
-                }else
-                    return "fail authorization";
-            }else if(m_auth.size() == 2)
-                hash = arcirk::get_hash(m_auth[0], m_auth[1]);
-            else
+    if(v.size() == 2){
+        const std::string base64 = v[1];
+        std::string auth = arcirk::base64::base64_decode(base64);
+        arcirk::T_vec m_auth = split(auth, ":");
+        std::string hash;
+        if(m_auth.size() == 1){
+            auto source = v[0];
+            arcirk::trim(source);
+            arcirk::to_lower(source);
+            if( source == "token"){
+                hash =m_auth[0];
+            }else
                 return "fail authorization";
+        }else if(m_auth.size() == 2)
+            hash = arcirk::get_hash(m_auth[0], m_auth[1]);
+        else
+            return "fail authorization";
 
-            auto sql = soci_initialize();
-            soci::rowset<soci::row> rs = (sql->prepare << "select * from Users where hash = " <<  "'" << hash << "'");
-            for (auto it = rs.begin(); it != rs.end(); it++) {
-                const soci::row &row_ = *it;
-                http_session->set_role(row_.get<std::string>("role"));
-                http_session->set_user_name(row_.get<std::string>("first"));
-                http_session->set_authorized(true);
-                http_session->set_app_name("http_client");
-            }
+        auto sql = soci_initialize();
+        soci::rowset<soci::row> rs = (sql->prepare << "select * from Users where hash = " <<  "'" << hash << "'");
+        for (auto it = rs.begin(); it != rs.end(); it++) {
+            const soci::row &row_ = *it;
+            http_session->set_role(row_.get<std::string>("role"));
+            http_session->set_user_name(row_.get<std::string>("first"));
+            http_session->set_authorized(true);
+            http_session->set_app_name("http_client");
+        }
 
-            }
+    }
 
     sessions_.insert(std::pair<boost::uuids::uuid, subscriber*>(http_session->uuid_session(), http_session.get()));
 

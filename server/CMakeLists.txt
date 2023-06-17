@@ -137,6 +137,7 @@ find_package(Boost COMPONENTS thread regex filesystem system locale REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(SOCI CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cryptopp CONFIG REQUIRED)
 
 target_link_libraries(${TARGET} PRIVATE
         Boost::filesystem
@@ -153,6 +154,7 @@ target_link_libraries(${TARGET} PRIVATE
         SOCI::soci_odbc_static
         nlohmann_json::nlohmann_json
         libwdc
+        cryptopp::cryptopp
         )
 
 if (WIN32)
