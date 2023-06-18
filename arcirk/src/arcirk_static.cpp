@@ -172,7 +172,13 @@ namespace arcirk{
         return source;
 #endif
     }
-
+    std::string from_utf(const std::string& source){
+#ifdef BOOST_WINDOWS
+        return boost::locale::conv::from_utf(source, "windows-1251");
+#else
+        return source;
+#endif
+    }
     std::string get_sha1(const std::string& p_arg)
     {
         boost::uuids::detail::sha1 sha1;
@@ -294,8 +300,12 @@ namespace arcirk{
 
     std::string crypt(const std::string &source, const std::string& key) {
 
-        void * text = (void *) source.c_str();
-        void * pass = (void *) key.c_str();
+        std::vector<char> source_(source.c_str(), source.c_str() + source.size() + 1);
+        std::vector<char> key_(key.c_str(), key.c_str() + key.size() + 1);
+        void* text = std::data(source_);
+        void* pass = std::data(key_);
+//        void * text = (void *) source.c_str();
+//        void * pass = (void *) key.c_str();
         _crypt(text, ARR_SIZE(source.c_str()), pass, ARR_SIZE(key.c_str()));
 
         std::string result((char*)text);

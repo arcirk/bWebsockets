@@ -270,6 +270,8 @@ scheduled_operations::scheduled_operations(const arcirk::server::server_config &
 
 nlohmann::json scheduled_operations::exec_http_query(const std::string& command, const nlohmann::json& param) {
 
+    //using namespace arcirk::cryptography;
+
     auto url = arcirk::Uri::Parse(sett_.HSHost);
     auto const host = url.Host;
     auto const port = url.Port;//"80";
@@ -286,9 +288,10 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-     std::string user_name = sett_.HSUser;
-     const std::string pwd = sett_.HSPassword;
-     std::string user_pwd = arcirk::crypt(pwd, "my_key");
+    std::string user_name = sett_.HSUser;
+    const std::string pwd = sett_.HSPassword;
+    std::string user_pwd = arcirk::crypt(pwd, CRYPT_KEY);
+    //std::string user_pwd = crypt_utils().decrypt_string(pwd);
 
     std::string auth = user_name;
     auth.append(":");

@@ -302,6 +302,8 @@ public:
 
     std::string handle_request_get_blob(const std::string& content_disposition);
 
+    boost::filesystem::path log_directory() const;
+
 private:
 
     soci::session * sql_sess;

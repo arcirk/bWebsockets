@@ -11,7 +11,9 @@
 #include <sstream>
 
 #include <boost/asio.hpp>
+#ifdef USE_BOOST_VARIANT
 #include <boost/variant.hpp>
+#endif
 #include <boost/exception/all.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -52,13 +54,16 @@ namespace arcirk {
 
     typedef unsigned char BYTE;
     typedef std::vector<BYTE> ByteArray;
+#ifdef USE_BOOST_VARIANT
     typedef boost::variant<std::string, long int, bool, double, boost::uuids::uuid, std::vector<BYTE>> Variant;
+#endif
     typedef std::string T_str;
     typedef std::vector<T_str> T_vec;
     typedef std::vector<std::pair<T_str, T_str>> T_list;
 
     std::string local_8bit(const std::string& source);
     std::string to_utf(const std::string& source);
+    std::string from_utf(const std::string& source);
     std::string get_sha1(const std::string& p_arg);
     std::string get_hash(const std::string& first, const std::string& second);
     T_vec split(const T_str& line, const T_str& sep);
@@ -76,9 +81,7 @@ namespace arcirk {
     long int tz_offset(time_t when = NULL_TIME);
     long int add_day(const long int& dt, const int& quantity);
 
-
     std::string crypt(const std::string &source, const std::string& key);
-    //void* _crypt(void* data, unsigned data_size, void* key, unsigned key_size);
 
     void write_file(const std::string& filename, ByteArray& file_bytes);
     void read_file(const std::string &filename, ByteArray &result);
@@ -115,13 +118,13 @@ namespace arcirk {
         bool byte_is_base64(BYTE c);
         std::string byte_to_base64(BYTE const* buf, unsigned int bufLen);
         ByteArray base64_to_byte(std::string const& encoded_string);
-        void writeFile(const std::string& filename, ByteArray& file_bytes);
-        void readFile(const std::string &filename, ByteArray &result);
+//        void writeFile(const std::string& filename, ByteArray& file_bytes);
+//        void readFile(const std::string &filename, ByteArray &result);
         std::string base64_encode(const std::string &s);
         std::string base64_decode(const std::string &s);
         bool is_base64(const std::string& source);
     };
-
+#ifdef USE_BOOST_VARIANT
     class bVariant {
     public:
         explicit bVariant(const std::string &val) : value(val) {}
@@ -163,7 +166,7 @@ namespace arcirk {
         content_value() = default;
 
     } content_value;
-
+#endif
 #ifdef USE_RAPIDJSON
     namespace json{
 
@@ -394,12 +397,6 @@ namespace arcirk {
             out << res << '\n';
         }
         out.close();
-
-        //std::cerr << file << std::endl;
-//        if(conv)
-//            std::cerr << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(error) << std::endl;
-//        else
-//            std::cerr << std::string(cur_date) << " " << what << ": " << error << std::endl;
     };
 
     static inline void log(const std::string& what, const std::string& message, bool conv = true, const std::string& log_folder = "logs"){
@@ -435,8 +432,6 @@ namespace arcirk {
         strftime(date_string, sizeof(date_string), "%u_%m_%Y", &tm);
 
         fs::path file = log_dir / (std::string(date_string) + ".log");
-        //std::cout << file << std::endl;
-
         std::ofstream out;			// поток для записи
         out.open(file.string(), std::ios::app); 		// открываем файл для записи
         if (out.is_open())
@@ -445,12 +440,18 @@ namespace arcirk {
         }
         out.close();
 
-//        if(conv)
-//            std::cout << std::string(cur_date) << " " << what << ": " << arcirk::local_8bit(message) << std::endl;
-//        else
-//            std::cout << std::string(cur_date) << " " << what << ": " <<message << std::endl;
     };
 
+    namespace cryptography {
+        class crypt_utils
+        {
+            public:
+                crypt_utils();
+
+            [[maybe_unused]] std::string encrypt_string(const std::string& plain_text) const;
+                std::string decrypt_string(const std::string& cipher_text) const;
+        };
+    }
 }
 
 #endif //ARCIRK_LIBRARY_H

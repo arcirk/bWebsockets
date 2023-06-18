@@ -182,6 +182,7 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
     using namespace boost::filesystem;
     using namespace soci;
     using namespace arcirk::database;
+    //using namespace arcirk::cryptography;
 
     auto version = arcirk::server::get_version();
 //    std::string db_name = arcirk::str_sample("arcirk_v%1%%2%%3%", std::to_string(version.major), std::to_string(version.minor), std::to_string(version.path));
@@ -198,7 +199,10 @@ void verify_database_structure(arcirk::DatabaseType type, const arcirk::server::
         const std::string pwd = sett.SQLPassword;
         std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
                                                            "SERVER=%1%;Persist Security Info=true;"
-                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, arcirk::crypt(pwd, "my_key"));
+                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, arcirk::crypt(pwd, CRYPT_KEY));
+//        std::string connection_string = arcirk::str_sample("DRIVER={SQL Server};"
+//                                                           "SERVER=%1%;Persist Security Info=true;"
+//                                                           "uid=%2%;pwd=%3%", sett.SQLHost, sett.SQLUser, crypt_utils().decrypt_string(pwd));
         try {
             sql.open(soci::odbc, connection_string);
         } catch (const std::exception &e) {

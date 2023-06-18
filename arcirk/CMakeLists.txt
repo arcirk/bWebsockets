@@ -7,7 +7,7 @@ project(arcirk)
 #else()
 #    set(CMAKE_TOOLCHAIN_FILE "/home/arcady/lib/vcpkg/scripts/buildsystems/vcpkg.cmake"
 #            CACHE STRING "Vcpkg toolchain file")
-#endif()
+#endif(
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -107,6 +107,7 @@ add_library(arcirk
         )
 
 find_package(Boost REQUIRED COMPONENTS regex filesystem)
+find_package(cryptopp CONFIG REQUIRED)
 
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -116,4 +117,5 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(arcirk PRIVATE
         ${Boost_LIBRARIES}
+        cryptopp::cryptopp
         )

@@ -1,7 +1,9 @@
 
 #include "../arcirk.hpp"
 
+
 namespace arcirk{
+#ifdef USE_BOOST_VARIANT
     std::string bVariant::get_string(){
         if (is_string())
             return boost::get<std::string>(value);
@@ -92,6 +94,7 @@ namespace arcirk{
         } else
             return {};
     }
+#endif
 
     std::string sample(const std::string& format_string, const std::vector<std::string>& args){
         boost::format f(format_string);
@@ -126,3 +129,4 @@ namespace arcirk{
     }
 
 }
+

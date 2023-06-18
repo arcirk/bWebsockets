@@ -4,6 +4,7 @@
 #include "arcirk.hpp"
 #include "includes.hpp"
 
+#define ARCIRK_PROJECT "arcirk"
 #define ARCIRK_VERSION "1.1.0"
 #define CLIENT_VERSION 2
 #define ARCIRK_SERVER_CONF "server_conf.json"
@@ -72,14 +73,14 @@ BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::ByteArray, data)
 )
 BOOST_FUSION_DEFINE_STRUCT(
-                (arcirk::server), server_command_result,
-                (std::string, command)
-                (std::string, uuid_form)
-                (std::string, result)
-                (std::string, message)
-                (std::string, error_description)
-                (std::string, param)
-                (arcirk::ByteArray, data)
+        (arcirk::server), server_command_result,
+        (std::string, command)
+        (std::string, uuid_form)
+        (std::string, result)
+        (std::string, message)
+        (std::string, error_description)
+        (std::string, param)
+        (arcirk::ByteArray, data)
 
 )
 
@@ -89,9 +90,6 @@ private:
     std::string m_error{}; // handle our own string
     std::string uuid_form_{};
     std::string command_{};
-//    std::string result_{};
-//    std::string message_{};
-//    std::string error_description_{};
 public:
     server_commands_exception(std::string_view error, std::string_view command, std::string_view uuid_form)
             : m_error{error},
