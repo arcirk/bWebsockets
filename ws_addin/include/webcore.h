@@ -15,8 +15,8 @@
 class WebCore final : public Component {
     std::mutex mutex_;
 public:
-    const char *Version = u8"1.1.0";
-    const std::string version = "1.1.0";
+    const char *Version = u8"1.1.1";
+    const std::string version = ARCIRK_VERSION;
     const std::string application_name = "1c_webcore";
 
     std::string extensionName() override;

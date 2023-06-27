@@ -3150,31 +3150,32 @@ arcirk::server::server_command_result shared_state::device_get_full_info(const v
     }
 
     auto device = param_.value("device", "");
-    if(device.empty())
-        throw native_exception("Не указано устройство!");
+//    if(device.empty())
+//        throw native_exception("Не указано устройство!");
 
     auto sql = soci_initialize();
     auto query = builder::query_builder();
     query.set_databaseType((builder::sql_database_type)sett.SQLFormat);
-    int count = 0;
-    //*sql << "use arcirk_v110;";
-    auto rs = query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
-            {"ref", device}
-    }, true).exec(*sql, {}, true);
-//    soci::rowset<soci::row> rs = *sql << (sql->prepare <<  query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
-//            {"ref", device}
-//    }, true).prepare());
-//
-    json struct_dev{};
-    //получаем данные устройства
-    for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
-        count++;
-        const soci::row &row_ = *itr;
-        struct_dev = database::row_to_json(row_);
-    }
 
-    if(count == 0)
-        throw native_exception("Устройство не найдено!");
+    int count = 0;
+    json struct_dev{};
+
+    if(!device.empty()){
+        auto rs = query.select().from(arcirk::enum_synonym(tables::tbDevices)).where(json{
+                {"ref", device}
+        }, true).exec(*sql, {}, true);
+
+
+        //получаем данные устройства
+        for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+            count++;
+            const soci::row &row_ = *itr;
+            struct_dev = database::row_to_json(row_);
+        }
+
+        if(count == 0)
+            throw native_exception("Устройство не найдено!");
+    }
 
     //получаем данные подчиненных таблиц
     Tables_v tables{};

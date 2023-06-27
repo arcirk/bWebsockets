@@ -290,8 +290,6 @@ int main(int argc, char* argv[])
     if(conf.ServerWorkingDirectory.empty())
         conf.ServerWorkingDirectory = program_data().string();
 
-
-
     //читаем командную строку
     read_command_line(input, conf);
 

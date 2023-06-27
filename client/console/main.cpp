@@ -7,7 +7,7 @@
 #include <functional>
 #include <boost/beast/ssl.hpp>
 
-const std::string version = "1.1.0";
+const std::string version = ARCIRK_VERSION;
 
 boost::filesystem::path m_root_conf;
 
