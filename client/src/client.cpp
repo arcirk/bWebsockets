@@ -147,6 +147,8 @@ std::string websocket_client::base64_to_string(const std::string &base64str) con
 
 void websocket_client::on_message(const std::string &message) {
 
+    using json = nlohmann::json;
+
     if(message.empty())
         return;
 
@@ -155,14 +157,13 @@ void websocket_client::on_message(const std::string &message) {
     if(isSetParam){
         //парсим ответ если это установка параметров
         try {
-            auto resp = pre::json::from_json<server::server_response>(message);
+            auto resp = arcirk::secure_serialization<server::server_response>(json::parse(message));
             resp.version = ARCIRK_VERSION;
             if(resp.command == enum_synonym(server::server_commands::SetClientParam)){
                 client::client_param client_param;
                 if(!resp.result.empty()){
-                    //std::string r = arcirk::base64::base64_decode(resp.result);
                     std::string r = arcirk::base64::base64_decode(resp.param);
-                    client_param = pre::json::from_json<client::client_param>(r);
+                    client_param = arcirk::secure_serialization<client::client_param>(json::parse(r));
                     client_param_.session_uuid = client_param.session_uuid;
                     boost::uuids::uuid uuid{};
                     if(arcirk::uuids::is_valid_uuid(client_param_.session_uuid, uuid))

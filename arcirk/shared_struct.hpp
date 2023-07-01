@@ -36,6 +36,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, device_id)
         (std::string, info_base)
         (std::string, product)
+        (std::string, sid)
         (int, version)
 )
 
@@ -211,6 +212,7 @@ namespace arcirk::server{
         RunTask,
         StopTask,
         SendNotify,
+        GetCertUser,
         CMD_INVALID=-1,
     };
 
@@ -251,6 +253,7 @@ namespace arcirk::server{
         {RunTask, "RunTask"}    ,
         {StopTask, "StopTask"}    ,
         {SendNotify, "SendNotify"}    ,
+        {GetCertUser, "GetCertUser"}    ,
     })
 
 }
@@ -292,6 +295,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, ExchangePlan)
         (std::string, ServerProtocol)
         (bool, WriteJournal)
+        (bool, AllowIdentificationByWINSID)
 );
 
 #endif

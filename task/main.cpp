@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
         write_conf(vec);
     }else{
         for (auto itr = options.begin(); itr != options.end(); ++itr) {
-            auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
+            auto opt = arcirk::secure_serialization<arcirk::services::task_options>(*itr);
             vec.push_back(opt);
         }
     }

@@ -37,6 +37,7 @@ void verify_directories(){
 void read_conf(server::server_config & result){
 
     using namespace boost::filesystem;
+    using json = nlohmann::json;
 
     if(!exists(arcirk::local_8bit(m_root_conf.string())))
         return;
@@ -47,7 +48,8 @@ void read_conf(server::server_config & result){
         std::ifstream file(conf.string(), std::ios_base::in);
         std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
         if(!str.empty()){
-            result = pre::json::from_json<server::server_config>(str);
+            //result = pre::json::from_json<server::server_config>(str);
+            result = arcirk::secure_serialization<server::server_config>(json::parse(str));
         }
     }
 }

@@ -513,6 +513,65 @@ bool shared_state::verify_auth_from_hash(const std::string &hash) {
     return false;
 }
 
+bool shared_state::verify_auth_from_sid(const std::string &sid, arcirk::database::user_info& info) {
+
+    log(__FUNCTION__, "verify_connection ... ", true, sett.WriteJournal ? log_directory().string(): "");
+
+    using namespace boost::filesystem;
+    using namespace soci;
+    using namespace arcirk::database;
+    using json = nlohmann::json;
+
+    if(sid.empty())
+        return false;
+
+    try {
+        auto sql = soci_initialize();
+
+        auto rs = builder::query_builder((builder::sql_database_type)sett.SQLFormat)
+                .select(json{"uuid"})
+                .from(arcirk::enum_synonym(tbCertUsers))
+                .where(json::object({{"sid", sid}}), true).exec(*sql, {}, true);
+
+        std::string ref;
+        for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+            const soci::row &row_ = *itr;
+            ref = row_.get<std::string>("uuid");
+        }
+        if(ref.empty())
+            return false;
+
+        rs =  builder::query_builder((builder::sql_database_type)sett.SQLFormat)
+        .select()
+        .from(enum_synonym(tables::tbUsers))
+        .where(json{{"ref", ref}}, true)
+        .exec(*sql, {}, true);
+        int count = 0;
+        for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+            const soci::row &row_ = *itr;
+            info.ref = row_.get<std::string>("ref");
+            info.hash = row_.get<std::string>("hash");
+            info.second = row_.get<std::string>("second");
+            info.first = row_.get<std::string>("first");
+            info.role = row_.get<std::string>("role");
+            info.parent = row_.get<std::string>("parent");
+            info.performance = row_.get<std::string>("performance");
+            info.version = row_.get<int>("version");
+            info.deletion_mark = row_.get<int>("deletion_mark");
+            info.is_group = row_.get<int>("is_group");
+            info.cache = row_.get<std::string>("cache");
+            count++;
+            break;
+        }
+        return count > 0;
+    } catch (std::exception &e) {
+        arcirk::fail(__FUNCTION__, e.what(), false, sett.WriteJournal ? log_directory().string(): "");
+    }
+
+    //}
+    return false;
+}
+
 bool shared_state::verify_auth(const std::string& usr, const std::string& pwd ) {
 
     using namespace boost::filesystem;
@@ -785,19 +844,20 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         return result;
     }
 
-    json param_j = json::parse(base64_to_string(std::get<std::string>(param)));
-    auto param_ = client::client_param();
-    try {
-        param_ = pre::json::from_json<client::client_param>(param_j);
-    } catch (...) {
-        auto tmp = pre::json::to_json(param_);
-        auto items = param_j.items();
-        for (auto it = items.begin(); it != items.end() ; ++it) {
-            if(tmp.find(it.key()) != tmp.end())
-                tmp[it.key()] = it.value();
-        }
-        param_ = pre::json::from_json<client::client_param>(tmp);
-    }
+//    json param_j = json::parse(base64_to_string(std::get<std::string>(param)));
+//    auto param_ = client::client_param();
+//    try {
+//        param_ = pre::json::from_json<client::client_param>(param_j);
+//    } catch (...) {
+//        auto tmp = pre::json::to_json(param_);
+//        auto items = param_j.items();
+//        for (auto it = items.begin(); it != items.end() ; ++it) {
+//            if(tmp.find(it.key()) != tmp.end())
+//                tmp[it.key()] = it.value();
+//        }
+//        param_ = pre::json::from_json<client::client_param>(tmp);
+//    }
+    auto param_ = arcirk::secure_serialization<client::client_param>(base64_to_string(std::get<std::string>(param)));
 
     bool is_check_version = param_.version != CLIENT_VERSION;
 
@@ -823,8 +883,26 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
             if(!param_.hash.empty()){
                 bool result_auth = verify_auth_from_hash(param_.hash);
                 if(!result_auth){
-                    fail(__FUNCTION__, "failed authorization", true, sett.WriteJournal ? log_directory().string(): "");
-                    result.message = "failed authorization";
+                    if(sett.AllowIdentificationByWINSID) {
+                        auto info = arcirk::database::user_info();
+                        result_auth = verify_auth_from_sid(param_.sid, info);
+                        if (!result_auth) {
+                            fail(__FUNCTION__, "failed authorization", true,
+                                 sett.WriteJournal ? log_directory().string() : "");
+                            result.message = "failed authorization";
+                        } else {
+                            session->set_authorized(true);
+                            session->set_user_name(info.first);
+                            session->set_role(info.role);
+                            param_.user_uuid = info.ref;
+                            param_.user_name = info.first;
+                            result.result = base64::base64_encode(pre::json::to_json(info).dump());
+                        }
+                    }else{
+                        fail(__FUNCTION__, "failed authorization", true,
+                             sett.WriteJournal ? log_directory().string() : "");
+                        result.message = "failed authorization";
+                    }
                 }
                 else{
                     log(__FUNCTION__, "successful authorization", true, sett.WriteJournal ? log_directory().string(): "");
@@ -832,14 +910,31 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
                     auto info = get_user_info(param_.hash);
                     //если используется авторизация устанавливаем параметры из базы данных
                     set_session_info(session, info);
-                    info.hash = "";
+                    //info.hash = "";
                     param_.user_uuid = info.ref;
                     result.result = base64::base64_encode(pre::json::to_json(info).dump());
                 }
 
             }else{
-                fail(__FUNCTION__, "failed authorization", true, sett.WriteJournal ? log_directory().string(): "");
-                result.message = "failed authorization";
+                if(sett.AllowIdentificationByWINSID && !param_.sid.empty()) {
+                    auto info = arcirk::database::user_info();
+                    auto result_auth = verify_auth_from_sid(param_.sid, info);
+                    if (!result_auth) {
+                        fail(__FUNCTION__, "failed authorization", true,
+                             sett.WriteJournal ? log_directory().string() : "");
+                        result.message = "failed authorization";
+                    } else {
+                        session->set_authorized(true);
+                        session->set_user_name(info.first);
+                        session->set_role(info.role);
+                        param_.user_uuid = info.ref;
+                        param_.user_name = info.first;
+                        result.result = base64::base64_encode(pre::json::to_json(info).dump());
+                    }
+                }else{
+                    fail(__FUNCTION__, "failed authorization", true, sett.WriteJournal ? log_directory().string(): "");
+                    result.message = "failed authorization";
+                }
             }
         }
 
@@ -1011,7 +1106,7 @@ arcirk::server::server_command_result shared_state::update_server_configuration(
     auto param_ = parse_json(std::get<std::string>(param), true);
     auto p = param_.value("config", n_json::object());
     if(!p.empty()){
-        sett = pre::json::from_json<arcirk::server::server_config>(p.dump());
+        sett = arcirk::secure_serialization<arcirk::server::server_config>(p);
         write_conf(sett, app_directory(), ARCIRK_SERVER_CONF);
     }
 
@@ -2311,7 +2406,13 @@ void shared_state::run_server_tasks() {
         vec.push_back(opt1);
     }else{
         for (auto itr = result.begin(); itr != result.end(); ++itr) {
-            auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
+            auto opt = arcirk::secure_serialization<arcirk::services::task_options>(*itr);
+            if(opt.name == "EraseDeletedMarkObjects" && opt.interval == 0)
+                opt.interval = 600;
+            else if(opt.name == "ExchangePlan" && opt.interval == 0)
+                opt.interval = 1800;
+            else if(opt.interval == 0)
+                opt.interval = 60;
             vec.push_back(opt);
         }
     }
@@ -2452,8 +2553,8 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
             auto obj = http_result.value("barcode", nlohmann::json{});
             if(obj.empty())
                 throw native_exception("Штрихкод не найден!");
-            auto struct_br = pre::json::from_json<database::barcodes>(obj);
-            auto struct_n = pre::json::from_json<database::nomenclature>(http_result["nomenclature"]);
+            auto struct_br = arcirk::secure_serialization<database::barcodes>(obj);
+            auto struct_n = arcirk::secure_serialization<database::nomenclature>(http_result["nomenclature"]);
 
             auto rs = builder::query_builder((builder::sql_database_type)sett.SQLFormat).select().from(table_name).where(nlohmann::json{
                     {"barcode", br}
@@ -3291,7 +3392,7 @@ arcirk::server::server_command_result shared_state::update_task_options(const va
     fs::path conf = root_conf /+ file_name.c_str();
     std::vector<arcirk::services::task_options> vec;
     for (auto itr = task_options.begin(); itr != task_options.end() ; ++itr) {
-        auto opt = pre::json::from_json<arcirk::services::task_options>(*itr);
+        auto opt = arcirk::secure_serialization<arcirk::services::task_options>(*itr);
         vec.push_back(opt);
     }
 
@@ -3580,4 +3681,41 @@ boost::filesystem::path shared_state::log_directory() const {
         create_directories(wd);
     }
     return wd;
+}
+
+arcirk::server::server_command_result shared_state::get_cert_user(const variant_t &param, const variant_t &session_id) {
+
+    using json = nlohmann::json;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::GetCertUser, arcirk::database::roles::dbUser
+                ,param_, param);
+    } catch (const std::exception &e) {
+        throw native_exception(e.what());
+    }
+
+    auto session = get_session(uuid);
+    auto host = session->host_name();
+    auto system_user = session->system_user();
+
+    if(host.empty() || system_user.empty())
+        throw native_exception("Нарушение прав доступа. Хост или имя пользователя не указаны!");
+
+    using builder = arcirk::database::builder::query_builder;
+    using tables = arcirk::database::tables;
+    using namespace soci;
+
+    auto sql = soci_initialize();
+    json result_table;
+    builder::execute(builder().select().from(arcirk::enum_synonym(tables::tbCertUsers)).where(json{
+            {"system_user", system_user},
+            {"host", host}
+    }, true).prepare(), *sql, result_table) ;
+
+    result.message = "OK";
+    result.result = arcirk::base64::base64_encode(result_table.dump());
+    return result;
 }

@@ -72,6 +72,7 @@ namespace arcirk{
     static inline void read_conf(server::server_config & result, const boost::filesystem::path& root_conf, const std::string& file_name){
 
         using namespace boost::filesystem;
+        using json = nlohmann::json;
 
         try {
             path conf = root_conf /+ file_name.c_str();
@@ -80,7 +81,7 @@ namespace arcirk{
                 std::ifstream file(conf.string(), std::ios_base::in);
                 std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
                 if(!str.empty()){
-                    result = pre::json::from_json<server::server_config>(str);
+                    result = arcirk::secure_serialization<server::server_config>(json::parse(str));
                 }
             }
         } catch (std::exception &e) {
@@ -185,6 +186,7 @@ public:
     arcirk::server::server_command_result run_task(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result stop_task(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result send_all_notify(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_cert_user(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
@@ -334,6 +336,7 @@ private:
 
     [[nodiscard]] bool verify_auth(const std::string& usr, const std::string& pwd);
     [[nodiscard]] bool verify_auth_from_hash(const std::string& hash);
+    [[nodiscard]] bool verify_auth_from_sid(const std::string& sid, arcirk::database::user_info& info);
     static bool is_cmd(const std::string& message) { return message.substr(0, 3) == "cmd";};
     static bool is_msg(const std::string& message) { return message.substr(0, 3) == "msg";};
     void execute_command_handler(const std::string& message, subscriber *session);
