@@ -66,8 +66,6 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::StopTask), this, &shared_state::stop_task);
     add_method(enum_synonym(server::server_commands::SendNotify), this, &shared_state::send_all_notify);
 
-    run_server_tasks();
-
     sql_sess = new soci::session();// soci_initialize();
 
 }
@@ -1124,10 +1122,21 @@ arcirk::server::server_command_result shared_state::server_configuration(const v
 
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
-    if (!operation_available)
-        throw native_exception("Не достаточно прав доступа!");
+//    if (!operation_available)
+//        throw native_exception("Не достаточно прав доступа!");
 
-    std::string conf_json = pre::json::to_json(sett).dump();
+    auto conf_copy = pre::json::to_json(sett);
+    if(!operation_available){
+        conf_copy["ServerUser"] = "Не достаточно прав доступа";
+        conf_copy["ServerUserHash"] = "Не достаточно прав доступа";
+        conf_copy["WebDavUser"] = "Не достаточно прав доступа";
+        conf_copy["WebDavPwd"] = "Не достаточно прав доступа";
+        conf_copy["SQLUser"] = "Не достаточно прав доступа";
+        conf_copy["SQLPassword"] = "Не достаточно прав доступа";
+        conf_copy["HSUser"] = "Не достаточно прав доступа";
+        conf_copy["HSPassword"] = "Не достаточно прав доступа";
+    }
+    std::string conf_json = conf_copy.dump();
     server::server_command_result result;
     result.result = arcirk::base64::base64_encode(conf_json);
     result.command = enum_synonym(server::server_commands::ServerConfiguration);
@@ -1256,11 +1265,10 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
 
             if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert" || query_type == "delete"){
                 if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbDevices) &&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages)
-                   &&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocuments)&&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables)&&
-                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsMarkedTables)&&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages) &&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocuments) &&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables) &&
+                   table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsMarkedTables) &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbBarcodes)){
                     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
                     if (!operation_available)
@@ -3718,4 +3726,8 @@ arcirk::server::server_command_result shared_state::get_cert_user(const variant_
     result.message = "OK";
     result.result = arcirk::base64::base64_encode(result_table.dump());
     return result;
+}
+
+void shared_state::start() {
+    run_server_tasks();
 }

@@ -166,7 +166,7 @@ public:
             return derived().do_eof();
 
         if(ec)
-            return fail(ec, "read");
+            return fail(ec, __FUNCTION__);
 
         auto req = parser_->get();
         bool http_authorization = false;
@@ -175,7 +175,7 @@ public:
             std::string auth = static_cast<std::string>(req[http::field::authorization]);
             http_authorization = state_->verify_connection(auth);
             if(http_authorization)
-                info("on_read", "Authorization passed successfully");
+                info(__FUNCTION__, "Authorization passed successfully");
         }
 
         // See if it is a WebSocket Upgrade
@@ -316,7 +316,7 @@ public:
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
-            return fail(ec, "write");
+            return fail(ec, __FUNCTION__);
 
         if(close)
         {
@@ -467,7 +467,7 @@ private:
             std::size_t bytes_used)
     {
         if(ec)
-            return fail(ec, "handshake");
+            return fail(ec, __FUNCTION__);
 
         // Consume the portion of the buffer used by the handshake
         buffer_.consume(bytes_used);
@@ -479,7 +479,7 @@ private:
     on_shutdown(beast::error_code ec)
     {
         if(ec)
-            return fail(ec, "shutdown");
+            return fail(ec, __FUNCTION__);
 
         // At this point the connection is closed gracefully
     }
@@ -543,7 +543,7 @@ public:
     on_detect(beast::error_code ec, bool result)
     {
         if(ec)
-            return fail(ec, "detect");
+            return fail(ec, __FUNCTION__);
 
         if(result)
         {

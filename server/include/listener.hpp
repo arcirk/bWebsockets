@@ -31,35 +31,40 @@ public:
         acceptor_.open(endpoint.protocol(), ec);
         if(ec)
         {
-            fail(ec, "open");
-            return;
+            fail(ec, "listener::open");
+            //return;
+            std::exit(0);
         }
 
         // Allow address reuse
         acceptor_.set_option(net::socket_base::reuse_address(true), ec);
         if(ec)
         {
-            fail(ec, "set_option");
-            return;
+            fail(ec, "listener::set_option");
+            //return;
+            std::exit(0);
         }
 
         // Bind to the server address
         acceptor_.bind(endpoint, ec);
         if(ec)
         {
-            fail(ec, "bind");
-            return;
+            fail(ec, "listener::bind");
+            std::exit(0);
+            //return;
         }
 
-        std::cout << "start server listen " << endpoint.address().to_string() << " " << endpoint.port() << " ..." << std::endl;
+        //std::cout << "start server listen " << endpoint.address().to_string() << " " << endpoint.port() << " ..." << std::endl;
+        info(__FUNCTION__,  "start server listen " + endpoint.address().to_string() + " " + std::to_string(endpoint.port()) + " ...");
 
         // Start listening for connections
         acceptor_.listen(
                 net::socket_base::max_listen_connections, ec);
         if(ec)
         {
-            fail(ec, "listen");
-            return;
+            fail(ec, "listener::listen");
+            //return;
+            std::exit(0);
         }
     }
 
@@ -67,9 +72,11 @@ public:
     void
     run()
     {
-        std::tm tm = arcirk::current_date();
-        std::cout.imbue(std::locale("ru_RU.utf8"));
-        std::cout << "server run " << std::put_time(&tm, "%c %Z") << std::endl;
+        //std::tm tm = arcirk::current_date();
+        //std::cout.imbue(std::locale("ru_RU.utf8"));
+        //std::cout << "server run " << std::put_time(&tm, "%c %Z") << std::endl;
+        info(__FUNCTION__, "server run");
+        state_->start();
         do_accept();
     }
 

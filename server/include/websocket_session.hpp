@@ -197,7 +197,7 @@ class websocket_session
     on_accept(beast::error_code ec)
     {
         if(ec)
-            return fail(ec, "accept");
+            return fail(ec, __FUNCTION__);
 
         derived().set_uuid_session(arcirk::uuids::random_uuid());
         derived().join();
@@ -246,7 +246,7 @@ class websocket_session
     on_close(beast::error_code ec)
     {
         if(ec)
-            return fail(ec, "close");
+            return fail(ec, __FUNCTION__ );
 
         // If we get here then the connection is closed gracefully
 
@@ -283,8 +283,8 @@ class websocket_session
         boost::ignore_unused(bytes_transferred);
 
         if (ec == boost::asio::error::eof){
-            std::cerr << "websocket_session::on_read: " << "boost::asio::error::eof" << std::endl;
-            return;
+            //std::cerr << "websocket_session::on_read: " << "boost::asio::error::eof" << std::endl;
+            return fail(ec, __FUNCTION__);;
         }
 
         // This indicates that the websocket_session was closed
@@ -292,7 +292,7 @@ class websocket_session
             return;
 
         if(ec)
-            return fail(ec, "read");
+            return fail(ec, __FUNCTION__);
 
         derived().deliver(beast::buffers_to_string(buffer_.data()));
 
@@ -322,7 +322,7 @@ class websocket_session
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
-            return fail(ec, "write");
+            return fail(ec, __FUNCTION__);
 
         // Clear the buffer
         buffer_.consume(buffer_.size());

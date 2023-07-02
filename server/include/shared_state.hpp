@@ -81,7 +81,7 @@ namespace arcirk{
                 std::ifstream file(conf.string(), std::ios_base::in);
                 std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
                 if(!str.empty()){
-                    result = arcirk::secure_serialization<server::server_config>(json::parse(str));
+                    result = arcirk::secure_serialization<server::server_config>(str);
                 }
             }
         } catch (std::exception &e) {
@@ -122,6 +122,8 @@ public:
     shared_state();
 
     ~shared_state()= default;
+
+    void start();
 
     void join(subscriber* session);
 
