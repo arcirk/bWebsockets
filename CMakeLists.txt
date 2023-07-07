@@ -12,3 +12,4 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/wdc" "${PROJECT_SOURCE_DIR}/wdc/cmake-bu
 add_subdirectory("${PROJECT_SOURCE_DIR}/task" "${PROJECT_SOURCE_DIR}/task/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/task/lib" "${PROJECT_SOURCE_DIR}/task/lib/cmake-build-debug")
 add_subdirectory("${PROJECT_SOURCE_DIR}/tests/database" "${PROJECT_SOURCE_DIR}/tests/database/cmake-build-debug")
+add_subdirectory("${PROJECT_SOURCE_DIR}/tests/mail" "${PROJECT_SOURCE_DIR}/tests/mail/cmake-build-debug")

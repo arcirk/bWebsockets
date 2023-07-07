@@ -737,9 +737,11 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
 
             char cur_date[100];
             auto tm = itr->second->start_date();
-            std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
-            std::string dt = arcirk::to_utf(cur_date);
-
+            std::string dt;
+            if(tm.tm_year !=0){
+                std::strftime(cur_date, sizeof(cur_date), "%A %c", &tm);
+                dt = arcirk::to_utf(cur_date);
+            }
             auto row = arcirk::client::session_info();
             row.session_uuid = arcirk::uuids::uuid_to_string(itr->second->uuid_session());
             row.user_name = itr->second->user_name();
@@ -753,6 +755,7 @@ arcirk::server::server_command_result shared_state::get_clients_list(const varia
             row.product = itr->second->product();
             row.host_name = itr->second->host_name();
             row.system_user = itr->second->system_user();
+            row.sid = itr->second->sys_user_sid();
 
             auto row_ = pre::json::to_json(row);
             if(empty_column)
@@ -876,6 +879,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
         session->set_host_name(param_.host_name);
         session->set_product(param_.product);
         session->set_system_user(param_.system_user);
+        session->set_sys_user_sid(param_.sid);
 
         if(use_authorization() && !session->authorized()){
             if(!param_.hash.empty()){
@@ -1263,6 +1267,8 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             if(query_type.empty())
                 throw native_exception("Не указан тип запроса!");
 
+            bool is_cert_users = false;
+
             if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert" || query_type == "delete"){
                 if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbDevices) &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbMessages) &&
@@ -1270,9 +1276,16 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsTables) &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbDocumentsMarkedTables) &&
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbBarcodes)){
-                    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
-                    if (!operation_available)
-                        throw native_exception("Не достаточно прав доступа!");
+                    if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbCertUsers)){
+                        bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+                        if (!operation_available)
+                            throw native_exception("Не достаточно прав доступа!");
+                    }else{
+                        bool operation_available = is_operation_available(uuid, roles::dbUser);
+                        if (!operation_available)
+                            throw native_exception("Не достаточно прав доступа!");
+                        is_cert_users = true;
+                    }
                 }else{
                     bool operation_available = is_operation_available(uuid, roles::dbUser);
                     if (!operation_available)
@@ -1285,6 +1298,21 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto order_by = query_param.value("order_by", nlohmann::json::object());
             auto not_exists = query_param.value("not_exists", nlohmann::json::object());
             auto representation = query_param.value("representation", nlohmann::json{});
+
+            if(is_cert_users){
+                if(where_values.empty())
+                    throw native_exception("Не достаточно прав доступа!");
+                else{
+                    auto session = get_session(uuid);
+                    auto host = where_values.value("host", "");
+                    auto uuid_user = where_values.value("uuid", "");
+                    if((host != session->host_name()
+                        || uuid_user != arcirk::uuids::uuid_to_string(session->user_uuid()))
+                        && session->role() != arcirk::enum_synonym(roles::dbAdministrator)){
+                        throw native_exception("Не достаточно прав доступа!");
+                    }
+                }
+            }
 
             if(!table_name.empty()){
                 bool return_table = false;

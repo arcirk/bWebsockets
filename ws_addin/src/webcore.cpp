@@ -132,6 +132,7 @@ WebCore::WebCore(){
     AddMethod(L"Sha1Hash", L"Sha1Hash", this, &WebCore::sha1_hash);
     AddMethod(L"SessionUuid", L"ИдентификаторСессии", this, &WebCore::session_uuid);
     AddMethod(L"SetParam", L"УстановитьПараметры", this, &WebCore::set_client_param);
+    AddMethod(L"GetParam", L"ПолучитьПараметры", this, &WebCore::get_client_param);
     AddMethod(L"GetTableRowStructure", L"ПолучитьСтруктуруЗаписи", this, &WebCore::get_table_row_structure);
     AddMethod(L"GetServerCommands", L"ПолучитьСтруктуруКомандСервера", this, &WebCore::get_server_commands);
     AddMethod(L"GetMessages", L"ПолучитьИсториюСообщений", this, &WebCore::get_messages);
@@ -204,26 +205,41 @@ void WebCore::send_message(const variant_t &receiver, const variant_t &message, 
 
 }
 
-void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName, const variant_t &infoBase) {
-    if(!std::get<std::string>(userName).empty())
-        client_param.user_name = std::get<std::string>(userName);
-    if(!std::get<std::string>(userHash).empty())
-        client_param.hash = std::get<std::string>(userHash);
-    if(!std::get<std::string>(userUuid).empty())
-        client_param.user_uuid = std::get<std::string>(userUuid);
-    if(!std::get<std::string>(appName).empty())
-        client_param.app_name = std::get<std::string>(appName);
-    if(!std::get<std::string>(infoBase).empty())
-        client_param.info_base = std::get<std::string>(infoBase);
-
-    if(m_client){
-        try {
-            m_client->update_client_param(client_param);
-        } catch (std::exception &e) {
-            error(arcirk::to_utf("WebCore::set_client_param"), arcirk::to_utf(e.what()));
-        }
+void WebCore::set_client_param(const variant_t &jsonParam){
+    auto json_text = std::get<std::string>(jsonParam);
+    if(json_text.empty())
+        return;
+    using json = nlohmann::json;
+    json j_param;
+    try {
+        j_param = json::parse(json_text);
+        client_param = secure_serialization<client::client_param>(j_param);
+    } catch (const std::exception &e) {
+        fail(__FUNCTION__ , e.what());
     }
+
 }
+
+//void WebCore::set_client_param(const variant_t &userName, const variant_t &userHash, const variant_t &userUuid, const variant_t &appName, const variant_t &infoBase) {
+//    if(!std::get<std::string>(userName).empty())
+//        client_param.user_name = std::get<std::string>(userName);
+//    if(!std::get<std::string>(userHash).empty())
+//        client_param.hash = std::get<std::string>(userHash);
+//    if(!std::get<std::string>(userUuid).empty())
+//        client_param.user_uuid = std::get<std::string>(userUuid);
+//    if(!std::get<std::string>(appName).empty())
+//        client_param.app_name = std::get<std::string>(appName);
+//    if(!std::get<std::string>(infoBase).empty())
+//        client_param.info_base = std::get<std::string>(infoBase);
+//
+//    if(m_client){
+//        try {
+//            m_client->update_client_param(client_param);
+//        } catch (std::exception &e) {
+//            error(arcirk::to_utf("WebCore::set_client_param"), arcirk::to_utf(e.what()));
+//        }
+//    }
+//}
 
 WebCore::~WebCore() {
     m_client->close(true);
@@ -425,4 +441,8 @@ void WebCore::on_successful_authorization() {
         auto w = e.what();
         error("WebCore::on_successful_authorization", w);
     }
+}
+
+std::string WebCore::get_client_param() {
+    return pre::json::to_json(client_param).dump();
 }

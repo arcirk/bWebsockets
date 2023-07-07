@@ -54,6 +54,7 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, host_name)
         (std::string, product)
         (std::string, system_user)
+        (std::string, sid)
 )
 
 BOOST_FUSION_DEFINE_STRUCT(

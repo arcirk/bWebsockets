@@ -109,3 +109,4 @@
 /cmake-build-release-x86/
 /web_admin/build-waAdmin-Desktop_Qt_6_4_2_MinGW_64_bit-Debug/
 /web_admin/build-waAdmin-Desktop_Qt_6_4_2_MSVC2019_64bit-Debug/
+/tests/mail/x64/

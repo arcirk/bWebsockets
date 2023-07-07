@@ -91,6 +91,9 @@ public:
     virtual void set_system_user(const std::string& value){
         _system_user = value;
     }
+    virtual void set_sys_user_sid(const std::string& value){
+        _sys_user_sid = value;
+    }
     virtual void send(boost::shared_ptr<std::string const> const& ss) = 0;
 
     virtual bool is_ssl() = 0;
@@ -122,7 +125,9 @@ public:
     virtual std::string system_user() const{
         return _system_user;
     }
-
+    virtual std::string sys_user_sid() const{
+        return _sys_user_sid;
+    }
     [[nodiscard]] virtual boost::uuids::uuid device_id() const {
         return _device_id;
     }
@@ -144,6 +149,7 @@ protected:
     std::string _product;
     std::string _address;
     std::string _system_user;
+    std::string _sys_user_sid;
     boost::uuids::uuid _device_id{};
     bool _is_template_http_client = false;
     std::string _info_base{};
