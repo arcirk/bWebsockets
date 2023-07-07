@@ -1298,12 +1298,12 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto order_by = query_param.value("order_by", nlohmann::json::object());
             auto not_exists = query_param.value("not_exists", nlohmann::json::object());
             auto representation = query_param.value("representation", nlohmann::json{});
-
+            auto session = get_session(uuid);
             if(is_cert_users){
-                if(where_values.empty())
-                    throw native_exception("Не достаточно прав доступа!");
-                else{
-                    auto session = get_session(uuid);
+                if(where_values.empty()){
+                    if(session->role() != arcirk::enum_synonym(roles::dbAdministrator))
+                        throw native_exception("Не достаточно прав доступа!");
+                }else{
                     auto host = where_values.value("host", "");
                     auto uuid_user = where_values.value("uuid", "");
                     if((host != session->host_name()
