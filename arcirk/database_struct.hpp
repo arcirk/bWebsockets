@@ -241,6 +241,20 @@ BOOST_FUSION_DEFINE_STRUCT(
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
+                (arcirk::database), available_certificates,
+                (int, _id)
+                (std::string, first)
+                (std::string, second)
+                (std::string, ref)
+                (std::string, user_uuid)
+                (std::string, cert_uuid)
+                (std::string, parent)
+                (int, is_group)
+                (int, deletion_mark)
+                (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), certificates,
                 (int, _id)
                 (std::string, first)
@@ -377,6 +391,7 @@ namespace arcirk::database{
         tbCertificates,
         tbCertUsers,
         tbContainers,
+        tbAvailableCertificates,
         tables_INVALID=-1,
     };
 
@@ -400,6 +415,7 @@ namespace arcirk::database{
         {tbCertificates, "Certificates"}  ,
         {tbCertUsers, "CertUsers"}  ,
         {tbContainers, "Containers"}  ,
+        {tbAvailableCertificates, "AvailableCertificates"}  ,
     })
 
     enum views{
@@ -920,6 +936,36 @@ namespace arcirk::database{
                                                 ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
                                                 ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
+    const std::string available_certificates_table_ddl = "CREATE TABLE AvailableCertificates (\n"
+                                                  "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                  "    [first]         TEXT,\n"
+                                                  "    second          TEXT,\n"
+                                                  "    ref             TEXT (36) UNIQUE\n"
+                                                  "                             NOT NULL,\n"
+                                                  "    user_uuid       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                  "    cert_uuid       TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                  "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                  "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                  "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
+                                                  "    version         INTEGER  DEFAULT(0)  NOT NULL\n" //Это версия структуры таблицы, во всех остальных поле версия - это версия объекта
+                                                  ");";
+
+    const std::string available_certificates_odbc_table_ddl = "CREATE TABLE [dbo].[AvailableCertificates](\n"
+                                                       "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
+                                                       "[first] [varchar](max) NULL,\n"
+                                                       "[second] [varchar](max) NULL,\n"
+                                                       "[ref] [char](36) NOT NULL,\n"
+                                                       "[is_group] [int] NOT NULL,\n"
+                                                       "[user_uuid] [char](36) NULL,\n"
+                                                       "[cert_uuid] [char](36) NULL,\n"
+                                                       "[parent] [char](36) NULL,\n"
+                                                       "[deletion_mark] [int] NOT NULL,\n"
+                                                       "[version] [int] NOT NULL\n"
+                                                       "CONSTRAINT [PK_DatabaseConfig] PRIMARY KEY CLUSTERED\n"
+                                                       "(\n"
+                                                       "[_id] ASC\n"
+                                                       ")WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]\n"
+                                                       ") ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]";
 
     const std::string documents_table_view_ddl = "CREATE VIEW DocumentsTableView AS\n"
                                                  "    SELECT DocumentsTables._id,\n"
@@ -1260,6 +1306,17 @@ namespace arcirk::database{
                 tbl.version = 0;
                 return pre::json::to_json(tbl);
             }
+            case tbAvailableCertificates: {
+                auto tbl = available_certificates();
+                tbl.ref = arcirk::uuids::nil_string_uuid();
+                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.user_uuid = arcirk::uuids::nil_string_uuid();
+                tbl.cert_uuid = arcirk::uuids::nil_string_uuid();
+                tbl.is_group = 0;
+                tbl.deletion_mark = 0;
+                tbl.version = 0;
+                return pre::json::to_json(tbl);
+            }
             case tables_INVALID:{
                 break;
             }
@@ -1297,6 +1354,7 @@ namespace arcirk::database{
             case tbCertificates:  return type == DatabaseType::dbTypeSQLite ? certificates_table_ddl : certificates_odbc_table_ddl;
             case tbCertUsers:  return type == DatabaseType::dbTypeSQLite ? cert_users_table_ddl : cert_users_odbc_table_ddl;
             case tbContainers:  return type == DatabaseType::dbTypeSQLite ? containers_table_ddl : containers_odbc_table_ddl;
+            case tbAvailableCertificates:  return type == DatabaseType::dbTypeSQLite ? available_certificates_table_ddl : available_certificates_odbc_table_ddl;
             case tables_INVALID:{
                 break;
             }
@@ -1470,6 +1528,7 @@ namespace arcirk::database{
         result.emplace(tables::tbCertificates, 1);
         result.emplace(tables::tbCertUsers, 2);
         result.emplace(tables::tbContainers, 1);
+        result.emplace(tables::tbAvailableCertificates, 1);
         return result;
     }
 
@@ -1492,7 +1551,8 @@ namespace arcirk::database{
                 tbDocumentsMarkedTables,
                 tbCertificates,
                 tbCertUsers,
-                tbContainers
+                tbContainers,
+                tbAvailableCertificates
         };
         return result;
     }
