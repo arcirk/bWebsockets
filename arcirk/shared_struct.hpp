@@ -214,6 +214,7 @@ namespace arcirk::server{
         StopTask,
         SendNotify,
         GetCertUser,
+        VerifyAdministrator,
         CMD_INVALID=-1,
     };
 
@@ -255,6 +256,7 @@ namespace arcirk::server{
         {StopTask, "StopTask"}    ,
         {SendNotify, "SendNotify"}    ,
         {GetCertUser, "GetCertUser"}    ,
+        {VerifyAdministrator, "VerifyAdministrator"}    ,
     })
 
 }

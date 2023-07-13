@@ -299,26 +299,33 @@ namespace arcirk{
     }
 
     std::string crypt(const std::string &source, const std::string& key) {
-
+        if(source.empty())
+            return {};
+        try {
 #ifdef _WINDOWS
-        std::string s  = arcirk::from_utf(source);
-        std::string p  = arcirk::from_utf(key);
-        std::vector<char> source_(s.c_str(), s.c_str() + s.size() + 1);
-        std::vector<char> key_(p.c_str(), p.c_str() + p.size() + 1);
-        void* text = std::data(source_);
-        void* pass = std::data(key_);
-        _crypt(text, ARR_SIZE(source.c_str()), pass, ARR_SIZE(key.c_str()));
-        std::string result(arcirk::to_utf((char*)text));
-        return result;
+            std::string s  = arcirk::from_utf(source);
+            std::string p  = arcirk::from_utf(key);
+            std::vector<char> source_(s.c_str(), s.c_str() + s.size() + 1);
+            std::vector<char> key_(p.c_str(), p.c_str() + p.size() + 1);
+            void* text = std::data(source_);
+            void* pass = std::data(key_);
+            //_crypt(text, ARR_SIZE(source_.c_str()), pass, ARR_SIZE(key.c_str()));
+            _crypt(text, source_.size(), pass, key_.size());
+            std::string result(arcirk::to_utf((char*)text));
+            return result;
 #else
-        std::vector<char> source_(source.c_str(), source.c_str() + source.size() + 1);
-        std::vector<char> key_(key.c_str(), key.c_str() + key.size() + 1);
-        void* text = std::data(source_);
-        void* pass = std::data(key_);
-        _crypt(text, ARR_SIZE(source.c_str()), pass, ARR_SIZE(key.c_str()));
-        std::string result((char*)text);
-        return result;
+            std::vector<char> source_(source.c_str(), source.c_str() + source.size() + 1);
+            std::vector<char> key_(key.c_str(), key.c_str() + key.size() + 1);
+            void* text = std::data(source_);
+            void* pass = std::data(key_);
+            _crypt(text, ARR_SIZE(source.c_str()), pass, ARR_SIZE(key.c_str()));
+            std::string result((char*)text);
+            return result;
 #endif
+        } catch (const std::exception &e) {
+            fail(__FUNCTION__, e.what());
+        }
+
     }
 
     std::string byte_array_to_string(const ByteArray& data){

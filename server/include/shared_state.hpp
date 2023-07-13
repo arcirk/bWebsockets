@@ -189,6 +189,7 @@ public:
     arcirk::server::server_command_result stop_task(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result send_all_notify(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_cert_user(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result verify_administrator(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
