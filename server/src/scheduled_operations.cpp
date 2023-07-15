@@ -316,8 +316,14 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
 
     auto res_ = res.get();
 
-    if(res_.result() == http::status::unauthorized)
-        throw native_exception(__FUNCTION__, arcirk::local_8bit("Ошибка авторизации на http сервисе!").c_str());
+    if(res_.result() == http::status::unauthorized){
+        std::string s(__FUNCTION__);
+        s.append(": ");
+        s.append("Ошибка авторизации на http сервере!");
+        throw native_exception(s.c_str());
+        //throw native_exception(__FUNCTION__ , "Ошибка авторизации на http сервере!");
+    }
+
 
     std::string result_body = boost::beast::buffers_to_string(res_.body().data());
     beast::error_code ec;
@@ -325,8 +331,14 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
     if (ec && ec != beast::errc::not_connected)
         throw beast::system_error{ec};
 
-    if(result_body == "error")
-        throw native_exception(__FUNCTION__, "Ошибка на http сервисе!");
+    if(result_body == "error"){
+        std::string s(__FUNCTION__);
+        s.append(": ");
+        s.append("Ошибка на http сервисе!");
+        throw native_exception(s.c_str());
+        //throw native_exception(__FUNCTION__, "Error on http service!");
+    }
+
 
     nlohmann::json result{};
     try {

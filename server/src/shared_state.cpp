@@ -2520,7 +2520,7 @@ void shared_state::synchronize_objects_from_1c() {
         if(result)
             log(__FUNCTION__, "Регламентная операция успешно завершена!", true, sett.WriteJournal ? log_directory().string(): "");
     } catch (const std::exception &err) {
-        fail(__FUNCTION__, arcirk::to_utf(err.what()), false, sett.WriteJournal ? log_directory().string(): "");
+        fail(__FUNCTION__, err.what(), false, sett.WriteJournal ? log_directory().string(): "");
     }
 
 }
@@ -2754,7 +2754,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
     }else{
 
         arcirk::write_file(dest.string(), data);
-
+        log(__FUNCTION__ , "Файл успешно загружен!");
     }
 
 

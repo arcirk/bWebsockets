@@ -3,6 +3,7 @@
 
 #include "includes.hpp"
 #include <map>
+#include <utility>
 #include "arcirk.hpp"
 
 namespace arcirk{
@@ -1952,14 +1953,17 @@ class native_exception : public std::exception
 {
 public:
     explicit native_exception(const char *msg) : message(msg) {}
-    explicit native_exception(const char *fun, const char *msg) : message(fun), func(fun) {}
+    explicit native_exception(const char *fun, const char *msg) : message(msg), func(fun) {}
     virtual ~native_exception() throw() {}
     virtual const char *what() const throw() {
         if(func.empty())
             return message.c_str();
         else{
-            std::string r = func + ": " + message;
-            return r.c_str();
+              std::string result(func); // + ": " + message;
+              result.append(": ");
+              result.append(message);
+//              func.append(": ");
+            return result.c_str();
         }
 
     }

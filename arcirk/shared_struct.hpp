@@ -215,6 +215,7 @@ namespace arcirk::server{
         SendNotify,
         GetCertUser,
         VerifyAdministrator,
+
         CMD_INVALID=-1,
     };
 

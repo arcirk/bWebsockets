@@ -300,6 +300,7 @@ public:
         } catch (const std::exception &e) {
             resp.message = e.what();
             resp.result = "error";
+            fail(__FUNCTION__ , resp.message);
         }
 
         return pre::json::to_json(resp).dump();
