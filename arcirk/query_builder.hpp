@@ -382,7 +382,7 @@ namespace arcirk::database::builder {
                         else
                             val.value = "?";
 
-                    }if(f_value.is_array()) {
+                    }else if(f_value.is_array()) {
                         val.compare = On_List;
                         val.value = f_value;
                     }else{

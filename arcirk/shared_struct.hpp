@@ -8,6 +8,10 @@
 #define ARCIRK_VERSION "1.1.1"
 #define CLIENT_VERSION 3
 #define ARCIRK_SERVER_CONF "server_conf.json"
+#define NIL_STRING_UUID "00000000-0000-0000-0000-000000000000"
+#define SHARED_CHANNEL_UUID "3e3b54bf-4319-4e73-9917-22f06cc1bfbd"
+#define WS_RESULT_SUCCESS "success"
+#define WS_RESULT_ERROR "error"
 
 typedef std::function<void(const std::string&)> callback_message;
 typedef std::function<void(bool)> callback_status;
@@ -215,7 +219,7 @@ namespace arcirk::server{
         SendNotify,
         GetCertUser,
         VerifyAdministrator,
-
+        UserMessage,
         CMD_INVALID=-1,
     };
 
@@ -258,6 +262,7 @@ namespace arcirk::server{
         {SendNotify, "SendNotify"}    ,
         {GetCertUser, "GetCertUser"}    ,
         {VerifyAdministrator, "VerifyAdministrator"}    ,
+        {UserMessage, "UserMessage"}    ,
     })
 
 }

@@ -124,11 +124,8 @@ public:
     ~shared_state()= default;
 
     void start();
-
     void join(subscriber* session);
-
     void leave(const boost::uuids::uuid& session_uuid, const std::string& user_name);
-
     void deliver(const std::string& message, subscriber* session);
 
     template<typename T>
@@ -145,11 +142,8 @@ public:
     void system_message(const std::string& message, subscriber* session, const std::string& res = "OK");
 
     [[nodiscard]] bool use_authorization() const;
-
     [[nodiscard]] bool allow_delayed_authorization() const;
-
     bool verify_connection(const std::string& basic_auth);
-
     [[nodiscard]] std::string handle_request(const std::string& body, const std::string& basic_auth);
 
     //команды сервера
@@ -219,9 +213,7 @@ public:
     void start_tasks();
 
     std::string save_blob(arcirk::database::tables table, const nlohmann::json& where, const ByteArray& data);
-
     ByteArray get_blob(arcirk::database::tables table, const nlohmann::json& where);
-
     std::string save_file(const std::string& content_disp, ByteArray& data){
 
         using json = nlohmann::json;
@@ -309,6 +301,8 @@ public:
     std::string handle_request_get_blob(const std::string& content_disposition);
 
     boost::filesystem::path log_directory() const;
+
+    bool is_channel(const std::string& uuid);
 
 private:
 

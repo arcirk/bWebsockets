@@ -194,10 +194,10 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
     }
 
     server::server_response resp;
-    resp.command = "message";
+    resp.command = "UserMessage";
     resp.message = msg; //base64
     resp.param = param; //base64
-    resp.result = "OK";
+    resp.result = WS_RESULT_SUCCESS;
     resp.sender = arcirk::uuids::uuid_to_string(session->uuid_session());
     resp.receiver = receiver;
     resp.app_name = session->app_name();
@@ -207,20 +207,26 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
 
     std::string response =  pre::json::to_json(resp).dump();
 
+    bool is_channel_ = is_channel(receiver);
+
     boost::uuids::uuid receiver_{};
     if(!uuids::is_valid_uuid(receiver, receiver_)){
         fail(__FUNCTION__, "Не верный идентификатор получателя!", true, sett.WriteJournal ? log_directory().string(): "");
         return;
     }
 
-    const auto itr = sessions_.find(receiver_);
-    if(itr == sessions_.cend()){
-        fail(__FUNCTION__, "Не известный получатель!", true, sett.WriteJournal ? log_directory().string(): "") ;
-        return;
-    }
+    subscriber* receiver_itr = nullptr;
 
-    resp.receiver_name = itr->second->user_name();
-    resp.receiver_uuid = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
+    if(!is_channel_){
+        const auto itr = sessions_.find(receiver_);
+        if(itr == sessions_.cend()){
+            fail(__FUNCTION__, "Не известный получатель!", true, sett.WriteJournal ? log_directory().string(): "") ;
+            return;
+        }
+        resp.receiver_name = itr->second->user_name();
+        resp.receiver_uuid = arcirk::uuids::uuid_to_string(itr->second->user_uuid());
+        receiver_itr = itr->second;
+    }
 
     if(sett.AllowHistoryMessages){
         std::string content_type_ = arcirk::enum_synonym(database::text_type::dbText);
@@ -233,14 +239,18 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         auto msg_struct = database::messages();
         msg_struct.ref = boost::to_string(uuids::random_uuid());
         msg_struct.first = boost::to_string(session->user_uuid());
-        msg_struct.second = boost::to_string(itr->second->user_uuid());
+        msg_struct.second = is_channel_ ? receiver : resp.receiver_uuid;
         msg_struct.message = msg;
         msg_struct.content_type = content_type_;
         msg_struct.date = (int) arcirk::date_to_seconds();
-        msg_struct.unread_messages = 1;
+        msg_struct.unread_messages = is_channel_ ? 0: 1;
         try {
             auto sql = soci_initialize();
-            msg_struct.token  = get_channel_token(*sql, boost::to_string(session->user_uuid()), boost::to_string(itr->second->user_uuid()));
+            if(!is_channel_)
+                msg_struct.token  = get_channel_token(*sql, boost::to_string(session->user_uuid()), resp.receiver_uuid);
+            else
+                msg_struct.token  = arcirk::get_sha1(receiver);
+
             if(msg_struct.token == "error"){
                 fail(__FUNCTION__, "Ошибка генерации токена!", true, sett.WriteJournal ? log_directory().string(): "");
                 return;
@@ -253,13 +263,24 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
         }
     }
 
-    if(sett.ResponseTransferToBase64){
-        auto const ss = boost::make_shared<std::string const>(base64::base64_encode(response));
-        itr->second->send(ss);
+    if(!is_channel_){
+        if(sett.ResponseTransferToBase64){
+            auto const ss = boost::make_shared<std::string const>(base64::base64_encode(response));
+            //itr->second->send(ss);
+            receiver_itr->send(ss);
+        }else{
+            auto const ss = boost::make_shared<std::string const>(response);
+            //itr->second->send(ss);
+            receiver_itr->send(ss);
+        }
     }else{
-        auto const ss = boost::make_shared<std::string const>(response);
-        itr->second->send(ss);
+        auto resp_ = sett.ResponseTransferToBase64 ? base64::base64_encode(response) : response;
+        if(sett.ServerSSL)
+            send<ssl_websocket_session>(resp_);
+        else
+            send<plain_websocket_session>(resp_);
     }
+
 
 }
 
@@ -270,6 +291,9 @@ std::string shared_state::get_channel_token(soci::session& sql, const std::strin
 
     auto builder = query_builder();
     std::vector<std::string> refs;
+
+    if(first == NIL_STRING_UUID && second == NIL_STRING_UUID) // общий чат
+        return arcirk::get_hash(NIL_STRING_UUID, NIL_STRING_UUID);
 
     try {
         nlohmann::json ref = {
@@ -1512,11 +1536,12 @@ soci::session * shared_state::soci_initialize(){
 arcirk::server::server_command_result shared_state::get_messages(const variant_t &param, const variant_t &session_id) {
 
     using namespace arcirk::database;
+    using namespace arcirk::database::builder;
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
 
     server::server_command_result result;
-    result.command = enum_synonym(server::server_commands::InsertOrUpdateUser);
+    result.command = enum_synonym(server::server_commands::GetMessages);
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
 
@@ -1525,31 +1550,45 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
 
     std::string sender = param_.value("sender", "");
     std::string recipient = param_.value("recipient", "");
+    int start_date = param_.value("start_date", 0);
 
     arcirk::log(__FUNCTION__, "sender: " + sender + " receiver:" + recipient, true, sett.WriteJournal ? log_directory().string(): "");
 
     if(sender.empty() || recipient.empty())
         throw native_exception(__FUNCTION__, "Не заданы параметры запроса!");
 
-    bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
+    bool operation_available = is_operation_available(uuid, roles::dbAdministrator); // администратор может отправлять от чужого имени
     auto current_session = get_session(uuid);
     if(!current_session)
         throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+
+    bool is_grope = is_channel(recipient);
     if (!operation_available){
-        if(sender != boost::to_string(current_session->user_uuid()) && recipient != boost::to_string(current_session->user_uuid()))
-            throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        if(!is_grope)
+            if(sender != boost::to_string(current_session->user_uuid()) && recipient != boost::to_string(current_session->user_uuid()))
+                throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+    }
+
+    if(start_date == 0){
+        auto tm = arcirk::current_date();
+        auto current_date_long = arcirk::date_to_seconds(tm, true);
+        start_date = arcirk::add_day(current_date_long, -10);
     }
 
     auto sql = soci_initialize();
-    std::string token = get_channel_token(*sql, sender, recipient);
+    std::string token = is_grope ? arcirk::get_sha1(recipient) : get_channel_token(*sql, sender, recipient);
 
     auto query = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
     nlohmann::json table = {};
 
-    query.select({"*"}).from("Messages").where({{"token", token}}, true).order_by({"date"});
+    auto s_date = sql_compare_value("date", start_date, sql_type_of_comparison::More).to_object();
+
+    query.select({"*"}).from("Messages").where({{"token", token}, {"date", s_date}}, true).order_by({"date"});
     query.execute(query.prepare(), *sql, table);
 
-    result.message = base64::base64_encode(table.dump());
+    result.param = base64::base64_encode(param_.dump());
+    result.message = "OK";
+    result.result = base64::base64_encode(table.dump());
 
     return result;
 }
@@ -3814,4 +3853,26 @@ arcirk::server::server_command_result shared_state::verify_administrator(const v
     result.message = "OK";
 
     return result;
+}
+
+bool shared_state::is_channel(const std::string &uuid) {
+
+    if(uuid == SHARED_CHANNEL_UUID)
+        return true;
+
+    using json = nlohmann::json;
+    using namespace soci;
+    using query_builder = arcirk::database::builder::query_builder;
+    using namespace arcirk::database;
+
+    auto sql = soci_initialize();
+    auto builder = query_builder((database::builder::sql_database_type)sett.SQLFormat);
+    int count = 0;
+    *sql << builder.row_count().from(arcirk::enum_synonym(tables::tbCertUsers)).where(json{
+            {"is_grope", 1},
+            {"uuid", uuid}
+    }, true).prepare(), into(count);
+
+    return count > 0;
+
 }

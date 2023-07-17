@@ -259,9 +259,12 @@ void read_command_line(const command_line_parser::cmd_parser& parser, server::se
     if(parser.option_exists("-key_file")){
         copy_ssl_file(parser.option("-key_file"), conf);
     }
-    conf.UseAuthorization = parser.option_exists("-use_auth"); //требуется авторизация на сервере
-    conf.AllowDelayedAuthorization = parser.option_exists("-ada");// разрешить отложенную авторизацию
-    conf.AllowHistoryMessages = parser.option_exists("-ahm"); //разрешить хранение истории сообщений
+    if(parser.option_exists("-use_auth"))
+        conf.UseAuthorization = true; //требуется авторизация на сервере
+    if(parser.option_exists("-ada"))
+        conf.AllowDelayedAuthorization = true;// разрешить отложенную авторизацию
+    if(parser.option_exists("-ahm"))
+        conf.AllowHistoryMessages = true; //разрешить хранение истории сообщений
 }
 
 void save_conf(server::server_config& conf){

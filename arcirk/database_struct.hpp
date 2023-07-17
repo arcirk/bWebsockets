@@ -324,6 +324,15 @@ BOOST_FUSION_DEFINE_STRUCT(
         (int, deletion_mark)
         (int, version)
 );
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), registered_users_view,
+        (std::string, ref)
+        (std::string, first)
+        (std::string, uuid)
+        (std::string, parent)
+        (int, is_group)
+        (int, deletion_mark)
+);
 
 namespace arcirk::database{
 
@@ -417,17 +426,19 @@ namespace arcirk::database{
         {tbCertUsers, "CertUsers"}  ,
         {tbContainers, "Containers"}  ,
         {tbAvailableCertificates, "AvailableCertificates"}  ,
-    })
+    });
 
     enum views{
         dvDevicesView,
         dvDocumentsTableView,
+        dvRegisteredUsersView,
         views_INVALID=-1,
     };
     NLOHMANN_JSON_SERIALIZE_ENUM(views, {
         { views_INVALID, nullptr }    ,
         { dvDevicesView, "DevicesView" }  ,
         { dvDocumentsTableView, "DocumentsTableView" }  ,
+        { dvRegisteredUsersView, "RegisteredUsersView" }  ,
     });
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
@@ -999,6 +1010,19 @@ namespace arcirk::database{
                                                  "           DocumentsMarkedTables AS DocumentsMarkedTables ON DocumentsTables.ref = DocumentsMarkedTables.parent\n"
                                                  "     GROUP BY DocumentsTables.ref;";
 
+    const std::string registered_users_view_ddl = "CREATE VIEW RegisteredUsersView AS\n"
+                                                  "    SELECT ref,\n"
+                                                  "           \"first\",\n"
+                                                  "           uuid,\n"
+                                                  "           parent,\n"
+                                                  "           is_group,\n"
+                                                  "           deletion_mark\n"
+                                                  "      FROM CertUsers\n"
+                                                  "     WHERE deletion_mark = '0'\n"
+                                                  "     GROUP BY \"first\",\n"
+                                                  "              uuid,\n"
+                                                  "              parent,\n"
+                                                  "              is_group;";
 
     const std::string certificates_odbc_table_ddl = "CREATE TABLE [dbo].[Certificates](\n"
                                                     "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
@@ -1368,6 +1392,7 @@ namespace arcirk::database{
         switch (table) {
             case dvDevicesView: return devises_view_ddl;
             case dvDocumentsTableView: return documents_table_view_ddl;
+            case dvRegisteredUsersView: return registered_users_view_ddl;
             case views_INVALID:{
                 break;
             }
@@ -1561,7 +1586,8 @@ namespace arcirk::database{
     static inline std::vector<views> views_name_array(){
         std::vector<views> result = {
                 dvDevicesView,
-                dvDocumentsTableView
+                dvDocumentsTableView,
+                dvRegisteredUsersView
         };
         return result;
     }
