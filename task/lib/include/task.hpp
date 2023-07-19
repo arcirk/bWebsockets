@@ -14,17 +14,18 @@
 #include "thread_pool.hpp"
 
 BOOST_FUSION_DEFINE_STRUCT(
-                (arcirk::services), task_options,
-                (std::string, uuid)
-                (std::string, name)
-                (std::string, synonum)
-                (bool, predefined)
-                (int, start_task)
-                (int, end_task)
-                (int, interval)
-                (bool, allowed)
-                (std::string, days_of_week)
-                (std::string, script)
+        (arcirk::services), task_options,
+        (std::string, uuid)
+        (std::string, name)
+        (std::string, synonum)
+        (bool, predefined)
+        (int, start_task)
+        (int, end_task)
+        (int, interval)
+        (bool, allowed)
+        (std::string, days_of_week)
+        (std::string, script)
+        (std::string, comment)
 );
 
 namespace arcirk::services{

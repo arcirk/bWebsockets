@@ -184,17 +184,19 @@ public:
     arcirk::server::server_command_result send_all_notify(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_cert_user(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result verify_administrator(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_channel_token_(const variant_t& param, const variant_t& session_id);
 
     //tasks
     void erase_deleted_mark_objects();
     void synchronize_objects_from_1c();
+    void verify_day_for_group_messages();
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name);
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref);
 
     static std::string execute_random_sql_query(soci::session& sql, const std::string& query_text, bool add_line_number = false, bool add_empty_column = false) ;
 
-    static auto parse_json(const std::string& json_text, bool is_base64 = false);
+    static nlohmann::json parse_json(const std::string& json_text, bool is_base64 = false);
 
     template<typename T, typename C, typename ... Ts>
     void add_method(const std::string &alias, C *c, T(C::*f)(Ts ...),
@@ -322,7 +324,7 @@ private:
     bool is_operation_available(const boost::uuids::uuid &uuid, arcirk::database::roles level);
 
     [[nodiscard]] boost::filesystem::path sqlite_database_path() const;
-    std::string get_channel_token(soci::session& sql, const std::string &first, const std::string &second) const;
+    std::string get_channel_token(soci::session& sql, const std::string &first, const std::string &second);
 
     class MethodMeta;
 

@@ -10,6 +10,7 @@
 #define ARCIRK_SERVER_CONF "server_conf.json"
 #define NIL_STRING_UUID "00000000-0000-0000-0000-000000000000"
 #define SHARED_CHANNEL_UUID "3e3b54bf-4319-4e73-9917-22f06cc1bfbd"
+#define MESSAGES_DATE_GROUP_UUID "78cb038c-4761-442e-b2d5-01c359dc2a53"
 #define WS_RESULT_SUCCESS "success"
 #define WS_RESULT_ERROR "error"
 
@@ -220,6 +221,7 @@ namespace arcirk::server{
         GetCertUser,
         VerifyAdministrator,
         UserMessage,
+        GetChannelToken,
         CMD_INVALID=-1,
     };
 
@@ -263,6 +265,7 @@ namespace arcirk::server{
         {GetCertUser, "GetCertUser"}    ,
         {VerifyAdministrator, "VerifyAdministrator"}    ,
         {UserMessage, "UserMessage"}    ,
+        {GetChannelToken, "GetChannelToken"}    ,
     })
 
 }

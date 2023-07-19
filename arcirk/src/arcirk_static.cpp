@@ -278,6 +278,16 @@ namespace arcirk{
         return dt + (quantity * (60*60*24));
     }
 
+    long int start_day(const std::tm& d){
+        auto sec = d.tm_sec + (d.tm_min * 60) + (d.tm_hour * 60 * 60);
+        return date_to_seconds(d, false) - sec;
+    }
+
+    long int end_day(const std::tm& d){
+        auto sec = 60 * 60 * 24 - 1;
+        return start_day(d) + sec;
+    }
+
     void trim(std::string& source){ boost::trim(source);};
     void to_upper(std::string& source){boost::to_upper(source);};
     void to_lower(std::string& source){boost::to_lower(source);};

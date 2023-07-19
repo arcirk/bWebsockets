@@ -80,6 +80,8 @@ namespace arcirk {
     long int date_to_seconds(const tm& dt = {}, bool offset = false);
     long int tz_offset(time_t when = NULL_TIME);
     long int add_day(const long int& dt, const int& quantity);
+    long int start_day(const std::tm& d);
+    long int end_day(const std::tm& d);
 
     std::string crypt(const std::string &source, const std::string& key);
 

@@ -266,7 +266,7 @@ namespace arcirk::database::builder {
             return select();
         }
 
-        query_builder& join(const std::string& table_name, const json& fields, std::string, sql_join_type join_type, const json& join_options = {}){
+        query_builder& join(const std::string& table_name, const json& fields, sql_join_type join_type, const json& join_options = {}){
 
             if(table_name_.empty())
                 throw native_exception("Используйте 'from' сначала для первой таблицы.");
@@ -274,31 +274,32 @@ namespace arcirk::database::builder {
             std::string table_first_alias = table_name_ + "First";
             std::string table_second_alias = table_name + "Second";
 
+            result = "select ";
+
             if(fields.is_object()){
                 auto items_ = fields.items();
                 for (auto itr = items_.begin(); itr != items_.end(); ++itr) {
-                    result.append(table_name + "." + itr.key() + " as " + table_second_alias + "_" + itr.key());
+                    result.append(table_second_alias + "." + itr.key() + " as " + table_second_alias + "_" + itr.key());
                     result.append(",\n");
                 }
             }else if(fields.is_array()){
                 for (auto itr = fields.begin(); itr != fields.end(); ++itr) {
                     std::string key = *itr;
-                    result.append(table_name + "." + key + " as " + table_second_alias + "_" +  key);
+                    result.append(table_second_alias + "." + key + " as " + table_second_alias + "_" +  key);
                     result.append(",\n");
                 }
             }
 
             if(m_list.empty()){
-                result = "select " + table_name_ + ".*";
+                result.append(table_name_ + ".*");
             }else{
-                result = "select ";
+                //result = "select ";
                 for (auto itr = m_list.begin(); itr != m_list.end() ; ++itr) {
-                    result.append(table_name_ + "." + itr->key + " as " + table_first_alias + "_" + itr->key);
+                    result.append(table_first_alias + "." + itr->key + " as " + table_first_alias + "_" + itr->key);
                     if(itr != --m_list.end())
                         result.append(",\n");
                 }
             }
-
             result.append("\nfrom " + table_name_ + " as " + table_first_alias + " ");
             result.append(enum_synonym(join_type));
             result.append(" join " + table_name + " as " + table_second_alias);
@@ -323,11 +324,14 @@ namespace arcirk::database::builder {
 
             result.append(" on ");
             for (auto itr = inner_join.begin(); itr != inner_join.end(); ++itr) {
-                result.append(table_name_ + "." + itr->first + "=" + table_name + "." + itr->second);
+                result.append(table_first_alias + "." + itr->first + "=" + table_second_alias + "." + itr->second);
                 if(itr != --inner_join.end()){
                     result.append("\nand ");
                 }
             }
+
+            //меняем на псевдоним
+            table_name_ = table_first_alias;
 
             return *this;
         }
