@@ -8,7 +8,7 @@
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database::builder), sql_value,
-        (std::string, key)
+        (std::string, field_name)
         (std::string, alias)
         (std::string, value)
 );
@@ -235,8 +235,8 @@ namespace arcirk::database::builder {
             if(m_list.size() > 0){
                 for (auto itr = m_list.cbegin(); itr != m_list.cend() ; ++itr) {
                     sql_value val = *itr;
-                    result.append(val.key);
-                    if(!val.alias.empty() && val.key != val.alias)
+                    result.append(val.field_name);
+                    if(!val.alias.empty() && val.field_name != val.alias)
                         result.append(" as " + val.alias);
                     if(itr != (--m_list.cend())){
                         result.append(",\n");
@@ -295,7 +295,7 @@ namespace arcirk::database::builder {
             }else{
                 //result = "select ";
                 for (auto itr = m_list.begin(); itr != m_list.end() ; ++itr) {
-                    result.append(table_first_alias + "." + itr->key + " as " + table_first_alias + "_" + itr->key);
+                    result.append(table_first_alias + "." + itr->field_name + " as " + table_first_alias + "_" + itr->field_name);
                     if(itr != --m_list.end())
                         result.append(",\n");
                 }
@@ -467,9 +467,9 @@ namespace arcirk::database::builder {
                     auto sql_v = sql_value();
                     sql_v.alias = itr.key();
                     if(itr.value().is_string())
-                        sql_v.key = itr.value().get<std::string>();
+                        sql_v.field_name = itr.value().get<std::string>();
                     else
-                        sql_v.key = sql_v.alias;
+                        sql_v.field_name = sql_v.alias;
                     sql_v.value = itr.value().dump();
                     m_list.emplace_back(sql_v);
                 }
@@ -479,16 +479,16 @@ namespace arcirk::database::builder {
                     const nlohmann::json& v = *itr;
                     sql_v.value = v.dump();
                     if(v.is_string()){
-                        sql_v.key = v.get<std::string>();
-                        sql_v.alias = sql_v.key;
+                        sql_v.field_name = v.get<std::string>();
+                        sql_v.alias = sql_v.field_name;
                     }else if(v.is_object()){
                         auto items = v.items();
                         for (auto const& val : items) {
                             sql_v.alias = val.key();
                             if(val.value().is_string())
-                                sql_v.key = val.value().get<std::string>();
+                                sql_v.field_name = val.value().get<std::string>();
                             else
-                                sql_v.key = sql_v.alias;
+                                sql_v.field_name = sql_v.alias;
                             sql_v.value = val.value().dump();
                         }
                     }

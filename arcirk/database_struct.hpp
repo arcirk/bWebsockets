@@ -151,11 +151,15 @@ BOOST_FUSION_DEFINE_STRUCT(
 BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), devices_view,
                 (std::string, ref)
+                (std::string, first)
+                (std::string, second)
+                (std::string, device_type)
                 (std::string, workplace)
                 (std::string, price)
                 (std::string, warehouse)
                 (std::string, subdivision)
                 (std::string, organization)
+                (std::string, address)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -737,7 +741,8 @@ namespace arcirk::database{
                                          "           Subdivisions.[first] AS subdivision,\n"
                                          "           Warehouses.[first] AS warehouse,\n"
                                          "           PriceTypes.[first] AS price,\n"
-                                         "           Workplaces.[first] AS workplace\n"
+                                         "           Workplaces.[first] AS workplace,\n"
+                                         "           Devices.address AS address\n"
                                          "      FROM Devices\n"
                                          "           LEFT JOIN\n"
                                          "           Organizations ON Devices.organization = Organizations.ref\n"
