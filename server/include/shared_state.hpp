@@ -189,7 +189,7 @@ public:
     //tasks
     void erase_deleted_mark_objects();
     void synchronize_objects_from_1c();
-    void verify_day_for_group_messages();
+    std::string verify_day_for_group_messages();
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name);
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref);

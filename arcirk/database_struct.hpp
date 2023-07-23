@@ -335,7 +335,8 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, uuid)
         (std::string, parent)
         (int, is_group)
-        (int, deletion_mark)
+        (int, unread)
+
 );
 
 namespace arcirk::database{
@@ -1016,18 +1017,20 @@ namespace arcirk::database{
                                                  "     GROUP BY DocumentsTables.ref;";
 
     const std::string registered_users_view_ddl = "CREATE VIEW RegisteredUsersView AS\n"
-                                                  "    SELECT ref,\n"
-                                                  "           \"first\",\n"
-                                                  "           uuid,\n"
-                                                  "           parent,\n"
-                                                  "           is_group,\n"
-                                                  "           deletion_mark\n"
+                                                  "    SELECT CertUsers.ref,\n"
+                                                  "           CertUsers.[first],\n"
+                                                  "           CertUsers.uuid,\n"
+                                                  "           CertUsers.parent,\n"
+                                                  "           CertUsers.is_group,\n"
+                                                  "           IFNULL(sum(Messages.unread_messages), 0) AS unread\n"
                                                   "      FROM CertUsers\n"
-                                                  "     WHERE deletion_mark = '0'\n"
-                                                  "     GROUP BY \"first\",\n"
-                                                  "              uuid,\n"
-                                                  "              parent,\n"
-                                                  "              is_group;";
+                                                  "           LEFT JOIN\n"
+                                                  "           Messages ON CertUsers.uuid = Messages.[first]\n"
+                                                  "     WHERE CertUsers.deletion_mark = '0'\n"
+                                                  "     GROUP BY CertUsers.[first],\n"
+                                                  "              CertUsers.uuid,\n"
+                                                  "              CertUsers.parent,\n"
+                                                  "              CertUsers.is_group;";
 
     const std::string certificates_odbc_table_ddl = "CREATE TABLE [dbo].[Certificates](\n"
                                                     "[_id] [int] IDENTITY(1,1) NOT NULL,\n"
