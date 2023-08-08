@@ -185,11 +185,20 @@ public:
     arcirk::server::server_command_result get_cert_user(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result verify_administrator(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_channel_token_(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result is_channel_token_(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result get_database_structure(const variant_t& param, const variant_t& session_id);
+
+    static void native_exception_(const char* func, std::basic_string<char, std::char_traits<char>, std::allocator<char>> msg){
+        std::string err(func);
+        err.append(": ");
+        err.append(msg);
+        throw native_exception(arcirk::local_8bit(err).c_str());
+    }
 
     //tasks
     void erase_deleted_mark_objects();
     void synchronize_objects_from_1c();
-    std::string verify_day_for_group_messages();
+    //std::string verify_day_for_group_messages();
 
     void data_synchronization_set_object(const nlohmann::json& object, const std::string& table_name);
     [[nodiscard]] nlohmann::json data_synchronization_get_object(const std::string& table_name, const std::string& ref);

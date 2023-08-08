@@ -68,6 +68,8 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::VerifyAdministrator), this, &shared_state::verify_administrator);
     add_method(enum_synonym(server::server_commands::SendNotify), this, &shared_state::send_all_notify);
     add_method(enum_synonym(server::server_commands::GetChannelToken), this, &shared_state::get_channel_token_);
+    add_method(enum_synonym(server::server_commands::IsChannel), this, &shared_state::is_channel_token_);
+    add_method(enum_synonym(server::server_commands::GetDatabaseStructure), this, &shared_state::get_database_structure);
 
     sql_sess = new soci::session();// soci_initialize();
 
@@ -309,7 +311,7 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
 //            parent = row_.get<std::string>("ref");
 //        }
 
-        msg_struct.parent = verify_day_for_group_messages(); //parent;
+        msg_struct.parent =  arcirk::start_day(arcirk::current_date());// verify_day_for_group_messages(); //parent;
         auto msg_object = pre::json::to_json(msg_struct);
         resp.message = arcirk::base64::base64_encode(msg_object.dump());
         if(sett.AllowHistoryMessages) {
@@ -348,6 +350,29 @@ void shared_state::forward_message(const std::string &message, subscriber *sessi
 
 }
 
+arcirk::server::server_command_result shared_state::is_channel_token_(const variant_t &param, const variant_t &session_id) {
+
+    using namespace arcirk::database;
+    using namespace arcirk::server;
+    using json = nlohmann::json;
+
+    server::server_command_result result;
+    result.command = enum_synonym(server::server_commands::IsChannel);
+
+    boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
+    bool operation_available = is_operation_available(uuid, roles::dbUser);
+    if (!operation_available)
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+
+    auto param_ = parse_json(std::get<std::string>(param), true);
+    std::string uuid_ch = param_["uuid"].get<std::string>();
+
+    json res = is_channel(uuid_ch);
+    result.result = arcirk::base64::base64_encode(res.dump());
+    result.message = "OK";
+    return result;
+}
+
 arcirk::server::server_command_result shared_state::get_channel_token_(const variant_t &param, const variant_t &session_id) {
 
     using namespace arcirk::database;
@@ -360,7 +385,7 @@ arcirk::server::server_command_result shared_state::get_channel_token_(const var
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     auto session = get_session(uuid);
     auto param_ = parse_json(std::get<std::string>(param), true);
@@ -369,16 +394,16 @@ arcirk::server::server_command_result shared_state::get_channel_token_(const var
 
     if(session->role() != arcirk::enum_synonym(roles::dbAdministrator)){
         if (boost::to_string(session->user_uuid()) != first && boost::to_string(session->user_uuid()) != second)
-            throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+            native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
     }
 
     std::string recipient = boost::to_string(session->user_uuid()) != first ? second : first;
 
     if(is_channel(recipient))
-        result.result = arcirk::get_sha1(recipient);
+        result.result = arcirk::base64::base64_encode(arcirk::get_sha1(recipient)) ;
     else{
         auto sql = soci_initialize();
-        std::string token = get_channel_token(*sql, first, second);
+        std::string token = arcirk::base64::base64_encode(get_channel_token(*sql, first, second));
         result.result = token;
     }
 
@@ -1380,9 +1405,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
         empty_column = param_.value("empty_column", false);
         //произвольный запрос только с правами администратора
         bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
-        if (!operation_available)
-            throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
-
+        if (!operation_available){
+            native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+        }
         result.result = base64::base64_encode(execute_random_sql_query(*sql, query_text, false, empty_column)); //текст запроса передан в параметрах
     }
     else{
@@ -1396,9 +1421,9 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             bool line_number = query_param.value("line_number", false);
             empty_column = query_param.value("empty_column", false);
 
-            if(query_type.empty())
-                throw native_exception(__FUNCTION__, "Не указан тип запроса!");
-
+            if(query_type.empty()) {
+                native_exception_(__FUNCTION__, "Не указан тип запроса!");
+            }
             bool is_cert_users = false;
 
             if (query_type == "insert" || query_type == "update" || query_type == "update_or_insert" || query_type == "delete"){
@@ -1410,18 +1435,23 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                    table_name != arcirk::enum_synonym(arcirk::database::tables::tbBarcodes)){
                     if(table_name != arcirk::enum_synonym(arcirk::database::tables::tbCertUsers)){
                         bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
-                        if (!operation_available)
-                            throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                        if (!operation_available) {
+                            native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+                        }
                     }else{
                         bool operation_available = is_operation_available(uuid, roles::dbUser);
-                        if (!operation_available)
-                            throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                        if (!operation_available){
+                            native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+                        }
+
                         is_cert_users = true;
                     }
                 }else{
                     bool operation_available = is_operation_available(uuid, roles::dbUser);
-                    if (!operation_available)
-                        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                    if (!operation_available){
+                        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+                    }
+
                 }
             }
 
@@ -1433,15 +1463,17 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
             auto session = get_session(uuid);
             if(is_cert_users){
                 if(where_values.empty()){
-                    if(session->role() != arcirk::enum_synonym(roles::dbAdministrator))
-                        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                    if(session->role() != arcirk::enum_synonym(roles::dbAdministrator)){
+                        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
+                    }
+
                 }else{
                     auto host = where_values.value("host", "");
                     auto uuid_user = where_values.value("uuid", "");
                     if((host != session->host_name()
                         || uuid_user != arcirk::uuids::uuid_to_string(session->user_uuid()))
                         && session->role() != arcirk::enum_synonym(roles::dbAdministrator)){
-                        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
                     }
                 }
             }
@@ -1467,8 +1499,10 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                 }else if(query_type == "update_or_insert"){
                     query.use(values);
                     std::string ref = query.ref();
-                    if(ref.empty())
-                        throw native_exception(__FUNCTION__, "Не найдено значение идентификатора для сравнения!");
+                    if(ref.empty()){
+                        native_exception_(__FUNCTION__, "Не найдено значение идентификатора для сравнения!");
+                    }
+
                     int count = 0;
                     auto query_temp = database::builder::query_builder((builder::sql_database_type)sett.SQLFormat);
                     *sql << query_temp.select({"count(*)"}).from(table_name).where({{"ref", ref}}, true).prepare(), into(count);
@@ -1479,8 +1513,10 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
                     }
                 }else if(query_type == "delete"){
                     query.remove().from(table_name);
-                }else
-                    throw native_exception(__FUNCTION__, "Не известный тип запроса!");
+                }else{
+                    native_exception_(__FUNCTION__, "Не известный тип запроса!");
+                }
+
 
                 if(query.is_valid()){
                     if(!where_values.empty()){
@@ -1512,7 +1548,7 @@ arcirk::server::server_command_result shared_state::execute_sql_query(const vari
 std::string shared_state::execute_random_sql_query(soci::session &sql, const std::string &query_text, bool add_line_number, bool add_empty_column) {
 
     if(query_text.empty())
-        throw native_exception(__FUNCTION__, "Не задан текст запроса!");
+        native_exception_(__FUNCTION__, "Не задан текст запроса!");
 
     auto query = std::make_shared<database::builder::query_builder>();
     nlohmann::json table = {};
@@ -1535,7 +1571,7 @@ arcirk::server::server_command_result shared_state::insert_or_update_user(const 
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
 
@@ -1601,7 +1637,7 @@ soci::session * shared_state::soci_initialize(){
     if(sett.SQLFormat == DatabaseType::dbTypeSQLite){
         if(sett.ServerWorkingDirectory.empty())
         {
-            throw native_exception(__FUNCTION__, "Ошибки в параметрах сервера!");
+            native_exception_(__FUNCTION__, "Ошибки в параметрах сервера!");
         }
 
         path database(sett.ServerWorkingDirectory);
@@ -1610,7 +1646,7 @@ soci::session * shared_state::soci_initialize(){
         database /= "arcirk.sqlite";
 
         if(!exists(database)){
-            throw native_exception(__FUNCTION__, "Файл базы данных не найден!");
+            native_exception_(__FUNCTION__, "Файл базы данных не найден!");
         }
 
         try {
@@ -1663,18 +1699,18 @@ arcirk::server::server_command_result shared_state::get_messages(const variant_t
     arcirk::log(__FUNCTION__, "sender: " + sender + " receiver:" + recipient, true, sett.WriteJournal ? log_directory().string(): "");
 
     if(sender.empty() || recipient.empty())
-        throw native_exception(__FUNCTION__, "Не заданы параметры запроса!");
+        native_exception_(__FUNCTION__, "Не заданы параметры запроса!");
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator); // администратор может отправлять от чужого имени
     auto current_session = get_session(uuid);
     if(!current_session)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     bool is_grope = is_channel(recipient);
     if (!operation_available){
         if(!is_grope)
             if(sender != boost::to_string(current_session->user_uuid()) && recipient != boost::to_string(current_session->user_uuid()))
-                throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
     }
 
     if(start_date == 0){
@@ -1718,7 +1754,7 @@ arcirk::server::server_command_result shared_state::get_http_service_configurati
 
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     nlohmann::json res = {
             {"HSHost", sett.HSHost},
@@ -1743,7 +1779,7 @@ arcirk::server::server_command_result shared_state::get_dav_service_configuratio
 
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     nlohmann::json res = {
             {"WebDavHost", sett.WebDavHost},
@@ -1767,7 +1803,7 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
 
@@ -1777,20 +1813,20 @@ arcirk::server::server_command_result shared_state::set_new_device_id(const vari
     std::string new_uuid_device = param_.value("device_id", "");
 
     if(new_uuid_device.empty())
-        throw native_exception(__FUNCTION__, "Не указан новый идентификатор устройства!");
+        native_exception_(__FUNCTION__, "Не указан новый идентификатор устройства!");
 
     auto uuid_device_ = uuids::string_to_uuid(new_uuid_device);
     if(uuid_device_ == uuids::nil_uuid())
-        throw native_exception(__FUNCTION__, "Указан не корректный идентификатор устройства!");
+        native_exception_(__FUNCTION__, "Указан не корректный идентификатор устройства!");
 
     if(remote_session_.empty())
-        throw native_exception(__FUNCTION__, "Не указана удаленная сессия клиента!");
+        native_exception_(__FUNCTION__, "Не указана удаленная сессия клиента!");
 
     auto uuid_remote_session = uuids::string_to_uuid(remote_session_);
     auto remote_session = get_session(uuid_remote_session);
 
     if(!remote_session)
-        throw native_exception(__FUNCTION__, "Не найдена удаленная сессия клиента!");
+        native_exception_(__FUNCTION__, "Не найдена удаленная сессия клиента!");
 
     remote_session->set_device_id(uuid_device_);
 
@@ -1826,7 +1862,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
 
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
 
@@ -1848,7 +1884,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
         bool delete_is_exists = query_param.value("delete_is_exists", false);
 
         if (table_name.empty())
-            throw native_exception(__FUNCTION__, "Не указана таблица.");
+            native_exception_(__FUNCTION__, "Не указана таблица.");
 
         if (values_array.empty() || !values_array.is_array()) {
             throw server_commands_exception("Не заданы параметры запроса!", result.command, result.uuid_form);
@@ -1867,7 +1903,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
                 //удалить выбранные записи удовлетворяющие условиям
                 for (auto itr = items.begin(); itr != items.end(); ++itr) {
                     if (!itr.value().is_object())
-                        throw native_exception(__FUNCTION__, "Не верная запись в массиве.");
+                        native_exception_(__FUNCTION__, "Не верная запись в массиве.");
                     query.clear();
                     nlohmann::json where{};
                     for (auto itr_ = where_values.begin();  itr_ != where_values.end() ; ++itr_) {
@@ -1882,7 +1918,7 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
 
         for (auto itr = items.begin(); itr != items.end(); ++itr) {
             if (!itr.value().is_object())
-                throw native_exception(__FUNCTION__, "Не верная запись в массиве.");
+                native_exception_(__FUNCTION__, "Не верная запись в массиве.");
 
             query.clear();
             query.use(itr.value());
@@ -1898,14 +1934,15 @@ arcirk::server::server_command_result shared_state::insert_to_database_from_arra
                     };
                 }
                 query_text = query.prepare(where, true);
-            }
+            }else
+                query_text = query.prepare();
 
             *sql << query_text;
 
 //            if (!where_is_exists_field.empty()) {
 //                std::string is_exists_val = itr.value().value(where_is_exists_field, "");
 //                if (is_exists_val.empty())
-//                    throw native_exception("Не верная запись в поле сравнения.");
+//                    native_exception_("Не верная запись в поле сравнения.");
 //                query_text = query->prepare({
 //                                                    {where_is_exists_field, is_exists_val}
 //                                            }, true);
@@ -1956,7 +1993,7 @@ void shared_state::data_synchronization_set_object(const nlohmann::json &object,
     std::string ref = query.ref();
 
     if(ref.empty())
-        throw native_exception(__FUNCTION__, "Не указан идентификатор объекта!");
+        native_exception_(__FUNCTION__, "Не указан идентификатор объекта!");
 
     auto sql = soci_initialize();
     int count = -1;
@@ -2029,18 +2066,18 @@ arcirk::server::server_command_result shared_state::object_set_to_database(const
         if(edit_table_only_admin(table_name) ){
             bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
             if (!operation_available)
-                throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
         }else{
             bool operation_available = is_operation_available(uuid, roles::dbUser);
             if (!operation_available)
-                throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+                native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
         }
 
         auto object = object_struct.value("object", nlohmann::json{});
 
         if(object.empty() || !object.is_object())
-            throw native_exception(__FUNCTION__, "Не верная структура объекта!");
+            native_exception_(__FUNCTION__, "Не верная структура объекта!");
 
         data_synchronization_set_object(object, table_name);
     }
@@ -2175,7 +2212,7 @@ nlohmann::json shared_state::data_synchronization_get_object(const std::string& 
             };
         }
     }else
-        throw native_exception(__FUNCTION__, "Сериализация выбранной таблицы не поддерживается");
+        native_exception_(__FUNCTION__, "Сериализация выбранной таблицы не поддерживается");
 
     j_object["table_name"] = table_name;
 
@@ -2198,7 +2235,7 @@ arcirk::server::server_command_result shared_state::object_get_from_database(con
     std::string table_name = param_.value("table_name", "");
 
     if(ref.empty() || table_name.empty())
-        throw native_exception(__FUNCTION__, "Не заданы параметры запроса!");
+        native_exception_(__FUNCTION__, "Не заданы параметры запроса!");
 
 
     auto j_object = data_synchronization_get_object(table_name, ref);
@@ -2229,14 +2266,14 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
     nlohmann::json ext_table{};
 
     if (table_name.empty() || device_id.empty())
-        throw native_exception(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
+        native_exception_(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
 
     if (table_name == arcirk::enum_synonym(tables::tbDocumentsTables) && parent.empty())
-        throw native_exception(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
+        native_exception_(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
 
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     auto sql = soci_initialize();
 
@@ -2253,7 +2290,7 @@ arcirk::server::server_command_result shared_state::sync_get_discrepancy_in_data
     *sql << query.prepare(), into(count);
 
     if (count <= 0)
-        throw native_exception(__FUNCTION__, str_sample("Устройство с идентификатором %1% не зарегистрировано!", device_id).c_str());
+        native_exception_(__FUNCTION__, str_sample("Устройство с идентификатором %1% не зарегистрировано!", device_id).c_str());
 
     query.clear();
 
@@ -2429,11 +2466,11 @@ arcirk::server::server_command_result shared_state::sync_update_data_on_the_serv
     nlohmann::json ext_objects{};
 
     if (table_name.empty() || device_id.empty())
-        throw native_exception(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
+        native_exception_(__FUNCTION__, "Не достаточно параметров для выполнения запроса!");
 
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     //auto sql = soci_initialize();
 
@@ -2696,63 +2733,63 @@ void shared_state::synchronize_objects_from_1c() {
 
 }
 
-std::string shared_state::verify_day_for_group_messages(){
-    using namespace soci;
-    using namespace arcirk::database;
-    using json = nlohmann::json;
-
-    std::string ref = NIL_STRING_UUID;
-
-    try {
-        auto start_day = arcirk::start_day(arcirk::current_date());
-        auto end_day = arcirk::end_day(arcirk::current_date());
-        int count = 0;
-        auto sql = soci_initialize();
-        auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
-        auto rs = query.select(json{"ref"}).from(arcirk::enum_synonym(tables::tbMessages)).where(json{
-                {"is_group", 1},
-                {"date",     start_day}
-        }, true).exec(*sql, {}, true);
-        for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
-            count++;
-            const soci::row &row_ = *itr;
-            ref = row_.get<std::string>("ref");
-        }
-
-        auto tr = soci::transaction(*sql);
-
-        if(count == 0){
-            auto msg = table_default_struct<messages>(tbMessages);
-            ref = boost::to_string(arcirk::uuids::random_uuid());
-            msg.ref = ref;
-            msg.date = start_day;
-            msg.is_group = 1;
-            msg.parent = NIL_STRING_UUID;
-            msg.token = arcirk::get_sha1(MESSAGES_DATE_GROUP_UUID);
-            ref = msg.ref;
-            query.clear();
-            query.use(pre::json::to_json(msg));
-            *sql << query.insert(arcirk::enum_synonym(tables::tbMessages), true).prepare();
-        }else
-            return ref;
-
-        query.clear();
-        query.use(json{{"parent", ref}});
-        *sql << query.update(arcirk::enum_synonym(tables::tbMessages), true).where(json{
-                {"is_group", 0},
-                {"date", builder::sql_compare_value("date", start_day, builder::sql_type_of_comparison::More_Or_Equal).to_object()},
-                {"date", builder::sql_compare_value("date", end_day, builder::sql_type_of_comparison::Less_Or_Equal).to_object()}
-        }, true).prepare();
-
-        tr.commit();
-    } catch (const std::exception &e) {
-        fail(__FUNCTION__ , e.what(), true, sett.WriteJournal ? log_directory().string(): "");
-    }
-
-    //log(__FUNCTION__, "Регламентная операция успешно завершена!", true, sett.WriteJournal ? log_directory().string(): "");
-
-    return ref;
-}
+//std::string shared_state::verify_day_for_group_messages(){
+//    using namespace soci;
+//    using namespace arcirk::database;
+//    using json = nlohmann::json;
+//
+//    std::string ref = NIL_STRING_UUID;
+//
+//    try {
+//        auto start_day = arcirk::start_day(arcirk::current_date());
+//        auto end_day = arcirk::end_day(arcirk::current_date());
+//        int count = 0;
+//        auto sql = soci_initialize();
+//        auto query = builder::query_builder((builder::sql_database_type)sett.SQLFormat);
+//        auto rs = query.select(json{"ref"}).from(arcirk::enum_synonym(tables::tbMessages)).where(json{
+//                {"is_group", 1},
+//                {"date",     start_day}
+//        }, true).exec(*sql, {}, true);
+//        for (rowset<row>::const_iterator itr = rs.begin(); itr != rs.end(); ++itr) {
+//            count++;
+//            const soci::row &row_ = *itr;
+//            ref = row_.get<std::string>("ref");
+//        }
+//
+//        auto tr = soci::transaction(*sql);
+//
+//        if(count == 0){
+//            auto msg = table_default_struct<messages>(tbMessages);
+//            ref = boost::to_string(arcirk::uuids::random_uuid());
+//            msg.ref = ref;
+//            msg.date = start_day;
+//            msg.is_group = 1;
+//            msg.parent = start_day;
+//            msg.token = arcirk::get_sha1(MESSAGES_DATE_GROUP_UUID);
+//            ref = msg.ref;
+//            query.clear();
+//            query.use(pre::json::to_json(msg));
+//            *sql << query.insert(arcirk::enum_synonym(tables::tbMessages), true).prepare();
+//        }else
+//            return ref;
+//
+//        query.clear();
+//        query.use(json{{"parent", ref}});
+//        *sql << query.update(arcirk::enum_synonym(tables::tbMessages), true).where(json{
+//                {"is_group", 0},
+//                {"date", builder::sql_compare_value("date", start_day, builder::sql_type_of_comparison::More_Or_Equal).to_object()},
+//                {"date", builder::sql_compare_value("date", end_day, builder::sql_type_of_comparison::Less_Or_Equal).to_object()}
+//        }, true).prepare();
+//
+//        tr.commit();
+//    } catch (const std::exception &e) {
+//        fail(__FUNCTION__ , e.what(), true, sett.WriteJournal ? log_directory().string(): "");
+//    }
+//
+//    //log(__FUNCTION__, "Регламентная операция успешно завершена!", true, sett.WriteJournal ? log_directory().string(): "");
+//
+//    return ref;
+//}
 
 arcirk::server::server_command_result
 shared_state::sync_update_barcode(const variant_t &param, const variant_t &session_id) {
@@ -2766,7 +2803,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
 
     bool operation_available = is_operation_available(uuid, roles::dbUser);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param));
     auto param_ = nlohmann::json::parse(param_json);
@@ -2785,7 +2822,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
     }
 
     if(barcodes.empty())
-        throw native_exception(__FUNCTION__, "Ошибка в параметрах команды!");
+        native_exception_(__FUNCTION__, "Ошибка в параметрах команды!");
 
     std::string table_name = arcirk::enum_synonym(tables::tbBarcodes);
     auto sql = soci_initialize();
@@ -2793,7 +2830,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
 
     std::string script = arcirk::_1c::scripts::get_text(arcirk::_1c::scripts::local_1c_script::barcode_information, sett);
     if(script.empty()){
-        throw native_exception(__FUNCTION__, "Не найден файл скрипта 1с!");
+        native_exception_(__FUNCTION__, "Не найден файл скрипта 1с!");
     }
 
     nlohmann::json result_for_client{};
@@ -2811,7 +2848,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
         try {
             http_result = http_service.exec_http_query("ExecuteScript", param_http);
         } catch (const std::exception &e) {
-            throw native_exception(__FUNCTION__, e.what());
+            native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
         }
 
         if(http_result.is_object()){
@@ -2819,7 +2856,7 @@ shared_state::sync_update_barcode(const variant_t &param, const variant_t &sessi
             int count = 0;
             auto obj = http_result.value("barcode", nlohmann::json{});
             if(obj.empty())
-                throw native_exception(__FUNCTION__, "Штрихкод не найден!");
+                native_exception_(__FUNCTION__, "Штрихкод не найден!");
             auto struct_br = arcirk::secure_serialization<database::barcodes>(obj);
             auto struct_n = arcirk::secure_serialization<database::nomenclature>(http_result["nomenclature"]);
 
@@ -2904,7 +2941,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
         init_default_result(result, uuid, arcirk::server::DownloadFile, arcirk::database::roles::dbAdministrator
                 , param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     std::string url_file = param_["file_name"];
@@ -2912,7 +2949,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
     ByteArray data = param_.value("data", ByteArray{});
 
     if(url_file.empty())
-        throw native_exception(__FUNCTION__, "Не верные параметры команды!");
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
 
     auto url = arcirk::Uri::Parse(url_file);
 
@@ -2927,7 +2964,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
     auto dest = catalog  /  file.filename();
 
     if(!exists(catalog)){
-        throw native_exception(__FUNCTION__, "Не верная структура каталогов на сервере!");
+        native_exception_(__FUNCTION__, "Не верная структура каталогов на сервере!");
     }
 
     if(data.size() == 0){
@@ -2936,7 +2973,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
         if(protocol == "file"){
 
             if(!exists(file)){
-                throw native_exception(__FUNCTION__, "Файл не найден!");
+                native_exception_(__FUNCTION__, "Файл не найден!");
             }else{
                 if(exists(dest))
                     remove(dest);
@@ -2966,7 +3003,7 @@ shared_state::download_file(const variant_t &param, const variant_t &session_id)
             auto is_exists = dav.check(file.filename().string());
 
             if(!is_exists)
-                throw native_exception(__FUNCTION__, "Файл на удаленном ресурсе не найден!");
+                native_exception_(__FUNCTION__, "Файл на удаленном ресурсе не найден!");
 
             if(exists(dest))
                 remove(dest);
@@ -2999,7 +3036,7 @@ bool shared_state::init_default_result(arcirk::server::server_command_result &re
 
     bool operation_available = is_operation_available(uuid, role);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string param_json = base64_to_string(std::get<std::string>(param_));
     param = nlohmann::json::parse(param_json);
@@ -3019,13 +3056,13 @@ arcirk::server::server_command_result
         init_default_result(result, uuid, arcirk::server::GetInformationAboutFile, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     std::string file_name = param_["file_name"];
 
     if(file_name.empty())
-        throw native_exception(__FUNCTION__, "Не верные параметры команды!");
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
 
     using namespace boost::filesystem;
 
@@ -3036,7 +3073,7 @@ arcirk::server::server_command_result
     file /= file_name;
 
     if(!exists(file)){
-        throw native_exception(__FUNCTION__, "Файл не найден!");
+        native_exception_(__FUNCTION__, "Файл не найден!");
     }else{
         auto sz = file_size(file);
         auto t = last_write_time(file);
@@ -3064,7 +3101,7 @@ arcirk::server::server_command_result
         init_default_result(result, uuid, arcirk::server::CheckForUpdates, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto current_version = param_.value("current_version", nlohmann::json{});
@@ -3072,7 +3109,7 @@ arcirk::server::server_command_result
     std::string extension = param_["extension"];
 
     if(current_version.empty() || release_dir.empty() || extension.empty())
-        throw native_exception(__FUNCTION__, "Не верные параметры!");
+        native_exception_(__FUNCTION__, "Не верные параметры!");
 
     namespace fs = boost::filesystem;
 
@@ -3081,7 +3118,7 @@ arcirk::server::server_command_result
     dir /= release_dir;
 
     if(!fs::exists(dir))
-        throw native_exception(__FUNCTION__, "Каталог не найден!");
+        native_exception_(__FUNCTION__, "Каталог не найден!");
 
     bool version_set = false;
 
@@ -3136,13 +3173,13 @@ arcirk::server::server_command_result
         init_default_result(result, uuid, arcirk::server::UploadFile, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto file_name = param_.value("file_name", "");
 
     if(file_name.empty())
-        throw native_exception(__FUNCTION__, "Ошибка в параметрах!");
+        native_exception_(__FUNCTION__, "Ошибка в параметрах!");
 
     namespace fs = boost::filesystem;
     fs::path file(sett.ServerWorkingDirectory);
@@ -3150,10 +3187,10 @@ arcirk::server::server_command_result
     file /= file_name;
 
     if(!fs::exists(file))
-        throw native_exception(__FUNCTION__, arcirk::str_sample("Файл не найден! '%1%'" , file.string()).c_str());
+        native_exception_(__FUNCTION__, arcirk::str_sample("Файл не найден! '%1%'" , file.string()).c_str());
 
     if(fs::is_directory(file))
-        throw native_exception(__FUNCTION__, "Файл является директорией!");
+        native_exception_(__FUNCTION__, "Файл является директорией!");
 
     arcirk::read_file(file.string(), result.data);
 
@@ -3173,7 +3210,7 @@ arcirk::server::server_command_result shared_state::get_database_tables(const va
     boost::uuids::uuid uuid = arcirk::uuids::string_to_uuid(std::get<std::string>(session_id));
     bool operation_available = is_operation_available(uuid, roles::dbAdministrator);
     if (!operation_available)
-        throw native_exception(__FUNCTION__, "Не достаточно прав доступа!");
+        native_exception_(__FUNCTION__, "Не достаточно прав доступа!");
 
     std::string conf_json = pre::json::to_json(sett).dump();
     server::server_command_result result;
@@ -3189,6 +3226,8 @@ arcirk::server::server_command_result shared_state::get_database_tables(const va
     auto rows = json::array();
     for (auto const& table: database_tables) {
         int count = 0;
+        if(table == "sqlite_sequence")
+            continue;
         *sql << builder::query_builder((builder::sql_database_type)sett.SQLFormat).row_count().from(table).prepare() , soci::into(count);
         rows += json{
                 {"name", table},
@@ -3226,14 +3265,14 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
         init_default_result(result, uuid, arcirk::server::FileToDatabase, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto file_name = param_.value("file_name", "");
     auto table_name = param_.value("table_name", "");
 
     if(file_name.empty() || table_name.empty())
-        throw native_exception(__FUNCTION__, "Ошибка в параметрах запроса!");
+        native_exception_(__FUNCTION__, "Ошибка в параметрах запроса!");
 
 
     fs::path file(sett.ServerWorkingDirectory);
@@ -3241,10 +3280,10 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
     file /= file_name;
 
     if(!fs::exists(file))
-        throw native_exception(__FUNCTION__, "Файл не найден!");
+        native_exception_(__FUNCTION__, "Файл не найден!");
 
     if(fs::is_directory(file))
-        throw native_exception(__FUNCTION__, "Файл является директорией!");
+        native_exception_(__FUNCTION__, "Файл является директорией!");
 
     task_manager->stop();
     arcirk::log(__FUNCTION__, "Все назначенные задания временно остановлены.");
@@ -3262,7 +3301,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
                ByteArray data;
                arcirk::read_file(file.string(), data);
                if(data.empty())
-                   throw native_exception(__FUNCTION__, "Ошибка чтения файла!");
+                   native_exception_(__FUNCTION__, "Ошибка чтения файла!");
 
                auto text = arcirk::byte_array_to_string(data);
 
@@ -3270,7 +3309,7 @@ arcirk::server::server_command_result shared_state::file_to_database(const varia
                auto j = json::parse(text);
 
                if(!j.is_array())
-                   throw native_exception(__FUNCTION__, "Ошибка формата файла!");
+                   native_exception_(__FUNCTION__, "Ошибка формата файла!");
 
                std::set<std::string> query_strings;
 
@@ -3373,7 +3412,7 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
         init_default_result(result, uuid, arcirk::server::ProfileDirFileList, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto dir_name = param_.value("parent", "");
@@ -3388,7 +3427,7 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
         profile /= dir_name;
 
     if(!fs::is_directory(profile))
-        throw native_exception(__FUNCTION__, "Объект не является директорией или не существует!");
+        native_exception_(__FUNCTION__, "Объект не является директорией или не существует!");
 
     json res = nlohmann::json::object();
     if(table){
@@ -3477,7 +3516,7 @@ arcirk::server::server_command_result shared_state::delete_file(const variant_t 
         init_default_result(result, uuid, arcirk::server::ProfileDeleteFile, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto file_name = param_.value("file_name", "");
@@ -3487,13 +3526,13 @@ arcirk::server::server_command_result shared_state::delete_file(const variant_t 
     file /= file_name;
 
     if(!fs::exists(file))
-        throw native_exception(__FUNCTION__, "Файл не найден!");
+        native_exception_(__FUNCTION__, "Файл не найден!");
     try {
         bool res = fs::remove(file);
         result.message = res ? "OK" : "error";
         result.result = res ? "success" : "error";
     }catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     return result;
@@ -3514,12 +3553,12 @@ arcirk::server::server_command_result shared_state::device_get_full_info(const v
         init_default_result(result, uuid, arcirk::server::DeviceGetFullInfo, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto device = param_.value("device", "");
 //    if(device.empty())
-//        throw native_exception("Не указано устройство!");
+//        native_exception_("Не указано устройство!");
 
     auto sql = soci_initialize();
     auto query = builder::query_builder();
@@ -3542,7 +3581,7 @@ arcirk::server::server_command_result shared_state::device_get_full_info(const v
         }
 
         if(count == 0)
-            throw native_exception(__FUNCTION__, "Устройство не найдено!");
+            native_exception_(__FUNCTION__, "Устройство не найдено!");
     }
 
     //получаем данные подчиненных таблиц
@@ -3596,7 +3635,7 @@ arcirk::server::server_command_result shared_state::get_tasks(const variant_t &p
         init_default_result(result, uuid, arcirk::server::GetTasks, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     using namespace boost::filesystem;
@@ -3645,12 +3684,12 @@ arcirk::server::server_command_result shared_state::update_task_options(const va
         init_default_result(result, uuid, arcirk::server::UpdateTaskOptions, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto task_options = param_.value("task_options", json{});
     if(task_options.empty() || !task_options.is_array())
-        throw native_exception(__FUNCTION__, "Ошибка в параметрах команды!");
+        native_exception_(__FUNCTION__, "Ошибка в параметрах команды!");
 
     auto root_conf = app_directory();
     fs::path file_name = "server_tasks.json";
@@ -3691,7 +3730,7 @@ arcirk::server::server_command_result shared_state::task_restart(const variant_t
         init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     if(task_manager){
@@ -3713,13 +3752,13 @@ arcirk::server::server_command_result shared_state::run_task(const variant_t &pa
         init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     std::string  id = param_.value("task_uuid", "");
     auto custom_interval = param_.value("custom_interval", -1);
     if(id.empty())
-        throw native_exception(__FUNCTION__, arcirk::local_8bit("Не указан идентификатор задачи!").c_str());
+        native_exception_(__FUNCTION__, "Не указан идентификатор задачи!");
 
     if(task_manager){
         if(task_manager->is_started())
@@ -3738,12 +3777,12 @@ arcirk::server::server_command_result shared_state::stop_task(const variant_t &p
         init_default_result(result, uuid, arcirk::server::TasksRestart, arcirk::database::roles::dbAdministrator
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     std::string  id = param_.value("task_uuid", "");
     if(id.empty())
-        throw native_exception(__FUNCTION__, arcirk::local_8bit("Не указан идентификатор задачи!").c_str());
+        native_exception_(__FUNCTION__, "Не указан идентификатор задачи!");
 
     if(task_manager){
         if(task_manager->is_started())
@@ -3766,7 +3805,7 @@ arcirk::server::server_command_result shared_state::send_all_notify(const varian
         init_default_result(result, uuid, arcirk::server::SendNotify, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto app_filter = param_.value("app_filter", json::array());
@@ -3775,7 +3814,7 @@ arcirk::server::server_command_result shared_state::send_all_notify(const varian
     auto command_param = param_.value("param", json{});
 
     if(command.empty() && message.empty())
-        throw native_exception(__FUNCTION__, arcirk::local_8bit("Не верные параметры команды!").c_str());
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
 
     std::vector<std::string> apps{};
     if(!app_filter.empty()){
@@ -3960,7 +3999,7 @@ arcirk::server::server_command_result shared_state::get_cert_user(const variant_
         init_default_result(result, uuid, arcirk::server::GetCertUser, arcirk::database::roles::dbUser
                 ,param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     auto session = get_session(uuid);
@@ -3968,7 +4007,7 @@ arcirk::server::server_command_result shared_state::get_cert_user(const variant_
     auto system_user = session->system_user();
 
     if(host.empty() || system_user.empty())
-        throw native_exception(__FUNCTION__, "Нарушение прав доступа. Хост или имя пользователя не указаны!");
+        native_exception_(__FUNCTION__, "Нарушение прав доступа. Хост или имя пользователя не указаны!");
 
     using builder = arcirk::database::builder::query_builder;
     using tables = arcirk::database::tables;
@@ -4004,7 +4043,7 @@ arcirk::server::server_command_result shared_state::verify_administrator(const v
     try {
         init_default_result(result, uuid, arcirk::server::VerifyAdministrator, arcirk::database::roles::dbUser, param_, param);
     } catch (const std::exception &e) {
-        throw native_exception(__FUNCTION__, e.what());
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
     std::string hash = param_.value("hash", "");
@@ -4018,7 +4057,7 @@ arcirk::server::server_command_result shared_state::verify_administrator(const v
 
     if(hash.empty()){
         if(password.empty())
-            throw native_exception(__FUNCTION__, "Не верные имя пользователя или пароль!");
+            native_exception_(__FUNCTION__, "Не верные имя пользователя или пароль!");
         hash = arcirk::get_hash(user, arcirk::crypt(password, CRYPT_KEY));
     }
 
@@ -4034,10 +4073,10 @@ arcirk::server::server_command_result shared_state::verify_administrator(const v
         }
 
         if(role.get<roles>() != dbAdministrator)
-            throw native_exception(__FUNCTION__, "Не верные имя пользователя или пароль!");
+            native_exception_(__FUNCTION__, "Не верные имя пользователя или пароль!");
 
     }else
-        throw native_exception(__FUNCTION__, "Не верные имя пользователя или пароль!");
+        native_exception_(__FUNCTION__, "Не верные имя пользователя или пароль!");
 
     result.result = "success";
     result.message = "OK";
@@ -4067,4 +4106,125 @@ bool shared_state::is_channel(const std::string &uuid){
 
     return count > 0;
 
+}
+
+arcirk::server::server_command_result shared_state::get_database_structure(const variant_t &param,
+                                                                         const variant_t &session_id) {
+    using json = nlohmann::json;
+    using namespace soci;
+    using query_builder = arcirk::database::builder::query_builder;
+    using namespace arcirk::database;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::GetDatabaseStructure, arcirk::database::roles::dbUser, param_, param);
+    } catch (const std::exception &e) {
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
+    }
+
+    auto sql = soci_initialize();
+    auto version = arcirk::server::get_version();
+    auto database_tables = arcirk::database::get_database_tables(*sql, arcirk::DatabaseType(sett.SQLFormat), pre::json::to_json(version));
+    auto database_views = arcirk::database::get_database_views(*sql, arcirk::DatabaseType(sett.SQLFormat), pre::json::to_json(version));
+
+    std::vector<json> m_groups;
+    std::vector<json> m_childs;
+
+    auto res = json::object();
+    auto m_tables= database_structure();
+    m_tables.first = "Таблицы";
+    m_tables.type = "";
+    m_tables.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_tables.first + m_tables.object_type))); //arcirk::uuids::random_uuid());
+    m_tables.parent = NIL_STRING_UUID;
+    m_tables.is_group = 1;
+    m_tables.object_type = "tablesRoot";
+    m_groups.push_back(pre::json::to_json(m_tables));
+    auto m_views= database_structure();
+    m_views.first = "Представления";
+    m_views.type = "";
+    m_views.ref = boost::to_string(arcirk::uuids::random_uuid());
+    m_views.parent = NIL_STRING_UUID;
+    m_views.is_group = 1;
+    m_views.object_type = "tviewsRoot";
+    m_groups.push_back(pre::json::to_json(m_views));
+
+//    auto test = arcirk::uuids::to_md5(m_tables.first + m_tables.object_type);
+//    test = test.insert(8, "-");
+//    test = test.insert(13, "-");
+//    test = test.insert(18, "-");
+//    test = test.insert(23, "-");
+//
+//    arcirk::to_lower(test);
+//
+//    auto s = arcirk::uuids::random_uuid();
+//    auto s1 = arcirk::uuids::string_to_uuid(test);
+//
+//    std::cout << s << std::endl;
+//    std::cout << test << "     " << s1 << std::endl;
+
+    for (auto const& table: database_tables) {
+        int count = 0;
+        if(table == "sqlite_sequence")
+            continue;
+
+        auto m_struct = database_structure();
+        m_struct.first = table;
+        m_struct.type = "";
+        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.first + m_struct.object_type))); //
+        m_struct.parent = m_tables.ref;
+        m_struct.is_group = 1;
+        m_struct.object_type = "table";
+        m_groups.push_back(pre::json::to_json(m_struct));
+
+        json table_ = table;
+
+        auto details = table_info(*sql, table_.get<tables>(), arcirk::DatabaseType(sett.SQLFormat));
+
+        for (auto const itr : details) {
+            auto m_details = database_structure();
+            m_details.first = itr.second.name;
+            m_details.type = itr.second.type;
+            m_details.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_details.first + m_details.object_type))); //arcirk::uuids::random_uuid());
+            m_details.parent = m_struct.ref;
+            m_details.is_group = 0;
+            m_details.object_type = "field";
+            m_childs.push_back(pre::json::to_json(m_details));
+        }
+    }
+
+    for (auto const& view: database_views) {
+        auto m_struct = database_structure();
+        m_struct.first = view;
+        m_struct.type = "";
+        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.first + m_struct.object_type))); //arcirk::uuids::random_uuid());
+        m_struct.parent = m_views.ref;
+        m_struct.is_group = 0;
+        m_struct.object_type = "view";
+        m_childs.push_back(pre::json::to_json(m_struct));
+    }
+
+    auto m_empty = pre::json::to_json(database_structure());
+
+    auto columns = json::array();
+
+    for (auto itr = m_empty.items().begin(); itr != m_empty.items().end(); ++itr) {
+        columns += itr.key();
+    }
+    res["columns"] = columns;
+
+    auto rows = json::array();
+    for (auto gr : m_groups) {
+        rows += gr;
+    }
+    for (auto gr : m_childs) {
+        rows += gr;
+    }
+    res["rows"] = rows;
+
+    result.message = "OK";
+    result.result = arcirk::base64::base64_encode(res.dump());
+
+    return result;
 }

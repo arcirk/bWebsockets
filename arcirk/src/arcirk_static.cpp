@@ -59,10 +59,46 @@ namespace arcirk{
             return v;
         }
         boost::uuids::uuid from_byte_array(const ByteArray& byte){
-            boost::uuids::uuid u;
+            boost::uuids::uuid u{};
             memcpy(&u, byte.data(), byte.size());
             return u;
         }
+
+        std::string digest_to_string(const boost::uuids::detail::md5::digest_type &digest)
+        {
+            const auto charDigest = reinterpret_cast<const char *>(&digest);
+            std::string result;
+            boost::algorithm::hex(charDigest, charDigest + sizeof(boost::uuids::detail::md5::digest_type), std::back_inserter(result));
+            return result;
+        }
+
+        std::string  to_md5(const std::string& source){
+            using boost::uuids::detail::md5;
+            md5 hash;
+            md5::digest_type digest;
+
+            hash.process_bytes(source.data(), source.size());
+            hash.get_digest(digest);
+            return digest_to_string(digest);
+        }
+
+        boost::uuids::uuid md5_to_uuid(const std::string& md5_string){
+            using boost::uuids::detail::md5;
+            using namespace boost::uuids;
+            try {
+                std::string source = md5_string;
+                source = source.insert(8, "-");
+                source = source.insert(13, "-");
+                source = source.insert(18, "-");
+                source = source.insert(23, "-");
+                auto result = string_generator()(source);
+                return result;
+            } catch(...) {
+                return boost::uuids::nil_uuid();
+            }
+
+        }
+
     }
 
     namespace standard_paths{

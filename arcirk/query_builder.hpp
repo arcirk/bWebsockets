@@ -67,16 +67,32 @@ namespace arcirk::database::builder {
         {joinFull, "full"}
     });
 
-    static std::map<sql_type_of_comparison, std::string> sql_compare_template = {
-            std::pair<sql_type_of_comparison, std::string>(Equals, "%1%=%2%"),
-            std::pair<sql_type_of_comparison, std::string>(Not_Equals, "not %1%=%2%"),
-            std::pair<sql_type_of_comparison, std::string>(More, "%1%>%2%"),
-            std::pair<sql_type_of_comparison, std::string>(More_Or_Equal, "%1%>=%2%"),
-            std::pair<sql_type_of_comparison, std::string>(Less_Or_Equal, "%1%<=%2%"),
-            std::pair<sql_type_of_comparison, std::string>(Less, "%1%<%2%"),
-            std::pair<sql_type_of_comparison, std::string>(On_List, "%1% in (%2%)"),
-            std::pair<sql_type_of_comparison, std::string>(Not_In_List, "not %1% in (%2%)")
+//    static std::map<sql_type_of_comparison, std::string> sql_compare_template = {
+//            std::pair<sql_type_of_comparison, std::string>(Equals, "%1%=%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(Not_Equals, "not %1%=%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(More, "%1%>%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(More_Or_Equal, "%1%>=%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(Less_Or_Equal, "%1%<=%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(Less, "%1%<%2%"),
+//            std::pair<sql_type_of_comparison, std::string>(On_List, "%1% in (%2%)"),
+//            std::pair<sql_type_of_comparison, std::string>(Not_In_List, "not %1% in (%2%)")
+//    };
+    typedef std::map<sql_type_of_comparison, std::string> comparation_string;
+    struct A{
+        static comparation_string compare_template(){ return {
+                    std::pair<sql_type_of_comparison, std::string>(Equals, "%1%=%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(Not_Equals, "not %1%=%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(More, "%1%>%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(More_Or_Equal, "%1%>=%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(Less_Or_Equal, "%1%<=%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(Less, "%1%<%2%"),
+                    std::pair<sql_type_of_comparison, std::string>(On_List, "%1% in (%2%)"),
+                    std::pair<sql_type_of_comparison, std::string>(Not_In_List, "not %1% in (%2%)")
+            };
+        }
     };
+
+    const comparation_string sql_compare_template = A::compare_template();
 
     typedef struct sql_compare_value{
 
@@ -136,7 +152,7 @@ namespace arcirk::database::builder {
         }
 
         [[nodiscard]] std::string to_string(bool quotation_marks = true) const{
-            std::string template_value = sql_compare_template[compare];
+            std::string template_value = sql_compare_template.at(compare);//sql_compare_template[compare];
             std::string result;
             if(!value.is_array()){
                 std::string s_val = quotation_marks ? "'%1%'" : "%1%";
@@ -887,7 +903,9 @@ namespace arcirk::database::builder {
                         case dt_date:
                             //std::tm when = r.get<std::tm>(i);
                             break;
-                        case dt_blob:
+                        case dt_blob:{
+                            j_row += {column_name, "<Бинарные данные>"};
+                        }
                             break;
                         case dt_xml:
                             break;

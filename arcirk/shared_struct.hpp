@@ -222,6 +222,8 @@ namespace arcirk::server{
         VerifyAdministrator,
         UserMessage,
         GetChannelToken,
+        IsChannel,
+        GetDatabaseStructure,
         CMD_INVALID=-1,
     };
 
@@ -266,6 +268,8 @@ namespace arcirk::server{
         {VerifyAdministrator, "VerifyAdministrator"}    ,
         {UserMessage, "UserMessage"}    ,
         {GetChannelToken, "GetChannelToken"}    ,
+        {IsChannel, "IsChannel"}    ,
+        {GetDatabaseStructure, "GetDatabaseStructure"}    ,
     })
 
 }

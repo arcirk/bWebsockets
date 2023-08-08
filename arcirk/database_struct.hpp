@@ -56,7 +56,7 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, date)
                 (std::string, content_type)
                 (int, unread_messages)
-                (std::string, parent)
+                (int, parent)
                 (int, is_group)
                 (int, deletion_mark)
                 (int, version)
@@ -73,6 +73,17 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, is_group)
                 (int, deletion_mark)
                 (int, version)
+);
+
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), database_structure,
+        (std::string, first)
+        (std::string, second)
+        (std::string, ref)
+        (std::string, object_type)
+        (std::string, type)
+        (std::string, parent)
+        (int, is_group)
 );
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -457,7 +468,7 @@ namespace arcirk::database{
                                            "    date            INTEGER,\n"
                                            "    content_type    TEXT      DEFAULT HTML,\n"
                                            "    unread_messages INTEGER   DEFAULT (0),\n"
-                                           "    parent          TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                           "    parent          INTEGER   DEFAULT (0),\n"
                                            "    is_group        INTEGER   DEFAULT (0) NOT NULL,\n"
                                            "    deletion_mark   INTEGER   DEFAULT (0) NOT NULL,\n"
                                            "    version         INTEGER   DEFAULT (0)  NOT NULL\n"
@@ -472,7 +483,7 @@ namespace arcirk::database{
                                             "[date] [int] NOT NULL,\n"
                                             "[content_type] [char](10) NULL,\n"
                                             "[unread_messages] [int] NULL,\n"
-                                            "[parent] [char](36) NULL,\n"
+                                            "[parent] [int] NOT NULL,\n"
                                             "[is_group] [int] NOT NULL,\n"
                                             "[deletion_mark] [int] NOT NULL,\n"
                                             "[version] [int] NOT NULL\n"
@@ -1180,7 +1191,7 @@ namespace arcirk::database{
                 auto tbl = messages();
                 tbl.ref = arcirk::uuids::nil_string_uuid();
                 tbl.content_type ="Text";
-                tbl.parent = arcirk::uuids::nil_string_uuid();
+                tbl.parent = 0;
                 tbl.is_group = 0;
                 tbl.deletion_mark = 0;
                 return pre::json::to_json(tbl);
@@ -1430,7 +1441,6 @@ namespace arcirk::database{
             //table_info_sqlite info = *it;
             auto info = table_info_sqlite();
             row const& row_ = *it;
-            //info.cid = row_.get<int>("cid");
             info.name = row_.get<std::string>(c_name);
             info.type = row_.get<std::string>(c_type);
             result.emplace(info.name, info);
@@ -1988,6 +1998,7 @@ class native_exception : public std::exception
 public:
     explicit native_exception(const char *msg) : message(msg) {}
     explicit native_exception(const char *fun, const char *msg) : message(msg), func(fun) {}
+    //explicit native_exception(const std::string& fun, const std::string& msg) : message(msg), func(fun) {}
     virtual ~native_exception() throw() {}
     virtual const char *what() const throw() {
         if(func.empty())

@@ -26,6 +26,8 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/regex.hpp>
+#include <boost/uuid/detail/md5.hpp>
+#include <boost/algorithm/hex.hpp>
 
 #ifdef USE_RAPIDJSON
 #include <rapidjson/document.h>
@@ -102,6 +104,9 @@ namespace arcirk {
         boost::uuids::uuid random_uuid();
         ByteArray to_byte_array(const boost::uuids::uuid& uuid);
         boost::uuids::uuid from_byte_array(const ByteArray& byte);
+        std::string  to_md5(const std::string& source);
+        std::string digest_to_string(const boost::uuids::detail::md5::digest_type &digest);
+        boost::uuids::uuid md5_to_uuid(const std::string& md5_string);
     }
 
     namespace standard_paths{

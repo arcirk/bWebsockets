@@ -111,3 +111,5 @@
 /web_admin/build-waAdmin-Desktop_Qt_6_4_2_MSVC2019_64bit-Debug/
 /tests/mail/x64/
 /tests/mail/cmake-build-debug/
+/.vs/
+/out/
