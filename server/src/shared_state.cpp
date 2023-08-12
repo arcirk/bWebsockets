@@ -4133,21 +4133,23 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
     std::vector<json> m_childs;
 
     auto res = json::object();
-    auto m_tables= database_structure();
-    m_tables.first = "Таблицы";
-    m_tables.type = "";
-    m_tables.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_tables.first + m_tables.object_type))); //arcirk::uuids::random_uuid());
+    auto m_tables= ibase_object_structure();
+    m_tables.name = "Таблицы";
+    m_tables.alias = "Таблицы";
+    m_tables.full_name = "Таблицы";
+    m_tables.object_type = "tablesRoot";
+    m_tables.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_tables.name + m_tables.object_type)));
     m_tables.parent = NIL_STRING_UUID;
     m_tables.is_group = 1;
-    m_tables.object_type = "tablesRoot";
     m_groups.push_back(pre::json::to_json(m_tables));
-    auto m_views= database_structure();
-    m_views.first = "Представления";
-    m_views.type = "";
-    m_views.ref = boost::to_string(arcirk::uuids::random_uuid());
+    auto m_views= ibase_object_structure();
+    m_views.name = "Представления";
+    m_views.alias = "Представления";
+    m_views.alias = "Представления";
+    m_views.object_type = "tviewsRoot";
+    m_views.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_views.name + m_views.object_type)));
     m_views.parent = NIL_STRING_UUID;
     m_views.is_group = 1;
-    m_views.object_type = "tviewsRoot";
     m_groups.push_back(pre::json::to_json(m_views));
 
 //    auto test = arcirk::uuids::to_md5(m_tables.first + m_tables.object_type);
@@ -4169,10 +4171,12 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
         if(table == "sqlite_sequence")
             continue;
 
-        auto m_struct = database_structure();
-        m_struct.first = table;
-        m_struct.type = "";
-        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.first + m_struct.object_type))); //
+        auto m_struct = ibase_object_structure();
+        m_struct.name = table;
+        m_struct.alias = table;
+        m_struct.full_name = table;
+        m_struct.data_type = "";
+        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.name + m_struct.object_type))); //
         m_struct.parent = m_tables.ref;
         m_struct.is_group = 1;
         m_struct.object_type = "table";
@@ -4183,10 +4187,12 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
         auto details = table_info(*sql, table_.get<tables>(), arcirk::DatabaseType(sett.SQLFormat));
 
         for (auto const itr : details) {
-            auto m_details = database_structure();
-            m_details.first = itr.second.name;
-            m_details.type = itr.second.type;
-            m_details.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_details.first + m_details.object_type))); //arcirk::uuids::random_uuid());
+            auto m_details = ibase_object_structure();
+            m_details.data_type = itr.second.type;
+            m_details.name = itr.second.name;
+            m_details.alias = itr.second.name;
+            m_details.full_name = table + "." + itr.second.name;
+            m_details.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_details.name + m_details.object_type))); //arcirk::uuids::random_uuid());
             m_details.parent = m_struct.ref;
             m_details.is_group = 0;
             m_details.object_type = "field";
@@ -4195,17 +4201,18 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
     }
 
     for (auto const& view: database_views) {
-        auto m_struct = database_structure();
-        m_struct.first = view;
-        m_struct.type = "";
-        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.first + m_struct.object_type))); //arcirk::uuids::random_uuid());
+        auto m_struct = ibase_object_structure();
+        m_struct.name = view;
+        m_struct.alias = view;
+        m_struct.full_name = view;
+        m_struct.object_type = "view";
+        m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.name + m_struct.object_type))); //arcirk::uuids::random_uuid());
         m_struct.parent = m_views.ref;
         m_struct.is_group = 0;
-        m_struct.object_type = "view";
         m_childs.push_back(pre::json::to_json(m_struct));
     }
 
-    auto m_empty = pre::json::to_json(database_structure());
+    auto m_empty = pre::json::to_json(ibase_object_structure());
 
     auto columns = json::array();
 

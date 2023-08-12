@@ -75,16 +75,35 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (int, version)
 );
 
+//BOOST_FUSION_DEFINE_STRUCT(
+//        (arcirk::database), database_structure,
+//        (std::string, first)
+//        (std::string, second)
+//        (std::string, ref)
+//        (std::string, object_type)
+//        (std::string, type)
+//        (std::string, parent)
+//        (int, is_group)
+//);
+
 BOOST_FUSION_DEFINE_STRUCT(
-        (arcirk::database), database_structure,
-        (std::string, first)
-        (std::string, second)
-        (std::string, ref)
+        (arcirk::database), ibase_object_structure,
+        (std::string, name)
+        (std::string, alias)
+        (std::string, full_name)
         (std::string, object_type)
-        (std::string, type)
+        (std::string, data_type)
+        (std::string, query)
+        (bool, user_query)
+        (std::string, ref)
         (std::string, parent)
+        (std::string, base_ref)
+        (std::string, base_parent)
+        (std::string, parent_name)
+        (std::string, parent_alias)
         (int, is_group)
-);
+)
+
 
 BOOST_FUSION_DEFINE_STRUCT(
                 (arcirk::database), subdivisions,
