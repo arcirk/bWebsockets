@@ -4192,8 +4192,11 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
             m_details.name = itr.second.name;
             m_details.alias = itr.second.name;
             m_details.full_name = table + "." + itr.second.name;
+            m_details.query = table + "." + itr.second.name;
             m_details.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_details.name + m_details.object_type))); //arcirk::uuids::random_uuid());
             m_details.parent = m_struct.ref;
+            m_details.base_ref = m_details.ref; //arcirk::uuids::random_uuid());
+            m_details.base_parent = m_struct.ref;
             m_details.is_group = 0;
             m_details.object_type = "field";
             m_childs.push_back(pre::json::to_json(m_details));
