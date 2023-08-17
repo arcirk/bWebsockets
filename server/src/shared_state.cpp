@@ -526,12 +526,18 @@ void shared_state::execute_command_handler(const std::string& message, subscribe
         return_value.result = "error";
         return_value.uuid_form = ex.uuid_form();
         return_value.message = ex.what();
-        fail("shared_state::execute_command_handler::" + std::string(ex.command()), return_value.message, true, sett.WriteJournal ? log_directory().string(): "");
+        std::string err_desc = __FUNCTION__;
+        err_desc.append("::");
+        err_desc.append(ex.command());
+        fail(err_desc, return_value.message, true, sett.WriteJournal ? log_directory().string(): "");
     }
     catch (const std::exception& ex) {
         return_value.result = "error";
         return_value.uuid_form = arcirk::uuids::nil_string_uuid();
         return_value.message = arcirk::to_utf(ex.what());
+        std::string err_desc = __FUNCTION__;
+        err_desc.append("::");
+        err_desc.append(return_value.command);
         fail("shared_state::execute_command_handler", return_value.message, true, sett.WriteJournal ? log_directory().string(): "");
     }
 

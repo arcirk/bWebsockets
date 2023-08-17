@@ -320,7 +320,7 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
         std::string s(__FUNCTION__);
         s.append(": ");
         s.append("Ошибка авторизации на http сервере!");
-        throw native_exception(s.c_str());
+        throw native_exception(arcirk::local_8bit(s).c_str());
         //throw native_exception(__FUNCTION__ , "Ошибка авторизации на http сервере!");
     }
 
@@ -335,7 +335,7 @@ nlohmann::json scheduled_operations::exec_http_query(const std::string& command,
         std::string s(__FUNCTION__);
         s.append(": ");
         s.append("Ошибка на http сервисе!");
-        throw native_exception(s.c_str());
+        throw native_exception(arcirk::local_8bit(s).c_str());
         //throw native_exception(__FUNCTION__, "Error on http service!");
     }
 

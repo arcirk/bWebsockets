@@ -611,8 +611,8 @@ namespace arcirk::database::builder {
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
 
-                    boost::algorithm::erase_all(value, "'");
-
+                    //boost::algorithm::erase_all(value, "'");
+                    boost::algorithm::replace_all(value, "'", "''");
                     if(value.empty())
                         result.append("=''");
                     else
@@ -659,7 +659,8 @@ namespace arcirk::database::builder {
                     else if(val.is_number_integer())
                         value = std::to_string(val.get<long long>());
 
-                    boost::algorithm::erase_all(value, "'");
+                    //boost::algorithm::erase_all(value, "'");
+                    boost::algorithm::replace_all(value, "'", "''");
 
                     if(value.empty())
                         string_values.append("''");

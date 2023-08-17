@@ -327,6 +327,17 @@ BOOST_FUSION_DEFINE_STRUCT(
                 (std::string, dflt_value)
                 (int, bk)
 );
+BOOST_FUSION_DEFINE_STRUCT(
+        (arcirk::database), sqlite_functions_info,
+        (std::string, name)
+        (std::string, fun)
+        (std::string, desc)
+        (std::string, ref)
+        (std::string, parent)
+        (int, is_group)
+        (int, deletion_mark)
+        (int, version)
+);
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), containers,
@@ -426,6 +437,7 @@ namespace arcirk::database{
         tbCertUsers,
         tbContainers,
         tbAvailableCertificates,
+        tbSQliteFunctionsInfo,
         tables_INVALID=-1,
     };
 
@@ -450,6 +462,7 @@ namespace arcirk::database{
         {tbCertUsers, "CertUsers"}  ,
         {tbContainers, "Containers"}  ,
         {tbAvailableCertificates, "AvailableCertificates"}  ,
+        {tbSQliteFunctionsInfo, "SQliteFunctionsInfo"}  ,
     });
 
     enum views{
@@ -464,6 +477,23 @@ namespace arcirk::database{
         { dvDocumentsTableView, "DocumentsTableView" }  ,
         { dvRegisteredUsersView, "RegisteredUsersView" }  ,
     });
+
+    const std::string sqlite_functions_info_table_ddl = "CREATE TABLE SQliteFunctionsInfo (\n"
+                                                        "    _id           INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
+                                                        "    name          TEXT      DEFAULT \"\",\n"
+                                                        "    [desc]        TEXT      DEFAULT \"\",\n"
+                                                        "    fun           TEXT      DEFAULT \"\",\n"
+                                                        "    ref           TEXT (36) UNIQUE\n"
+                                                        "                            NOT NULL\n"
+                                                        "                            DEFAULT \"\",\n"
+                                                        "    parent        TEXT (36) DEFAULT [00000000-0000-0000-0000-000000000000],\n"
+                                                        "    is_group      INTEGER   DEFAULT (0) \n"
+                                                        "                            NOT NULL,\n"
+                                                        "    deletion_mark INTEGER   DEFAULT (0) \n"
+                                                        "                            NOT NULL,\n"
+                                                        "    version       INTEGER   NOT NULL\n"
+                                                        "                            DEFAULT (0) \n"
+                                                        ");";
 
     const std::string messages_table_ddl = "CREATE TABLE Messages (\n"
                                            "    _id             INTEGER   PRIMARY KEY AUTOINCREMENT,\n"
@@ -1374,6 +1404,8 @@ namespace arcirk::database{
             }
             case tbDevicesType:
                 return devices_type();
+            case tbSQliteFunctionsInfo:
+                return pre::json::to_json(sqlite_functions_info());
         }
 
         return {};
@@ -1407,6 +1439,7 @@ namespace arcirk::database{
             case tbCertUsers:  return type == DatabaseType::dbTypeSQLite ? cert_users_table_ddl : cert_users_odbc_table_ddl;
             case tbContainers:  return type == DatabaseType::dbTypeSQLite ? containers_table_ddl : containers_odbc_table_ddl;
             case tbAvailableCertificates:  return type == DatabaseType::dbTypeSQLite ? available_certificates_table_ddl : available_certificates_odbc_table_ddl;
+            case tbSQliteFunctionsInfo:  return type == DatabaseType::dbTypeSQLite ? sqlite_functions_info_table_ddl : "";
             case tables_INVALID:{
                 break;
             }
@@ -1581,6 +1614,7 @@ namespace arcirk::database{
         result.emplace(tables::tbCertUsers, 2);
         result.emplace(tables::tbContainers, 1);
         result.emplace(tables::tbAvailableCertificates, 1);
+        result.emplace(tables::tbSQliteFunctionsInfo, 1);
         return result;
     }
 
@@ -1604,7 +1638,8 @@ namespace arcirk::database{
                 tbCertificates,
                 tbCertUsers,
                 tbContainers,
-                tbAvailableCertificates
+                tbAvailableCertificates,
+                tbSQliteFunctionsInfo
         };
         return result;
     }
