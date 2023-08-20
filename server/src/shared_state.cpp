@@ -4186,6 +4186,8 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
         m_struct.parent = m_tables.ref;
         m_struct.is_group = 1;
         m_struct.object_type = "table";
+        m_struct.base_ref = m_struct.ref; //arcirk::uuids::random_uuid());
+        m_struct.base_parent = m_tables.ref;
         m_groups.push_back(pre::json::to_json(m_struct));
 
         json table_ = table;
@@ -4218,6 +4220,8 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
         m_struct.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_struct.name + m_struct.object_type))); //arcirk::uuids::random_uuid());
         m_struct.parent = m_views.ref;
         m_struct.is_group = 0;
+        m_struct.base_ref = m_struct.ref; //arcirk::uuids::random_uuid());
+        m_struct.base_parent = m_views.ref;
         m_childs.push_back(pre::json::to_json(m_struct));
     }
 
