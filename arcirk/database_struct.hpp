@@ -77,6 +77,7 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 BOOST_FUSION_DEFINE_STRUCT(
         (arcirk::database), ibase_object_structure,
+        (int, _id)
         (std::string, name)
         (std::string, alias)
         (std::string, full_name)
@@ -90,6 +91,8 @@ BOOST_FUSION_DEFINE_STRUCT(
         (std::string, base_parent)
         (std::string, parent_name)
         (std::string, parent_alias)
+        (std::string, groupe_as)
+        (std::string, package_ref)
         (int, is_group)
 )
 
