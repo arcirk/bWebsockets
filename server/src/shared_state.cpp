@@ -4152,7 +4152,7 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
     m_views.name = "Представления";
     m_views.alias = "Представления";
     m_views.alias = "Представления";
-    m_views.object_type = "tviewsRoot";
+    m_views.object_type = "viewsRoot";
     m_views.ref = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(m_views.name + m_views.object_type)));
     m_views.parent = NIL_STRING_UUID;
     m_views.is_group = 1;
