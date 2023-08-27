@@ -93,6 +93,7 @@ BOOST_FUSION_DEFINE_STRUCT(
     (std::string, parent_alias)
     (std::string, groupe_as)
     (std::string, package_ref)
+    (int, size)
     (int, is_group)
 )
 
