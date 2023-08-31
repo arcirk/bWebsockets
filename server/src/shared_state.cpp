@@ -4188,6 +4188,7 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
         m_struct.object_type = "table";
         m_struct.base_ref = m_struct.ref; //arcirk::uuids::random_uuid());
         m_struct.base_parent = m_tables.ref;
+
         m_groups.push_back(pre::json::to_json(m_struct));
 
         json table_ = table;
@@ -4207,6 +4208,8 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
             m_details.base_parent = m_struct.ref;
             m_details.is_group = 0;
             m_details.object_type = "field";
+            m_details.parent_alias = m_struct.name;
+            m_details.parent_name = m_struct.name;
             m_childs.push_back(pre::json::to_json(m_details));
         }
     }
