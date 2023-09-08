@@ -70,6 +70,7 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::GetChannelToken), this, &shared_state::get_channel_token_);
     add_method(enum_synonym(server::server_commands::IsChannel), this, &shared_state::is_channel_token_);
     add_method(enum_synonym(server::server_commands::GetDatabaseStructure), this, &shared_state::get_database_structure);
+    add_method(enum_synonym(server::server_commands::Run1CScript), this, &shared_state::run_1c_script);
 
     sql_sess = new soci::session();// soci_initialize();
 
@@ -4158,20 +4159,6 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
     m_views.is_group = 1;
     m_groups.push_back(pre::json::to_json(m_views));
 
-//    auto test = arcirk::uuids::to_md5(m_tables.first + m_tables.object_type);
-//    test = test.insert(8, "-");
-//    test = test.insert(13, "-");
-//    test = test.insert(18, "-");
-//    test = test.insert(23, "-");
-//
-//    arcirk::to_lower(test);
-//
-//    auto s = arcirk::uuids::random_uuid();
-//    auto s1 = arcirk::uuids::string_to_uuid(test);
-//
-//    std::cout << s << std::endl;
-//    std::cout << test << "     " << s1 << std::endl;
-
     for (auto const& table: database_tables) {
         int count = 0;
         if(table == "sqlite_sequence")
@@ -4248,6 +4235,112 @@ arcirk::server::server_command_result shared_state::get_database_structure(const
 
     result.message = "OK";
     result.result = arcirk::base64::base64_encode(res.dump());
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::run_1c_script(const variant_t &param, const variant_t &session_id) {
+
+    using json = nlohmann::json;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::Run1CScript, arcirk::database::roles::dbUser, param_, param);
+    } catch (const std::exception &e) {
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
+    }
+
+    json http_result = exec_http("ExecuteScript", param_);
+    result.result = arcirk::base64::base64_encode(http_result.dump());
+    return result;
+}
+
+nlohmann::json shared_state::exec_http(const std::string &command, const nlohmann::json &param) {
+    auto url = arcirk::Uri::Parse(sett.HSHost);
+    auto const host = url.Host;
+    auto const port = url.Port;//"80";
+    auto const target = url.Path + "/info";
+    int version = 10;
+
+    net::io_context ioc;
+    tcp::resolver resolver(ioc);
+    beast::tcp_stream stream(ioc);
+    auto const results = resolver.resolve(host, port);
+    stream.connect(results);
+
+    http::request<http::string_body> req{http::verb::post, target, version};
+    req.set(http::field::host, host);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+    std::string user_name = sett.HSUser;
+    const std::string pwd = sett.HSPassword;
+    std::string user_pwd = arcirk::crypt(pwd, CRYPT_KEY);
+    //std::string user_pwd = crypt_utils().decrypt_string(pwd);
+
+    std::string auth = user_name;
+    auth.append(":");
+    auth.append(user_pwd);
+
+    req.set(http::field::authorization, "Basic " + arcirk::base64::base64_encode(auth));
+    req.set(http::field::content_type, "application/json");
+
+    nlohmann::json body{
+            {"command", command},
+            {"param", param}
+    };
+
+    req.body() = body.dump();
+    req.prepare_payload();
+    http::write(stream, req);
+
+    beast::flat_buffer buffer;
+    http::response_parser<http::dynamic_body> res;
+    res.body_limit((std::numeric_limits<std::uint64_t>::max)());
+    http::read(stream, buffer, res);
+
+    auto res_ = res.get();
+
+    if(res_.result() == http::status::unauthorized){
+        std::string s(__FUNCTION__);
+        s.append(": ");
+        s.append("Ошибка авторизации на http сервере!");
+        throw native_exception(arcirk::local_8bit(s).c_str());
+        //throw native_exception(__FUNCTION__ , "Ошибка авторизации на http сервере!");
+    }
+
+
+    std::string result_body = boost::beast::buffers_to_string(res_.body().data());
+    beast::error_code ec;
+    stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+    if (ec && ec != beast::errc::not_connected)
+        throw beast::system_error{ec};
+
+    if(result_body == "error"){
+        std::string s(__FUNCTION__);
+        s.append(": ");
+        s.append("Ошибка на http сервисе!");
+        throw native_exception(arcirk::local_8bit(s).c_str());
+        //throw native_exception(__FUNCTION__, "Error on http service!");
+    }
+
+
+    nlohmann::json result{};
+    try {
+        //std::cout << arcirk::local_8bit(result_body) << std::endl;
+        if(nlohmann::json::accept(result_body))
+            result = nlohmann::json::parse(result_body);
+        else
+            result = result_body;
+    } catch (const std::exception& e) {
+        arcirk::fail(__FUNCTION__, e.what());
+        if(!result_body.empty())
+            arcirk:: fail(__FUNCTION__, result_body);
+    }
+
+    stream.close();
+    //ioc.stop();
 
     return result;
 }

@@ -187,6 +187,7 @@ public:
     arcirk::server::server_command_result get_channel_token_(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result is_channel_token_(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_database_structure(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result run_1c_script(const variant_t& param, const variant_t& session_id);
 
     static void native_exception_(const char* func, std::basic_string<char, std::char_traits<char>, std::allocator<char>> msg){
         std::string err(func);
@@ -311,7 +312,7 @@ public:
 
     std::string handle_request_get_blob(const std::string& content_disposition);
 
-    boost::filesystem::path log_directory() const;
+    [[nodiscard]] boost::filesystem::path log_directory() const;
 
     bool is_channel(const std::string& uuid);
 
@@ -359,6 +360,8 @@ private:
    soci::session * soci_initialize();
 
    [[nodiscard]] long param_count(const long& method_num) const;
+
+   nlohmann::json exec_http(const std::string& command, const nlohmann::json& param);
 
 };
 

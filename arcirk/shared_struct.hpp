@@ -224,6 +224,7 @@ namespace arcirk::server{
         GetChannelToken,
         IsChannel,
         GetDatabaseStructure,
+        Run1CScript,
         CMD_INVALID=-1,
     };
 
@@ -270,6 +271,7 @@ namespace arcirk::server{
         {GetChannelToken, "GetChannelToken"}    ,
         {IsChannel, "IsChannel"}    ,
         {GetDatabaseStructure, "GetDatabaseStructure"}    ,
+        {Run1CScript, "Run1CScript"}    ,
     })
 
 }
