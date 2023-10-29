@@ -24,28 +24,15 @@ BOOST_FUSION_DEFINE_STRUCT(
     (int, interval)
     (bool, allowed)
     (std::string, days_of_week)
-    (std::string, script)
+    (arcirk::ByteArray, script)
+    (std::string, script_synonum)
     (std::string, comment)
-    (std::string, ref)
-    (std::string, parent)
-    (std::string, param)
+//    (std::string, ref)
+//    (std::string, parent)
+    (arcirk::ByteArray, param)
 );
 
 namespace arcirk::services{
-
-//    static inline void log_text(std::string const& text)
-//    {
-////        auto t = std::time(nullptr);
-////        auto tm = *std::localtime(&t);
-////        std::cout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << " " << arcirk::local_8bit(text) << std::endl;
-//        std::tm tm = arcirk::current_date();
-//        char cur_date[100];
-//        std::strftime(cur_date, sizeof(cur_date), "%c", &tm);
-//
-//        std::cout << std::string(cur_date) << " " << "task manager" << ": " << arcirk::local_8bit(text) << std::endl;
-//    }
-
-    //typedef std::function<void(const boost::uuids::uuid&, const std::string&)> send_fn;
 
     class task : boost::noncopyable
     {

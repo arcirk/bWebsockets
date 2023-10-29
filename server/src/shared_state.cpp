@@ -3422,7 +3422,7 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
         native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
     }
 
-    auto dir_name = param_.value("parent", "");
+    auto dir_name = param_.value("parent_path", "");
     auto recursive = param_.value("recursive", true);
     auto table = param_.value("table", true);
     auto empty_col = param_.value("empty_column", false);
@@ -3461,8 +3461,10 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
             row["name"] = path_.filename().string();
             row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
             row["is_group"] = fs::is_directory(path_) ? 1 : 0;
-            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            std::string  p = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            row["parent"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(p)));
             row["size"] = fs::is_directory(path_) ? 0 : (int)fs::file_size(*it);
+            row["ref"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(row["path"].get<std::string>())));
             rows += row;
             //std::cout << row.dump() << std::endl;
         }
@@ -3499,8 +3501,10 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
             row["name"] = path_.filename().string();
             row["path"] = path_.string().substr(pr.length(), di.length() - pr.length());
             row["is_group"] = fs::is_directory(path_) ? 1 : 0;
-            row["parent"] = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            std::string  p = path_.parent_path().string().substr(pr.length(), path_.parent_path().string().length() - pr.length());
+            row["parent"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(p)));
             row["size"] = fs::is_directory(path_) ? 0 : (int)fs::file_size(it);
+            row["ref"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(row["path"].get<std::string>())));
             rows += row;
         }
 
