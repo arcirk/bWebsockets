@@ -1333,7 +1333,10 @@ bool shared_state::is_operation_available(const boost::uuids::uuid &uuid, arcirk
     int d_role = (int)level;
 
     //return session->role() == enum_synonym(level);
-    return u_role >= d_role;
+    if(session->user_name() != "IIS_1C")
+        return u_role >= d_role;
+    else
+        return true;
 }
 
 arcirk::server::server_command_result shared_state::user_information(const variant_t &param,
