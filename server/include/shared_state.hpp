@@ -189,6 +189,8 @@ public:
     arcirk::server::server_command_result get_database_structure(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result run_1c_script(const variant_t& param, const variant_t& session_id);
 
+    nlohmann::json get_file_list(const std::string target);
+
     static void native_exception_(const char* func, std::basic_string<char, std::char_traits<char>, std::allocator<char>> msg){
         std::string err(func);
         err.append(": ");

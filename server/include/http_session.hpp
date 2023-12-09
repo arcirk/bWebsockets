@@ -208,10 +208,18 @@ public:
         auto req_ = parser_->release();
 
         if(!http_authorization){
-            std::string target = static_cast<std::string>(req.target());
-            if (target.empty() || target == "/") // откроем index.html
+            const std::string target = static_cast<std::string>(req_.target());
+            if (target.empty() || target == "/" || target == "/favicon.ico") // откроем index.html
                 return handle_request(*doc_root_, parser_->release(), queue_);
-            else{
+            else if (target == "/api/files" && req_.method() == http::verb::get){
+                http::response<http::string_body> res{http::status::ok, req_.version()};
+                res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+                res.set(http::field::content_type, "application/json");
+                res.keep_alive(req_.keep_alive());
+                res.body() = state_->get_file_list("html\\files").dump();
+                res.prepare_payload();
+                return queue_(std::move(res));
+            }else{
                 http::response<http::string_body> res{http::status::unauthorized, req_.version()};
                 res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
                 res.set(http::field::content_type, "text/html");

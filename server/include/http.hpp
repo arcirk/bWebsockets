@@ -191,6 +191,7 @@ handle_request(
     if(unauthorized)
         return send(server_authorization_error("Incorrect username or password"));
 
+    std::cout << static_cast<std::string>(req.target()) << std::endl;
     // Make sure we can handle the method
     if( req.method() != http::verb::get &&
         req.method() != http::verb::head &&

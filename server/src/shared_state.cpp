@@ -3518,6 +3518,36 @@ arcirk::server::server_command_result shared_state::profile_directory_file_list(
     return result;
 }
 
+nlohmann::json shared_state::get_file_list(const std::string target) {
+
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    std::vector<fs::path> files;
+
+    fs::path dir(sett.ServerWorkingDirectory);
+    dir /= sett.Version;
+    //fs::path profile(dir);
+    fs::path folder(dir);
+    folder /= target;
+
+    if(!exists(folder))
+        return json{{"error", "Не верный каталог!"}};
+
+    for (fs::directory_iterator it(folder), end; it != end; ++it) {
+        if(!fs::is_directory(*it))
+            files.push_back(*it);
+    }
+
+    auto arr = json::array();
+    for (auto it : files) {
+        std::string p = it.string().substr(dir.string().length(), it.string().length() - dir.string().length());
+        arr += p;
+    }
+
+    return arr;
+}
+
 arcirk::server::server_command_result shared_state::delete_file(const variant_t &param, const variant_t &session_id) {
 
     using json = nlohmann::json;
