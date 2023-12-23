@@ -188,6 +188,9 @@ public:
     arcirk::server::server_command_result is_channel_token_(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result get_database_structure(const variant_t& param, const variant_t& session_id);
     arcirk::server::server_command_result run_1c_script(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result profile_directory_create_directories(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result profile_directory_delete_directory(const variant_t& param, const variant_t& session_id);
+    arcirk::server::server_command_result profile_directory_delete_file(const variant_t& param, const variant_t& session_id);
 
     nlohmann::json get_file_list(const std::string target);
 

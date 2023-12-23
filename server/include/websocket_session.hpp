@@ -413,6 +413,7 @@ public:
         authorized_ = is_http_authorization;
         last_error = 0;
         boost::beast::error_code ec;
+        ws_.read_message_max(64 * 1024 * 1024);
         auto remote = ws_.next_layer().socket().remote_endpoint(ec);
         _address = remote.address().to_string();
     }

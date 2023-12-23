@@ -27,9 +27,8 @@ BOOST_FUSION_DEFINE_STRUCT(
     (arcirk::ByteArray, script)
     (std::string, script_synonum)
     (std::string, comment)
-//    (std::string, ref)
-//    (std::string, parent)
     (arcirk::ByteArray, param)
+    (bool, reset_version)
 );
 
 namespace arcirk::services{

@@ -71,6 +71,9 @@ shared_state::shared_state(){
     add_method(enum_synonym(server::server_commands::IsChannel), this, &shared_state::is_channel_token_);
     add_method(enum_synonym(server::server_commands::GetDatabaseStructure), this, &shared_state::get_database_structure);
     add_method(enum_synonym(server::server_commands::Run1CScript), this, &shared_state::run_1c_script);
+    add_method(enum_synonym(server::server_commands::CreateDirectories), this, &shared_state::profile_directory_create_directories);
+    add_method(enum_synonym(server::server_commands::DeleteDirectory), this, &shared_state::profile_directory_delete_directory);
+    add_method(enum_synonym(server::server_commands::bDeleteFile), this, &shared_state::profile_directory_delete_file);
 
     sql_sess = new soci::session();// soci_initialize();
 
@@ -1062,6 +1065,7 @@ arcirk::server::server_command_result shared_state::set_client_param(const varia
                             session->set_role(info.role);
                             param_.user_uuid = info.ref;
                             param_.user_name = info.first;
+                            param_.hash = info.hash;
                             result.result = base64::base64_encode(pre::json::to_json(info).dump());
                         }
                     }else{
@@ -2622,7 +2626,7 @@ void shared_state::run_server_tasks() {
 
     std::vector<arcirk::services::task_options> vec;
     if(result.empty()){
-        arcirk::services::task_options delete_rec{};
+        auto delete_rec = arcirk::services::task_options();
         delete_rec.end_task = 0;
         delete_rec.start_task = 0;
         delete_rec.interval = 600;
@@ -2633,7 +2637,7 @@ void shared_state::run_server_tasks() {
         delete_rec.synonum = "Очистка помеченных на удаление объектов.";
         delete_rec.comment = "Удаляет помеченные на удаление объекты на сервере.";
         vec.push_back(delete_rec);
-        arcirk::services::task_options exchange{};
+        auto exchange = arcirk::services::task_options();
         exchange.end_task = 0;
         exchange.start_task = 0;
         exchange.interval = 1800;
@@ -2644,17 +2648,6 @@ void shared_state::run_server_tasks() {
         exchange.synonum = "Обмен по плану обмена.";
         exchange.comment = "Обмен с 1С:Предприятие с использованием плана обмена.";
         vec.push_back(exchange);
-//        arcirk::services::task_options set_day{};
-//        set_day.end_task = 0;
-//        set_day.start_task = 0;
-//        set_day.interval = 21600;
-//        set_day.name = "SetDayMessages";
-//        set_day.uuid = boost::to_string(arcirk::uuids::random_uuid());
-//        set_day.allowed = true;
-//        set_day.predefined = true;
-//        set_day.synonum = "Служба записи текущей даты для группировки сообщений.";
-//        set_day.comment = "Добавляет родительскую запись в таблицу сообщений для формирования иерархических списков.";
-//        vec.push_back(set_day);
     }else{
         for (auto itr = result.begin(); itr != result.end(); ++itr) {
             auto opt = arcirk::secure_serialization<arcirk::services::task_options>(*itr);
@@ -2662,8 +2655,6 @@ void shared_state::run_server_tasks() {
                 opt.interval = 600;
             else if(opt.name == "ExchangePlan" && opt.interval == 0)
                 opt.interval = 1800;
-//            else if(opt.name == "SetDayMessages" && opt.interval == 0)
-//                opt.interval = 21600;
             else if(opt.interval == 0)
                 opt.interval = 60;
             vec.push_back(opt);
@@ -3174,7 +3165,7 @@ arcirk::server::server_command_result
 }
 
 arcirk::server::server_command_result
-        shared_state::upload_file(const variant_t &param, const variant_t &session_id) {
+        shared_state:: upload_file(const variant_t &param, const variant_t &session_id) {
 
     auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
     nlohmann::json param_{};
@@ -4378,6 +4369,134 @@ nlohmann::json shared_state::exec_http(const std::string &command, const nlohman
 
     stream.close();
     //ioc.stop();
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::profile_directory_create_directories(const variant_t &param,
+                                                                             const variant_t &session_id) {
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::CreateDirectories, arcirk::database::roles::dbAdministrator, param_, param);
+    } catch (const std::exception &e) {
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
+    }
+
+    std::string dest_ = param_.value("destantion", "");
+    if(dest_.empty())
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
+
+    std::string dest = arcirk::base64::base64_decode(dest_);
+
+    fs::path dir(sett.ServerWorkingDirectory);
+    dir /= sett.Version;
+    dir /= dest;
+
+    if(fs::exists(dir))
+        native_exception_(__FUNCTION__, "Каталог уже существует!");
+
+    boost::system::error_code ec;
+    if(!fs::create_directories(dir, ec)){
+        native_exception_(__FUNCTION__, arcirk::to_utf(ec.message()));
+    }
+    auto row = json::object();
+    row["name"] = dir.filename().string();
+    row["path"] = dest;
+    row["is_group"] = 1;
+    row["parent"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(dir.parent_path().string())));
+    row["size"] = 0;
+    row["ref"] = boost::to_string(arcirk::uuids::md5_to_uuid(arcirk::uuids::to_md5(row["path"].get<std::string>())));
+
+    result.message = "OK";
+    result.result = arcirk::base64::base64_encode(row.dump());
+
+    return result;
+}
+arcirk::server::server_command_result shared_state::profile_directory_delete_directory(const variant_t &param,
+                                                                                       const variant_t &session_id) {
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::DeleteDirectory, arcirk::database::roles::dbAdministrator, param_, param);
+    } catch (const std::exception &e) {
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
+    }
+
+    std::string dest_ = param_.value("destantion", "");
+    if(dest_.empty())
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
+
+    if(!arcirk::base64::is_base64(dest_))
+        native_exception_(__FUNCTION__, "Путь к каталогу должен быть в base64!");
+
+    std::string dest = arcirk::base64::base64_decode(dest_);
+
+    fs::path dir(sett.ServerWorkingDirectory);
+    dir /= sett.Version;
+    dir /= dest;
+
+    if(!fs::exists(dir))
+        native_exception_(__FUNCTION__, "Каталог не существует!");
+    if(!fs::is_directory(dir))
+        native_exception_(__FUNCTION__, "Объект не является директорией!");
+
+    boost::system::error_code ec;
+    if(!fs::remove_all(dir, ec)){
+        native_exception_(__FUNCTION__, arcirk::to_utf(ec.message()));
+    }
+    result.message = "OK";
+    result.result = WS_RESULT_SUCCESS;
+
+    return result;
+}
+
+arcirk::server::server_command_result shared_state::profile_directory_delete_file(const variant_t &param,
+                                                                                       const variant_t &session_id) {
+    using json = nlohmann::json;
+    namespace fs = boost::filesystem;
+
+    auto uuid = uuids::string_to_uuid(std::get<std::string>(session_id));
+    nlohmann::json param_{};
+    arcirk::server::server_command_result result;
+    try {
+        init_default_result(result, uuid, arcirk::server::bDeleteFile, arcirk::database::roles::dbAdministrator, param_, param);
+    } catch (const std::exception &e) {
+        native_exception_(__FUNCTION__, arcirk::to_utf(e.what()));
+    }
+
+    std::string dest_ = param_.value("destantion", "");
+    if(dest_.empty())
+        native_exception_(__FUNCTION__, "Не верные параметры команды!");
+
+    if(!arcirk::base64::is_base64(dest_))
+        native_exception_(__FUNCTION__, "Путь к каталогу должен быть в base64!");
+
+    std::string dest = arcirk::base64::base64_decode(dest_);
+
+    fs::path dir(sett.ServerWorkingDirectory);
+    dir /= sett.Version;
+    dir /= dest;
+
+    if(!fs::exists(dir))
+        native_exception_(__FUNCTION__, "Файл не существует!");
+    if(fs::is_directory(dir))
+        native_exception_(__FUNCTION__, "Объект является директорией!");
+
+    boost::system::error_code ec;
+    if(!fs::remove(dir, ec)){
+        native_exception_(__FUNCTION__, arcirk::to_utf(ec.message()));
+    }
+    result.message = "OK";
+    result.result = WS_RESULT_SUCCESS;
 
     return result;
 }

@@ -225,6 +225,9 @@ namespace arcirk::server{
         IsChannel,
         GetDatabaseStructure,
         Run1CScript,
+        CreateDirectories,
+        DeleteDirectory,
+        bDeleteFile,
         CMD_INVALID=-1,
     };
 
@@ -272,6 +275,9 @@ namespace arcirk::server{
         {IsChannel, "IsChannel"}    ,
         {GetDatabaseStructure, "GetDatabaseStructure"}    ,
         {Run1CScript, "Run1CScript"}    ,
+        {CreateDirectories, "CreateDirectories"}    ,
+        {DeleteDirectory, "DeleteDirectory"}    ,
+        {bDeleteFile, "DeleteFile"}    ,
     })
 
 }
